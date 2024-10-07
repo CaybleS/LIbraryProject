@@ -9,8 +9,8 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-        body: LoginBody(),
-      );
+      body: LoginBody(),
+    );
   }
 }
 
@@ -32,13 +32,13 @@ class _LoginBodyState extends State<LoginBody> {
 
   void click() {
     signInWithGoogle().then((user) => {
-      if (user != null) {
-        this.user = user,
-        Navigator.push(context,
-          MaterialPageRoute(builder: (context) => HomePage(user))
-        )
-      }
-    });
+          if (user != null)
+            {
+              this.user = user,
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => HomePage(user)))
+            }
+        });
   }
 
   Widget googleLoginButton() {
@@ -55,8 +55,8 @@ class _LoginBodyState extends State<LoginBody> {
                     padding: EdgeInsets.only(left: 10),
                     child: Text('Sign in with Google',
                         style: TextStyle(color: Colors.grey, fontSize: 25)))
-              ],))
-      );
+              ],
+            )));
   }
 
   @override

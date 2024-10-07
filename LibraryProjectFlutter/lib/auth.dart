@@ -7,19 +7,18 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn googleSignIn = GoogleSignIn();
 
 Future<User?> signInWithGoogle() async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-  final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
+  final GoogleSignInAuthentication? googleSignInAuthentication =
+      await googleSignInAccount?.authentication;
 
   final AuthCredential credential = GoogleAuthProvider.credential(
-    idToken: googleSignInAuthentication?.idToken,
-    accessToken: googleSignInAuthentication?.accessToken
-  );
+      idToken: googleSignInAuthentication?.idToken,
+      accessToken: googleSignInAuthentication?.accessToken);
 
-  final UserCredential userCredential = await _auth.signInWithCredential(credential);
+  final UserCredential userCredential =
+      await _auth.signInWithCredential(credential);
   final User? user = userCredential.user;
 
   if (user != null) {
