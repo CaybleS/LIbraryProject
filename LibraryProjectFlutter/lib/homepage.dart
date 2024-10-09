@@ -1,58 +1,64 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/add_book_page.dart';
 import 'book.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {
   final User user;
-  String showing = "all";
-  List<int> shownList = [];
 
-  HomePage(this.user, {super.key});
+  const HomePage(this.user, {super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  String _showing = "all";
+  List<int> _shownList = [];
 
   @override
   void initState() {
     super.initState();
 
-    widget.shownList = Iterable<int>.generate(exampleLibrary.length).toList();
+    _shownList = Iterable<int>.generate(exampleLibrary.length).toList();
   }
 
   void filterButtonClicked() {
     //TODO
   }
 
+  void addBookButtonClicked() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => AddBookPage()));
+  }
+
   Future<void> changeDisplay(String state) async {
     await updateList(state);
 
     setState(() {
-      widget.showing = state;
+      _showing = state;
     });
   }
 
   Future<void> updateList(String state) async {
-    widget.shownList.clear();
+    _shownList.clear();
 
     switch (state) {
       case "all":
-        widget.shownList = Iterable<int>.generate(exampleLibrary.length).toList();
+        _shownList =
+            Iterable<int>.generate(exampleLibrary.length).toList();
         break;
       case "fav":
         for (int i = 0; i < exampleLibrary.length; i++) {
           if (exampleLibrary[i].favorite) {
-            widget.shownList.add(i);
+            _shownList.add(i);
           }
         }
         break;
       case "lent":
         for (int i = 0; i < exampleLibrary.length; i++) {
           if (!exampleLibrary[i].available) {
-            widget.shownList.add(i);
+            _shownList.add(i);
           }
         }
         break;
@@ -61,7 +67,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      widget.showing = state;
+      _showing = state;
     });
   }
 
@@ -77,7 +83,7 @@ class _HomePageState extends State<HomePage> {
       const Color.fromRGBO(129, 199, 132, 1)
     ];
 
-    switch (widget.showing) {
+    switch (_showing) {
       case "all":
         buttonColor[0] = const Color.fromARGB(255, 117, 117, 117);
         break;
@@ -97,7 +103,7 @@ class _HomePageState extends State<HomePage> {
         ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0]),
             onPressed: () => {
-                  if (widget.showing == "all") {null} else changeDisplay("all")
+                  if (_showing == "all") {null} else changeDisplay("all")
                 },
             child: const Text(
               "All",
@@ -109,7 +115,7 @@ class _HomePageState extends State<HomePage> {
         ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1]),
             onPressed: () => {
-                  if (widget.showing == "fav") {null} else changeDisplay("fav")
+                  if (_showing == "fav") {null} else changeDisplay("fav")
                 },
             child: const Text(
               "Favorites",
@@ -121,7 +127,7 @@ class _HomePageState extends State<HomePage> {
         ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: buttonColor[2]),
             onPressed: () => {
-                  if (widget.showing == "lent")
+                  if (_showing == "lent")
                     {null}
                   else
                     changeDisplay("lent")
@@ -139,6 +145,19 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
         appBar: displayAppBar(context, widget.user, "home"),
         backgroundColor: Colors.grey[400],
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {addBookButtonClicked();},
+          backgroundColor: Colors.green,
+          label: const Text(
+            "Add Book",
+            style: TextStyle(fontSize: 20),
+          ),
+          icon: const Icon(
+            Icons.add,
+            size: 30,
+          ),
+          splashColor: Colors.blue,
+        ),
         body: Container(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -149,7 +168,10 @@ class _HomePageState extends State<HomePage> {
                     const Expanded(child: SearchBar()),
                     IconButton(
                       onPressed: () => {filterButtonClicked()},
-                      icon: const Icon(Icons.tune, size: 30,),
+                      icon: const Icon(
+                        Icons.tune,
+                        size: 30,
+                      ),
                       splashColor: Colors.white,
                     )
                   ],
@@ -159,15 +181,16 @@ class _HomePageState extends State<HomePage> {
                 ),
                 displayShowButtons(),
                 SizedBox(
-                    height: 500,
+                    height: 560,
                     child: ListView.builder(
-                        itemCount: widget.shownList.length,
+                        itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
                           Widget image;
-                          if (exampleLibrary[widget.shownList[index]].imagePath !=
+                          if (exampleLibrary[_shownList[index]]
+                                  .imagePath !=
                               null) {
                             image = Image.asset(
-                              exampleLibrary[widget.shownList[index]]
+                              exampleLibrary[_shownList[index]]
                                   .imagePath
                                   .toString(),
                               fit: BoxFit.fill,
@@ -180,7 +203,8 @@ class _HomePageState extends State<HomePage> {
                           String availableTxt;
                           Color availableTxtColor;
 
-                          if (exampleLibrary[widget.shownList[index]].available) {
+                          if (exampleLibrary[_shownList[index]]
+                              .available) {
                             availableTxt = "Available";
                             availableTxtColor = const Color(0xFF43A047);
                           } else {
@@ -190,7 +214,8 @@ class _HomePageState extends State<HomePage> {
 
                           Icon favIcon;
 
-                          if (exampleLibrary[widget.shownList[index]].favorite) {
+                          if (exampleLibrary[_shownList[index]]
+                              .favorite) {
                             favIcon = const Icon(Icons.favorite);
                           } else {
                             favIcon = const Icon(Icons.favorite_border);
@@ -224,7 +249,7 @@ class _HomePageState extends State<HomePage> {
                                                 alignment: Alignment.topLeft,
                                                 child: Text(
                                                   exampleLibrary[
-                                                          widget.shownList[index]]
+                                                          _shownList[index]]
                                                       .title,
                                                   style: const TextStyle(
                                                       color: Colors.black,
@@ -235,7 +260,7 @@ class _HomePageState extends State<HomePage> {
                                                 alignment: Alignment.topLeft,
                                                 child: Text(
                                                   exampleLibrary[
-                                                          widget.shownList[index]]
+                                                          _shownList[index]]
                                                       .author,
                                                   style: const TextStyle(
                                                       color: Colors.black,
@@ -276,7 +301,7 @@ class _HomePageState extends State<HomePage> {
                                             child: IconButton(
                                               onPressed: () => {
                                                 favoriteButtonClicked(
-                                                    widget.shownList[index])
+                                                    _shownList[index])
                                               },
                                               icon: favIcon,
                                               splashColor: Colors.white,

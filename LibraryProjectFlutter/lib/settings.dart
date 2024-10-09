@@ -10,6 +10,7 @@ class Settings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: displayAppBar(context, user, "settings"),
+      backgroundColor: Colors.grey[400],
       body: const Placeholder(),
     );
   }
