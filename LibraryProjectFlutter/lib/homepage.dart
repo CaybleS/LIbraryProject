@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book_page.dart';
+import 'package:library_project/database.dart';
 import 'book.dart';
 import 'appbar.dart';
 
@@ -16,20 +17,24 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _showing = "all";
   List<int> _shownList = [];
+  List<Book> _userLibrary = [];
 
   @override
   void initState() {
     super.initState();
 
-    _shownList = Iterable<int>.generate(exampleLibrary.length).toList();
+    updateList(_showing);
   }
 
   void filterButtonClicked() {
     //TODO
   }
 
-  void addBookButtonClicked() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => AddBookPage()));
+  void addBookButtonClicked() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => AddBookPage(widget.user)));
+    await updateList(_showing);
+    setState(() {});
   }
 
   Future<void> changeDisplay(String state) async {
@@ -42,22 +47,22 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> updateList(String state) async {
     _shownList.clear();
+    _userLibrary = await getUserLibrary(widget.user);
 
     switch (state) {
       case "all":
-        _shownList =
-            Iterable<int>.generate(exampleLibrary.length).toList();
+        _shownList = Iterable<int>.generate(_userLibrary.length).toList();
         break;
       case "fav":
-        for (int i = 0; i < exampleLibrary.length; i++) {
-          if (exampleLibrary[i].favorite) {
+        for (int i = 0; i < _userLibrary.length; i++) {
+          if (_userLibrary[i].favorite) {
             _shownList.add(i);
           }
         }
         break;
       case "lent":
-        for (int i = 0; i < exampleLibrary.length; i++) {
-          if (!exampleLibrary[i].available) {
+        for (int i = 0; i < _userLibrary.length; i++) {
+          if (!_userLibrary[i].available) {
             _shownList.add(i);
           }
         }
@@ -66,13 +71,11 @@ class _HomePageState extends State<HomePage> {
         break;
     }
 
-    setState(() {
-      _showing = state;
-    });
+    setState(() {});
   }
 
   void favoriteButtonClicked(int index) {
-    exampleLibrary[index].favorite = !exampleLibrary[index].favorite;
+    _userLibrary[index].favoriteButtonClicked();
     setState(() {});
   }
 
@@ -127,10 +130,7 @@ class _HomePageState extends State<HomePage> {
         ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: buttonColor[2]),
             onPressed: () => {
-                  if (_showing == "lent")
-                    {null}
-                  else
-                    changeDisplay("lent")
+                  if (_showing == "lent") {null} else changeDisplay("lent")
                 },
             child: const Text(
               "Lent",
@@ -146,7 +146,9 @@ class _HomePageState extends State<HomePage> {
         appBar: displayAppBar(context, widget.user, "home"),
         backgroundColor: Colors.grey[400],
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {addBookButtonClicked();},
+          onPressed: () {
+            addBookButtonClicked();
+          },
           backgroundColor: Colors.green,
           label: const Text(
             "Add Book",
@@ -186,11 +188,12 @@ class _HomePageState extends State<HomePage> {
                         itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
                           Widget image;
-                          if (exampleLibrary[_shownList[index]]
-                                  .imagePath !=
-                              null) {
+                          if (_userLibrary[_shownList[index]].imagePath !=
+                                  null ||
+                              _userLibrary[_shownList[index]].imagePath ==
+                                  '') {
                             image = Image.asset(
-                              exampleLibrary[_shownList[index]]
+                              _userLibrary[_shownList[index]]
                                   .imagePath
                                   .toString(),
                               fit: BoxFit.fill,
@@ -203,8 +206,7 @@ class _HomePageState extends State<HomePage> {
                           String availableTxt;
                           Color availableTxtColor;
 
-                          if (exampleLibrary[_shownList[index]]
-                              .available) {
+                          if (_userLibrary[_shownList[index]].available) {
                             availableTxt = "Available";
                             availableTxtColor = const Color(0xFF43A047);
                           } else {
@@ -214,8 +216,7 @@ class _HomePageState extends State<HomePage> {
 
                           Icon favIcon;
 
-                          if (exampleLibrary[_shownList[index]]
-                              .favorite) {
+                          if (_userLibrary[_shownList[index]].favorite) {
                             favIcon = const Icon(Icons.favorite);
                           } else {
                             favIcon = const Icon(Icons.favorite_border);
@@ -248,7 +249,7 @@ class _HomePageState extends State<HomePage> {
                                             Align(
                                                 alignment: Alignment.topLeft,
                                                 child: Text(
-                                                  exampleLibrary[
+                                                  _userLibrary[
                                                           _shownList[index]]
                                                       .title,
                                                   style: const TextStyle(
@@ -259,7 +260,7 @@ class _HomePageState extends State<HomePage> {
                                             Align(
                                                 alignment: Alignment.topLeft,
                                                 child: Text(
-                                                  exampleLibrary[
+                                                  _userLibrary[
                                                           _shownList[index]]
                                                       .author,
                                                   style: const TextStyle(

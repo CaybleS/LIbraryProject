@@ -36,7 +36,7 @@ class _LoginBodyState extends State<LoginBody> {
           if (user != null)
             {
               this.user = user,
-              Navigator.push(context,
+              Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (context) => HomePage(user)))
             }
         });
