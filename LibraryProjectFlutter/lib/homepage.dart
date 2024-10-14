@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book_page.dart';
+import 'package:library_project/book_page.dart';
 import 'package:library_project/database.dart';
 import 'book.dart';
 import 'appbar.dart';
@@ -28,6 +29,13 @@ class _HomePageState extends State<HomePage> {
 
   void filterButtonClicked() {
     //TODO
+  }
+
+  void bookClicked(int index) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (ctx) {
+      return BookPage(_userLibrary[index]);
+    }));
+    setState(() {});
   }
 
   void addBookButtonClicked() async {
@@ -189,9 +197,7 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: (BuildContext context, int index) {
                           Widget image;
                           if (_userLibrary[_shownList[index]].imagePath !=
-                                  null ||
-                              _userLibrary[_shownList[index]].imagePath ==
-                                  '') {
+                              null) {
                             image = Image.asset(
                               _userLibrary[_shownList[index]]
                                   .imagePath
@@ -222,97 +228,102 @@ class _HomePageState extends State<HomePage> {
                             favIcon = const Icon(Icons.favorite_border);
                           }
 
-                          return Card(
-                              margin: const EdgeInsets.all(5),
-                              child: Row(children: [
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                SizedBox(
-                                  height: 100,
-                                  width: 70,
-                                  child: image,
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                SizedBox(
-                                    width: 190,
-                                    height: 100,
-                                    child: Align(
-                                        alignment: Alignment.topLeft,
-                                        child: Column(
-                                          children: [
-                                            const SizedBox(
-                                              height: 10,
-                                            ),
-                                            Align(
-                                                alignment: Alignment.topLeft,
+                          return InkWell(
+                              onTap: () {bookClicked(_shownList[index]);},
+                              child: Card(
+                                  margin: const EdgeInsets.all(5),
+                                  child: Row(children: [
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    SizedBox(
+                                      height: 100,
+                                      width: 70,
+                                      child: image,
+                                    ),
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    SizedBox(
+                                        width: 190,
+                                        height: 100,
+                                        child: Align(
+                                            alignment: Alignment.topLeft,
+                                            child: Column(
+                                              children: [
+                                                const SizedBox(
+                                                  height: 10,
+                                                ),
+                                                Align(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    child: Text(
+                                                      _userLibrary[
+                                                              _shownList[index]]
+                                                          .title,
+                                                      style: const TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: 20),
+                                                      softWrap: true,
+                                                    )),
+                                                Align(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    child: Text(
+                                                      _userLibrary[
+                                                              _shownList[index]]
+                                                          .author,
+                                                      style: const TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: 16),
+                                                      softWrap: true,
+                                                    )),
+                                              ],
+                                            ))),
+                                    SizedBox(
+                                      height: 100,
+                                      width: 70,
+                                      child: Align(
+                                          alignment: Alignment.topRight,
+                                          child: Column(
+                                            children: [
+                                              const Align(
+                                                alignment: Alignment.topRight,
                                                 child: Text(
-                                                  _userLibrary[
-                                                          _shownList[index]]
-                                                      .title,
-                                                  style: const TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 20),
-                                                  softWrap: true,
-                                                )),
-                                            Align(
-                                                alignment: Alignment.topLeft,
-                                                child: Text(
-                                                  _userLibrary[
-                                                          _shownList[index]]
-                                                      .author,
-                                                  style: const TextStyle(
+                                                  "Status:",
+                                                  style: TextStyle(
                                                       color: Colors.black,
                                                       fontSize: 16),
                                                   softWrap: true,
-                                                )),
-                                          ],
-                                        ))),
-                                SizedBox(
-                                  height: 100,
-                                  width: 70,
-                                  child: Align(
-                                      alignment: Alignment.topRight,
-                                      child: Column(
-                                        children: [
-                                          const Align(
-                                            alignment: Alignment.topRight,
-                                            child: Text(
-                                              "Status:",
-                                              style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                              softWrap: true,
-                                            ),
-                                          ),
-                                          Align(
-                                            alignment: Alignment.topRight,
-                                            child: Text(
-                                              availableTxt,
-                                              style: TextStyle(
-                                                  color: availableTxtColor,
-                                                  fontSize: 16),
-                                              softWrap: true,
-                                            ),
-                                          ),
-                                          Align(
-                                            alignment: Alignment.bottomRight,
-                                            child: IconButton(
-                                              onPressed: () => {
-                                                favoriteButtonClicked(
-                                                    _shownList[index])
-                                              },
-                                              icon: favIcon,
-                                              splashColor: Colors.white,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        ],
-                                      )),
-                                )
-                              ]));
+                                                ),
+                                              ),
+                                              Align(
+                                                alignment: Alignment.topRight,
+                                                child: Text(
+                                                  availableTxt,
+                                                  style: TextStyle(
+                                                      color: availableTxtColor,
+                                                      fontSize: 16),
+                                                  softWrap: true,
+                                                ),
+                                              ),
+                                              Align(
+                                                alignment:
+                                                    Alignment.bottomRight,
+                                                child: IconButton(
+                                                  onPressed: () => {
+                                                    favoriteButtonClicked(
+                                                        _shownList[index])
+                                                  },
+                                                  icon: favIcon,
+                                                  splashColor: Colors.white,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          )),
+                                    )
+                                  ])));
                         }))
               ],
             )));

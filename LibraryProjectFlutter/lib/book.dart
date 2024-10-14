@@ -48,7 +48,7 @@ class Book {
 
 Book createBook(record) {
   Book book = Book(record['title'], record['author'], record['available'],
-      imagePath: record['imagePath']);
+      imagePath: record['image']);
   book.favorite = record['favorite'];
 
   return book;
