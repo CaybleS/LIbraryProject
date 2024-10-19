@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/friends_page.dart';
 import 'homepage.dart';
 import 'profile.dart';
 import 'settings.dart';
@@ -24,6 +25,13 @@ PreferredSizeWidget displayAppBar(
     if (curPage != "settings") {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) => Settings(user)));
+    }
+  }
+
+  void goToFriends() {
+    if (curPage != "friends") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => FriendsPage(user)));
     }
   }
 
@@ -57,7 +65,7 @@ PreferredSizeWidget displayAppBar(
     ),
     actions: [
       IconButton(
-          onPressed: () {}, icon: const Icon(Icons.person_add_alt_1, size: 30)),
+          onPressed: () {goToFriends();}, icon: const Icon(Icons.person_add_alt_1, size: 30)),
       const SizedBox(
         width: 10,
       )

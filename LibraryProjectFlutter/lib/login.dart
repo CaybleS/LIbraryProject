@@ -27,7 +27,7 @@ class _LoginBodyState extends State<LoginBody> {
   @override
   void initState() {
     super.initState();
-    //signOutGoogle();
+    signOutGoogle();
     //This will make user sign in every time, commented out bc I got tired of logging in when testing :)
   }
 
