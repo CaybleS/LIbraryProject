@@ -1,7 +1,7 @@
 // note that in my implementation of trying to add a search bar with google books API, I went to
 // \android\app\src\main\AndroidManifest.xml and added above the <application>: <uses-permission android:name="android.permission.INTERNET"/>
 // I also added "http: any" to pubspec.yaml dependencies.
-// those 3 files are the only files I edited
+// those 3 files are the only files I edited so far
 // inspiration: https://www.youtube.com/watch?v=H13CIwr3nIY
 // note that the API returns a JSON-formatted response body, with specific keywords to specify each value.
 // TODO add 2 database entries, 1 for url to the book cover, and 1 for the date checked out. The 2nd one doesn't pertain to this.
@@ -15,7 +15,6 @@ import 'dart:convert';
 
 class AddBookPage extends StatefulWidget {
   final User user;
-  dynamic searchQueryBooks; // since json.decode() returns a dynamic
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
@@ -26,21 +25,22 @@ class _AddBookPageState extends State<AddBookPage> {
   final controllerAuthor = TextEditingController();
   final controllerTitle = TextEditingController();
 
-  List searchQueryBooks = [];
+  // I would say in the future make this a list<Book> and update searchBooks to parse the api call response body to make a Book object
+  // also obviously update things to use this image url rather than the image path
+  List<dynamic> searchQueryBooks = [];
   // This is my private api key. Do NOT use this for the final project. I prob shouldnt even push this but idc
   // TODO change this to the libraryproject gmail google books api key
   static const String apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
+  bool hasSearched = false; // so that if there is no results, something is done which signals this, only after user searches
 
-  Widget displaySearchResults(var searchQueryBooks) {
+  Widget displaySearchResults(List<dynamic> searchQueryBooks) {
     if (searchQueryBooks.isNotEmpty) {
       var currentBook = searchQueryBooks[0]['volumeInfo']; // to get next book you do index 1, etc.
       String bookTitle = currentBook['title'];
       String bookCover = "https://lgimages.s3.amazonaws.com/nc-md.gif"; // placeholder image if no book cover is there, feel free to change it
-      // could also use null-aware operator here but I think this is more readable so whatever
       if (currentBook['imageLinks'] != null) {
         bookCover = currentBook['imageLinks']['thumbnail'];
       }
-      // maybe make the search a separate page from the actual results, I think this will be better (as in, search -> popup with results)
       return Column(
         children: [
           Text(
@@ -51,14 +51,21 @@ class _AddBookPageState extends State<AddBookPage> {
       );
 
     }
-    return const Text("No books found");
+    if (hasSearched) {
+      return const Text("No books found");
+    }
+    else {
+      return const Text("");
+    }
   }
   
   Future<void> searchBooks(String query, String endpoint) async {
     final response = await http.get(Uri.parse(endpoint));
     if (response.statusCode == 200) {
-      searchQueryBooks = json.decode(response.body)['items'];
+       // ?? is null-aware operator, so if there is no response, the query response will be an empty list
+      searchQueryBooks = json.decode(response.body)['items'] ?? [];
     }
+    // TODO also add some system to deal with rate limiting or other status codes, maybe a message "try again later" or something
   }
 
   // old onSubmit function, kept as a guideline for how to do this
@@ -73,6 +80,7 @@ class _AddBookPageState extends State<AddBookPage> {
 
   void onSubmit(BuildContext context) async {
     if (controllerTitle.text != "") {
+      hasSearched = true;
       // stuff with google books api
       String title = controllerTitle.text;
       String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
@@ -81,7 +89,6 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 }
 
-// TODO add another widget which will show a column with title, author, picture of book, that stuff.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +127,7 @@ class _AddBookPageState extends State<AddBookPage> {
               const SizedBox(
                 height: 20,
               ),
-              searchQueryBooks.isNotEmpty ? displaySearchResults(searchQueryBooks) : const Text(""),
+              displaySearchResults(searchQueryBooks),
             ],
           ),
         ));
