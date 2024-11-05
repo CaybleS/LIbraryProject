@@ -50,8 +50,8 @@ class _BookPageState extends State<BookPage> {
                   SizedBox(
                     height: 200,
                     width: 140,
-                    child: Image.asset(
-                      widget.book.imagePath.toString(),
+                    child: Image.network( // ensure this works since i changed it
+                      widget.book.coverUrl.toString(), // toString shouldnt be needed for these since imageUrl should always be str but I want to make sure before removing
                       fit: BoxFit.fill,
                     ),
                   ),

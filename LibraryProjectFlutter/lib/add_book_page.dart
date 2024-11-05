@@ -4,7 +4,6 @@
 // those 3 files are the only files I edited so far
 // inspiration: https://www.youtube.com/watch?v=H13CIwr3nIY
 // note that the API returns a JSON-formatted response body, with specific keywords to specify each value.
-// TODO add 2 database entries, 1 for url to the book cover, and 1 for the date checked out. The 2nd one doesn't pertain to this.
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -18,15 +17,13 @@ class AddBookPage extends StatefulWidget {
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
-  AddBookPage(this.user, {super.key});
+  const AddBookPage(this.user, {super.key});
 }
 
 class _AddBookPageState extends State<AddBookPage> {
   final controllerAuthor = TextEditingController();
   final controllerTitle = TextEditingController();
 
-  // I would say in the future make this a list<Book> and update searchBooks to parse the api call response body to make a Book object
-  // also obviously update things to use this image url rather than the image path
   List<dynamic> searchQueryBooks = [];
   // This is my private api key. Do NOT use this for the final project. I prob shouldnt even push this but idc
   // TODO change this to the libraryproject gmail google books api key
@@ -35,21 +32,24 @@ class _AddBookPageState extends State<AddBookPage> {
 
   Widget displaySearchResults(List<dynamic> searchQueryBooks) {
     if (searchQueryBooks.isNotEmpty) {
-      var currentBook = searchQueryBooks[0]['volumeInfo']; // to get next book you do index 1, etc.
-      String bookTitle = currentBook['title'];
-      String bookCover = "https://lgimages.s3.amazonaws.com/nc-md.gif"; // placeholder image if no book cover is there, feel free to change it
-      if (currentBook['imageLinks'] != null) {
-        bookCover = currentBook['imageLinks']['thumbnail'];
-      }
-      return Column(
-        children: [
-          Text(
-            bookTitle,
-          ),
-          Image.network(bookCover),
-        ],
+      return SizedBox(
+        height: 560,
+        child: ListView.builder(
+          itemCount: searchQueryBooks.length, // does this even work?? I have no idea!
+          itemBuilder: (BuildContext context, int index) {
+            Widget image;
+            // using ?[] to access array indicies safely even if they're null, and ?? is if-null operator which sets the cover to the placeholder img if index access is null
+            // kind of freaky line but I can't think of a better way to do it
+            String coverUrl = (searchQueryBooks[index]?['volumeInfo']['imageLinks']?['thumbnail']) ?? "https://lgimages.s3.amazonaws.com/nc-md.]if";
+            image = Image.network(coverUrl.toString());
+            return SizedBox(
+              height: 100,
+              width: 70,
+              child: image,
+            );
+          },
+        ),
       );
-
     }
     if (hasSearched) {
       return const Text("No books found");
@@ -62,12 +62,13 @@ class _AddBookPageState extends State<AddBookPage> {
   Future<void> searchBooks(String query, String endpoint) async {
     final response = await http.get(Uri.parse(endpoint));
     if (response.statusCode == 200) {
-       // ?? is null-aware operator, so if there is no response, the query response will be an empty list
+       // ?? is if-null operator, so if there is no response, the query response will be an empty list
       searchQueryBooks = json.decode(response.body)['items'] ?? [];
     }
     // TODO also add some system to deal with rate limiting or other status codes, maybe a message "try again later" or something
   }
 
+// note that the url is not used as a paramter there, but it will be required now
   // old onSubmit function, kept as a guideline for how to do this
   // void onSubmit(BuildContext context) {
   //   if (controllerAuthor.text != "" && controllerTitle.text != "") {
@@ -83,7 +84,7 @@ class _AddBookPageState extends State<AddBookPage> {
       hasSearched = true;
       // stuff with google books api
       String title = controllerTitle.text;
-      String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
+      final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
       await searchBooks(title, endpoint);
       setState(() {});
   }

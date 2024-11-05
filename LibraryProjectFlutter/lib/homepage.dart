@@ -194,20 +194,11 @@ class _HomePageState extends State<HomePage> {
                     child: ListView.builder(
                         itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
-                          Widget image;
-                          if (_userLibrary[_shownList[index]].imagePath !=
-                              null) {
-                            image = Image.asset(
-                              _userLibrary[_shownList[index]]
-                                  .imagePath
-                                  .toString(),
-                              fit: BoxFit.fill,
-                            );
-                          } else {
-                            image = Image.asset("assets/No_Cover.jpg",
-                                fit: BoxFit.fill);
-                          }
-
+                          Widget image; // todo ensure this works since I changed it
+                          image = Image.network(
+                            _userLibrary[_shownList[index]].coverUrl.toString(),
+                            fit: BoxFit.fill,
+                          );
                           String availableTxt;
                           Color availableTxtColor;
 
