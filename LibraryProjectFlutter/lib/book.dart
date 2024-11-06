@@ -1,7 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/database.dart';
 
-// I dont even know what this does or why its here to be honest
 List<Book> exampleLibrary = [
   Book("Lord of the Rings", "J.R.R. Tolkien", true, "https://lgimages.s3.amazonaws.com/nc-md.gif"),
   Book("Alice's Adventures in Wonderland", "Lewis Carroll", true, "https://lgimages.s3.amazonaws.com/nc-md.gif"),

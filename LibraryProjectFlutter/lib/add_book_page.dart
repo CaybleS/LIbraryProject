@@ -110,7 +110,7 @@ class _AddBookPageState extends State<AddBookPage> {
                   SizedBox(
                   height: 60,
                   width: 85,
-                  // the add book button is here, improve this breh
+                  // add book button and other buttons go here
                   child:
                     ElevatedButton(
                       onPressed: () {
