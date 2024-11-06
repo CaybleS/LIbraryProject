@@ -50,8 +50,8 @@ class _BookPageState extends State<BookPage> {
                   SizedBox(
                     height: 200,
                     width: 140,
-                    child: Image.asset(
-                      widget.book.imagePath.toString(),
+                    child: Image.network(
+                      widget.book.coverUrl.toString(),
                       fit: BoxFit.fill,
                     ),
                   ),

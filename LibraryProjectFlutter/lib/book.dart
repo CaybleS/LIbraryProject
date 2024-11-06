@@ -1,26 +1,16 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/database.dart';
 
-List<Book> exampleLibrary = [
-  Book("Lord of the Rings", "J.R.R. Tolkien", true),
-  Book(
-      "Alice's Adventures in Wonderland",
-      "Lewis Carroll",
-      imagePath: "assets/AliceCover.jpg",
-      false),
-  Book("The Lion, the Witch and the Wardrobe", "C.S. Lewis", true,
-      imagePath: "assets/LionWitchCover.jpg"),
-];
-
 class Book {
   String title;
   String author;
   bool available;
   bool favorite = false;
-  String? imagePath;
+  String coverUrl;
   late DatabaseReference _id;
+  // maybe dateCheckedOut at some point too, which should probably be an optional parameter, no idea what datatype it would be
 
-  Book(this.title, this.author, this.available, {this.imagePath});
+  Book(this.title, this.author, this.available, this.coverUrl);
 
   void favoriteButtonClicked() {
     favorite = !favorite;
@@ -41,14 +31,13 @@ class Book {
       'author': author,
       'available': available,
       'favorite': favorite,
-      'image': imagePath
+      'coverUrl': coverUrl,
     };
   }
 }
 
 Book createBook(record) {
-  Book book = Book(record['title'], record['author'], record['available'],
-      imagePath: record['image']);
+  Book book = Book(record['title'], record['author'], record['available'], record['coverUrl']);
   book.favorite = record['favorite'];
 
   return book;
