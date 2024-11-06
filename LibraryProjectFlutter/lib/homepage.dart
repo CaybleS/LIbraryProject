@@ -243,30 +243,31 @@ class _HomePageState extends State<HomePage> {
                                               children: [
                                                 const SizedBox(
                                                   height: 10,
+                                                  width: 80,
                                                 ),
                                                 Align(
                                                     alignment:
                                                         Alignment.topLeft,
                                                     child: Text(
-                                                      _userLibrary[
-                                                              _shownList[index]]
-                                                          .title,
+                                                      _userLibrary[_shownList[index]].title,
                                                       style: const TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 20),
                                                       softWrap: true,
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
                                                     )),
                                                 Align(
                                                     alignment:
                                                         Alignment.topLeft,
                                                     child: Text(
-                                                      _userLibrary[
-                                                              _shownList[index]]
-                                                          .author,
+                                                      _userLibrary[_shownList[index]].author,
                                                       style: const TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16),
                                                       softWrap: true,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     )),
                                               ],
                                             ))),
