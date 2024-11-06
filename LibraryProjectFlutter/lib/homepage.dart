@@ -194,7 +194,7 @@ class _HomePageState extends State<HomePage> {
                     child: ListView.builder(
                         itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
-                          Widget image; // todo ensure this works since I changed it
+                          Widget image;
                           image = Image.network(
                             _userLibrary[_shownList[index]].coverUrl.toString(),
                             fit: BoxFit.fill,

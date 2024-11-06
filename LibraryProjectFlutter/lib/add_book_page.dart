@@ -29,14 +29,29 @@ class _AddBookPageState extends State<AddBookPage> {
   List<dynamic> searchQueryBooks = [];
   // This is my private api key. Do NOT use this for the final project. I prob shouldnt even push this but idc
   // TODO change this to the libraryproject gmail google books api key
+  // the reason iv not changed it yet, is because we need some system to not have the api key on git and idk how we should do it
   static const String apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
   bool hasSearched = false; // so that if there is no results, something is done which signals this, only after user searches
 
-  void addBookToLibrary(BuildContext context, String title, String author, String coverUrl) async { // mby make async idk
+  void addBookToLibrary(BuildContext context, String title, String author, String coverUrl) {
       Book book = Book(title, author, true, coverUrl);
       book.setId(addBook(book, widget.user));
-      exampleLibrary.add(book);
       Navigator.pop(context);
+  }
+
+  Future<void> searchForBooks() async {
+    String title = controllerTitle.text;
+    if (title != "") {
+      hasSearched = true;
+      final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
+      final response = await http.get(Uri.parse(endpoint));
+      if (response.statusCode == 200) {
+        // ?? is if-null operator, so if there is no response, the query response will be an empty list
+        searchQueryBooks = json.decode(response.body)['items'] ?? [];
+      }
+      // TODO also add some system to deal with rate limiting or other status codes, maybe a message "try again later" or something
+      setState(() {});
+    }
   }
 
   Widget displaySearchResults() {
@@ -45,7 +60,7 @@ class _AddBookPageState extends State<AddBookPage> {
       return SizedBox(
         height: 560,
         child: ListView.builder(
-          itemCount: searchQueryBooks.length, // does this even work?? I have no idea!
+          itemCount: searchQueryBooks.length,
           itemBuilder: (BuildContext context, int index) {
             Widget image;
             // using ?[] to access array indicies safely even if they're null, and ?? is if-null operator which has placeholder values to the right
@@ -125,7 +140,7 @@ class _AddBookPageState extends State<AddBookPage> {
                     ),
                   ),
                 ],
-              ), 
+              ),
             );
           },
         ),
@@ -138,61 +153,41 @@ class _AddBookPageState extends State<AddBookPage> {
       return const Text("");
     }
   }
-  
-  Future<void> searchBooks(String query, String endpoint) async {
-    final response = await http.get(Uri.parse(endpoint));
-    if (response.statusCode == 200) {
-       // ?? is if-null operator, so if there is no response, the query response will be an empty list
-      searchQueryBooks = json.decode(response.body)['items'] ?? [];
-    }
-    // TODO also add some system to deal with rate limiting or other status codes, maybe a message "try again later" or something
-  }
-
-  void onSubmit() async {
-    if (controllerTitle.text != "") {
-      hasSearched = true;
-      // stuff with google books api
-      String title = controllerTitle.text;
-      final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
-      await searchBooks(title, endpoint);
-      setState(() {});
-  }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.blue,
-        ),
-        backgroundColor: Colors.grey[400],
-        body: Container(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: [
-              const Text(
-                "Search for book here:",
-                style: TextStyle(fontSize: 20),
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
+      ),
+      backgroundColor: Colors.grey[400],
+      body: Container(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            const Text("Search for book here:",
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            TextField(
+              controller: controllerTitle,
+              decoration: const InputDecoration(
+              fillColor: Colors.white, filled: true),
+            ),
+            const SizedBox(
+              height: 5,
+            ),
+            ElevatedButton(
+              onPressed: () {
+                searchForBooks();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(129, 199, 132, 1)
               ),
-              const SizedBox(
-                height: 10,
-              ),
-              TextField(
-                controller: controllerTitle,
-                decoration: const InputDecoration(
-                    fillColor: Colors.white, filled: true),
-              ),
-              const SizedBox(
-                height: 5,
-              ),
-              ElevatedButton(
-                  onPressed: () {
-                    onSubmit();
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                  child: const Text('Search',
-                      style: TextStyle(fontSize: 16, color: Colors.black))
+              child: const Text("Search",
+                style: TextStyle(fontSize: 16, color: Colors.black))
               ),
               const SizedBox(
                 height: 20,
@@ -200,6 +195,7 @@ class _AddBookPageState extends State<AddBookPage> {
               displaySearchResults(),
             ],
           ),
-        ));
+        ),
+      );
     }
 }
