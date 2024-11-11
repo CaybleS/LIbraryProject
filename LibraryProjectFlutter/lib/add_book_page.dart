@@ -1,11 +1,10 @@
 // note that the API returns a JSON-formatted response body, with specific keywords to specify each value
 // the results from the query is formatted in a way like this: https://developers.google.com/books/docs/v1/using#response_1
 // TODO what should the app show when a user already has a book in their library, should it not be shown? Or show "already owned", or a remove button?
-// TODO add a CircularProgressIndicator which shows between the time they hit add book and the time results are shown
 // TODO should I add an option for users to click on the book to get more details? Similar to the book_page thing. I think no but not sure, seems like too much button pressing.
 // TODO add a pagination system of some kind, for now it only shows 10 books and there is no page 2 or whatever. I think this will be a system where each 10 query results are
 // shown on screen, and if user goes to next page it will make another api call to get the next 10 query results if they exist, and store previous query results in a list/map
-// also if the user searches, should the query be cleared? Idk! That or there should be a clear button, not sure which
+// if user seaches should there be a clear button or should it automatically clear their search bar, idk!
 // also, should books in the DB also have info such as num pages, retail price, isbn, etc (this info would be added to book_page.dart if so)
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,18 +30,18 @@ class _AddBookPageState extends State<AddBookPage> {
   // TODO change this to the libraryproject gmail google books api key
   // the reason iv not changed it yet, is because we need some system to not have the api key on git and idk how we should do it
   static const String apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
-  bool hasSearched = false; // so that if there is no results, something is done which signals this, only after user searches
+  bool _hasSearched = false; // so that if there is no results, something is done which signals this, only after user searches
+  bool _isSearching = false;
 
   void addBookToLibrary(BuildContext context, String title, String author, String coverUrl) {
-      Book book = Book(title, author, true, coverUrl);
-      book.setId(addBook(book, widget.user));
-      Navigator.pop(context);
+    Book book = Book(title, author, true, coverUrl);
+    book.setId(addBook(book, widget.user));
+    Navigator.pop(context);
   }
 
   Future<void> searchForBooks() async {
     String title = controllerTitle.text;
     if (title != "") {
-      hasSearched = true;
       final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
       final response = await http.get(Uri.parse(endpoint));
       if (response.statusCode == 200) {
@@ -55,7 +54,10 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Widget displaySearchResults() {
-    controllerTitle.clear(); // emptying the title user input field (done here so that its emptied the same time the results are displayed) (should I even be doing this?)
+    if (controllerTitle.text.isNotEmpty) {
+      _hasSearched = true;
+      controllerTitle.clear();
+    }
     if (searchQueryBooks.isNotEmpty) {
       return SizedBox(
         height: 560,
@@ -146,7 +148,7 @@ class _AddBookPageState extends State<AddBookPage> {
         ),
       );
     }
-    if (hasSearched) {
+    if (_hasSearched) {
       return const Text("No books found");
     }
     else {
@@ -181,7 +183,14 @@ class _AddBookPageState extends State<AddBookPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                searchForBooks();
+                setState(() {
+                  _isSearching = true;
+                });
+                searchForBooks().then((_) { // triggers this setState when it finishes
+                  setState(() {
+                    _isSearching = false;
+                  });
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(129, 199, 132, 1)
@@ -192,7 +201,13 @@ class _AddBookPageState extends State<AddBookPage> {
               const SizedBox(
                 height: 20,
               ),
-              displaySearchResults(),
+              _isSearching 
+              ? const CircularProgressIndicator(
+                color: Colors.deepPurpleAccent,
+                backgroundColor: Colors.grey,
+                strokeWidth: 5.0,
+                )
+              : displaySearchResults(),
             ],
           ),
         ),
