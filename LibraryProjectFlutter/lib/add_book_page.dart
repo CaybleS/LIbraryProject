@@ -7,7 +7,6 @@ import 'package:library_project/book.dart';
 import 'package:library_project/database.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:mobile_scanner/mobile_scanner.dart'; // not implemented yet
 
 enum _AddBookOptions {search, scan, custom}
 
