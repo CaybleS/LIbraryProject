@@ -1,11 +1,5 @@
 // note that the API returns a JSON-formatted response body, with specific keywords to specify each value
 // the results from the query is formatted in a way like this: https://developers.google.com/books/docs/v1/using#response_1
-// TODO what should the app show when a user already has a book in their library, should it not be shown? Or show "already owned", or a remove button?
-// TODO should I add an option for users to click on the book to get more details? Similar to the book_page thing. I think no but not sure, seems like too much button pressing.
-// TODO add a pagination system of some kind, for now it only shows 10 books and there is no page 2 or whatever. I think this will be a system where each 10 query results are
-// shown on screen, and if user goes to next page it will make another api call to get the next 10 query results if they exist, and store previous query results in a list/map
-// if user seaches should there be a clear button or should it automatically clear their search bar, idk!
-// also, should books in the DB also have info such as num pages, retail price, isbn, etc (this info would be added to book_page.dart if so)
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +7,9 @@ import 'package:library_project/book.dart';
 import 'package:library_project/database.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:mobile_scanner/mobile_scanner.dart'; // not implemented yet
+
+enum _AddBookOptions {search, scan, custom}
 
 class AddBookPage extends StatefulWidget {
   final User user;
@@ -23,53 +20,119 @@ class AddBookPage extends StatefulWidget {
 }
 
 class _AddBookPageState extends State<AddBookPage> {
-  final controllerTitle = TextEditingController();
+  final _controllerTitle = TextEditingController();
 
-  List<dynamic> searchQueryBooks = [];
+  List<dynamic> _searchQueryBooks = [];
   // This is my private api key. Do NOT use this for the final project. I prob shouldnt even push this but idc
   // TODO change this to the libraryproject gmail google books api key
   // the reason iv not changed it yet, is because we need some system to not have the api key on git and idk how we should do it
-  static const String apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
+  static const String _apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
   bool _hasSearched = false; // so that if there is no results, something is done which signals this, only after user searches
   bool _isSearching = false;
+  bool _searchError = false;
+  bool _usingGoogleAPI = true;
+  Set<_AddBookOptions> selection = <_AddBookOptions>{_AddBookOptions.search}; // I think this will only ever be set to 1 selection value but idk!
 
-  void addBookToLibrary(BuildContext context, String title, String author, String coverUrl) {
+  void _addBookToLibrary(BuildContext context, String title, String author, String coverUrl) {
     Book book = Book(title, author, true, coverUrl);
     book.setId(addBook(book, widget.user));
     Navigator.pop(context);
   }
 
-  Future<void> searchForBooks() async {
-    String title = controllerTitle.text;
+  Future<void> _searchWithOpenLibrary() async {
+    String title = _controllerTitle.text;
     if (title != "") {
-      final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$apiKey";
-      final response = await http.get(Uri.parse(endpoint));
-      if (response.statusCode == 200) {
-        // ?? is if-null operator, so if there is no response, the query response will be an empty list
-        searchQueryBooks = json.decode(response.body)['items'] ?? [];
+      final String endpoint = "https://openlibrary.org/search.json?q=$title";
+      try { 
+        final response = await http.get(Uri.parse(endpoint));
+        if (response.statusCode == 200) {
+          _searchError = false;
+          // ?? is if-null operator, so if there is no response, the query response will be an empty list
+          _searchQueryBooks = json.decode(response.body)['docs'] ?? [];
+        } else {
+          _searchError = true;
+        }
+      } catch (e) {
+        _searchError = true; // amazing error handling over here
       }
-      // TODO also add some system to deal with rate limiting or other status codes, maybe a message "try again later" or something
-      setState(() {});
     }
   }
 
-  Widget displaySearchResults() {
-    if (controllerTitle.text.isNotEmpty) {
-      _hasSearched = true;
-      controllerTitle.clear();
+  Future<void> _searchWithGoogle() async {
+    String title = _controllerTitle.text;
+    if (title != "") {
+      final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$_apiKey";
+      try {
+        final response = await http.get(Uri.parse(endpoint));
+        if (response.statusCode == 200) {
+          // ?? is if-null operator, so if there is no response, the query response will be an empty list
+          _searchQueryBooks = json.decode(response.body)['items'] ?? [];
+        } else if (response.statusCode == 429) {
+          _usingGoogleAPI = false;
+          _searchWithOpenLibrary();
+        }
+        else {
+          _searchError = true;
+        }
+      } catch(e) {
+        _searchError = true;
+      }
     }
-    if (searchQueryBooks.isNotEmpty) {
+  }
+
+  // in general I'm not happy with this system, but for now I'll have it this way.
+  Future<void> _searchForBooks() async {
+  if (_usingGoogleAPI) {
+    await _searchWithGoogle();
+  }
+  else {
+    await _searchWithOpenLibrary();
+  }
+    setState(() {});
+  }
+
+  String _getSearchFailMessage() {
+    if (_hasSearched) {
+      return "No books found";
+    }
+    else if (_searchError) {
+      return "Error with book search, please try again in a few minutes!";
+    }
+    else {
+      return "";
+    }
+  }
+
+  Widget _displaySearchResults() {
+    if (_controllerTitle.text.isNotEmpty) {
+      _hasSearched = true;
+      _controllerTitle.clear();
+    }
+    if (_searchQueryBooks.isEmpty) {
+      return Text(_getSearchFailMessage());
+    }
+    else {
       return SizedBox(
         height: 560,
         child: ListView.builder(
-          itemCount: searchQueryBooks.length,
+          itemCount: _searchQueryBooks.length,
           itemBuilder: (BuildContext context, int index) {
             Widget image;
             // using ?[] to access array indicies safely even if they're null, and ?? is if-null operator which has placeholder values to the right
             // if any are null the placeholder is used. Freaky lines but I can't think of a better way to do it.
-            String title = (searchQueryBooks[index]?['volumeInfo']?['title']) ?? "No title found";
-            String author = (searchQueryBooks[index]?['volumeInfo']?['authors']?[0]) ?? "No author found";
-            String coverUrl = (searchQueryBooks[index]?['volumeInfo']?['imageLinks']?['thumbnail']) ?? "https://lgimages.s3.amazonaws.com/nc-md.gif";
+            String title, author, coverUrl;
+            if (_usingGoogleAPI) {
+              title = (_searchQueryBooks[index]?['volumeInfo']?['title']) ?? "No title found";
+              author = (_searchQueryBooks[index]?['volumeInfo']?['authors']?[0]) ?? "No author found";
+              coverUrl = (_searchQueryBooks[index]?['volumeInfo']?['imageLinks']?['thumbnail']) ?? "https://lgimages.s3.amazonaws.com/nc-md.gif";
+            }
+            else {
+              title = (_searchQueryBooks[index]?['title']) ?? "No title found";
+              author = (_searchQueryBooks[index]?['author_name']?[0] ?? "No author found");
+              coverUrl = (_searchQueryBooks[index]?['cover_i'] != null)
+              ? "https://covers.openlibrary.org/b/id/${_searchQueryBooks[index]?['cover_i']}-M.jpg"
+              : "https://lgimages.s3.amazonaws.com/nc-md.gif";
+            }
             image = Image.network(coverUrl.toString());
             return Card(
               margin: const EdgeInsets.all(5),
@@ -131,7 +194,7 @@ class _AddBookPageState extends State<AddBookPage> {
                   child:
                     ElevatedButton(
                       onPressed: () {
-                        addBookToLibrary(context, title, author, coverUrl);
+                        _addBookToLibrary(context, title, author, coverUrl);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
@@ -148,33 +211,14 @@ class _AddBookPageState extends State<AddBookPage> {
         ),
       );
     }
-    if (_hasSearched) {
-      return const Text("No books found");
-    }
-    else {
-      return const Text("");
-    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-      ),
-      backgroundColor: Colors.grey[400],
-      body: Container(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            const Text("Search for book here:",
-              style: TextStyle(fontSize: 20),
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            TextField(
-              controller: controllerTitle,
+
+  Widget _searchBook() {
+    return Column(
+      children: [
+        TextField(
+              controller: _controllerTitle,
               decoration: const InputDecoration(
               fillColor: Colors.white, filled: true),
             ),
@@ -186,7 +230,7 @@ class _AddBookPageState extends State<AddBookPage> {
                 setState(() {
                   _isSearching = true;
                 });
-                searchForBooks().then((_) { // triggers this setState when it finishes
+                _searchForBooks().then((_) { // triggers this setState when it finishes
                   setState(() {
                     _isSearching = false;
                   });
@@ -207,7 +251,72 @@ class _AddBookPageState extends State<AddBookPage> {
                 backgroundColor: Colors.grey,
                 strokeWidth: 5.0,
                 )
-              : displaySearchResults(),
+              : _displaySearchResults(),
+      ],
+    );
+  }
+
+  Widget _scanBook() {
+    return const Text("Scan here! Except its not implemtned yet!");
+  }
+
+  Widget _addCustomBook() {
+    return const Text("add book entry here! Except its not implemented yet!");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
+      ),
+      backgroundColor: Colors.grey[400],
+      body: Container(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            const Text("Add a book:",
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            SegmentedButton<_AddBookOptions>(
+              selected: selection,
+              onSelectionChanged: (Set<_AddBookOptions> newSelection) {
+                setState(() {
+                  selection = newSelection;
+                });
+              },
+              segments: const <ButtonSegment<_AddBookOptions>> [
+                ButtonSegment(
+                  icon: Icon(Icons.fiber_dvr),
+                  value: _AddBookOptions.search,
+                  label: Text("search"),
+                ),
+              ButtonSegment(
+                icon: Icon(Icons.bookmark_add),
+                value: _AddBookOptions.scan,
+                label: Text("scan"),
+              ),
+              ButtonSegment(
+                icon: Icon(Icons.back_hand),
+                value: _AddBookOptions.custom,
+                label: Text("manual entry"),
+              ),
+              ],
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            switch (selection.single) {
+              _AddBookOptions.search =>
+             _searchBook(),
+             _AddBookOptions.scan =>
+             _scanBook(),
+             _AddBookOptions.custom =>
+             _addCustomBook(), 
+            },
             ],
           ),
         ),
