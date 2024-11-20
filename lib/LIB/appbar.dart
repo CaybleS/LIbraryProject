@@ -1,0 +1,89 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:library_project/MSG/Screens/MSG/HomeScreen.dart';
+import '../MSG/Core/Accounting/CreateAccount.dart';
+import 'friends_page.dart';
+import 'homepage.dart';
+import 'profile.dart';
+import 'settings.dart';
+
+PreferredSizeWidget displayAppBar(
+    BuildContext context, User user, String curPage) {
+  void goToHome() {
+    if (curPage != "home") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => HomePage(user)));
+    }
+  }
+
+  void goToProfile() {
+    if (curPage != "profile") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => Profile(user)));
+    }
+  }
+
+  void goToSettings() {
+    if (curPage != "settings") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => Settings(user)));
+    }
+  }
+
+  void goToFriends() {
+    if (curPage != "friends") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => FriendsPage(user)));
+    }
+  }
+  void goToMessenger() {
+    if (curPage != "friends") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+    }
+  }
+  return AppBar(
+    backgroundColor: Colors.blue,
+    leading: MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+            onPressed: () => {goToHome()}, child: const Icon(Icons.home)),
+        MenuItemButton(
+            onPressed: () => {goToProfile()}, child: const Icon(Icons.person)),
+        MenuItemButton(
+            onPressed: () => {goToSettings()},
+            child: const Icon(Icons.settings)),
+        MenuItemButton(
+            onPressed: () => {logOut(context)},
+            child: const Icon(Icons.logout))
+      ],
+      builder: (context, controller, child) {
+        return IconButton(
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          icon: const Icon(
+            Icons.menu,
+            size: 30,
+          ),
+        );
+      },
+    ),
+    actions: [
+      IconButton(
+          onPressed: () {goToFriends();}, icon: const Icon(Icons.person_add_alt_1, size: 30)),
+      const SizedBox(
+        width: 10,
+      ),
+      IconButton(
+          onPressed: () {goToMessenger();}, icon: const Icon(Icons.message, size: 30)),
+      const SizedBox(
+        width: 10,
+      )
+    ],
+  );
+}
