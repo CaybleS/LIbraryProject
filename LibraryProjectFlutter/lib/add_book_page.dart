@@ -19,7 +19,9 @@ class AddBookPage extends StatefulWidget {
 }
 
 class _AddBookPageState extends State<AddBookPage> {
-  final _controllerTitle = TextEditingController();
+  final _searchQueryController = TextEditingController();
+  final _inputTitleController = TextEditingController();
+  final _inputAuthorController = TextEditingController();
 
   List<dynamic> _searchQueryBooks = [];
   // This is my private api key. Do NOT use this for the final project. I prob shouldnt even push this but idc
@@ -39,10 +41,10 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Future<void> _searchWithOpenLibrary() async {
-    String title = _controllerTitle.text;
+    String title = _searchQueryController.text;
     if (title != "") {
       final String endpoint = "https://openlibrary.org/search.json?q=$title";
-      try { 
+      try {
         final response = await http.get(Uri.parse(endpoint));
         if (response.statusCode == 200) {
           _searchError = false;
@@ -58,7 +60,7 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Future<void> _searchWithGoogle() async {
-    String title = _controllerTitle.text;
+    String title = _searchQueryController.text;
     if (title != "") {
       final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$title&key=$_apiKey";
       try {
@@ -103,9 +105,9 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Widget _displaySearchResults() {
-    if (_controllerTitle.text.isNotEmpty) {
+    if (_searchQueryController.text.isNotEmpty) {
       _hasSearched = true;
-      _controllerTitle.clear();
+      _searchQueryController.clear();
     }
     if (_searchQueryBooks.isEmpty) {
       return Text(_getSearchFailMessage());
@@ -212,45 +214,45 @@ class _AddBookPageState extends State<AddBookPage> {
     }
   }
 
-
   Widget _searchBook() {
     return Column(
       children: [
         TextField(
-              controller: _controllerTitle,
-              decoration: const InputDecoration(
-              fillColor: Colors.white, filled: true),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                });
-                _searchForBooks().then((_) { // triggers this setState when it finishes
-                  setState(() {
-                    _isSearching = false;
-                  });
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(129, 199, 132, 1)
-              ),
-              child: const Text("Search",
-                style: TextStyle(fontSize: 16, color: Colors.black))
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              _isSearching 
-              ? const CircularProgressIndicator(
-                color: Colors.deepPurpleAccent,
-                backgroundColor: Colors.grey,
-                strokeWidth: 5.0,
-                )
-              : _displaySearchResults(),
+          controller: _searchQueryController,
+          decoration: const InputDecoration(
+          fillColor: Colors.white, filled: true),
+        ),
+        const SizedBox(
+          height: 5, // todo higher values of this cause search results to go off the page... why? idk!
+        ),
+        ElevatedButton(
+          onPressed: () {
+            setState(() {
+              _isSearching = true;
+            });
+            _searchForBooks().then((_) { // triggers this setState when it finishes
+              setState(() {
+                _isSearching = false;
+              });
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromRGBO(129, 199, 132, 1)
+          ),
+          child: const Text("Search",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+        _isSearching 
+        ? const CircularProgressIndicator(
+          color: Colors.deepPurpleAccent,
+          backgroundColor: Colors.grey,
+          strokeWidth: 5.0,
+          )
+        : _displaySearchResults(),
       ],
     );
   }
@@ -260,7 +262,48 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Widget _addCustomBook() {
-    return const Text("add book entry here! Except its not implemented yet!");
+    return Container(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        children: [
+          const Text(
+            "Title:",
+            style: TextStyle(fontSize: 20),
+          ),
+          const SizedBox(
+            height: 5,
+          ),
+          TextField(
+            controller: _inputTitleController,
+            decoration: const InputDecoration(
+              fillColor: Colors.white, filled: true),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          const Text(
+            "Author:",
+            style: TextStyle(fontSize: 20),
+          ),
+          const SizedBox(
+            height: 5,
+          ),
+          TextField(
+            controller: _inputAuthorController,
+            decoration: const InputDecoration(
+              fillColor: Colors.white, filled: true),
+          ),
+          const SizedBox(
+          height: 10,
+          ),
+          ElevatedButton(
+            onPressed: () {_addBookToLibrary(context, _inputTitleController.text, _inputAuthorController.text, "https://lgimages.s3.amazonaws.com/nc-md.gif");},
+            style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+            child: const Text('Add Book', style: TextStyle(fontSize: 16, color: Colors.black)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -284,22 +327,26 @@ class _AddBookPageState extends State<AddBookPage> {
               selected: selection,
               onSelectionChanged: (Set<_AddBookOptions> newSelection) {
                 setState(() {
+                  // clearing text so that its not filled when they enter something, change selection, and go back
+                  _searchQueryController.clear();
+                  _inputTitleController.clear();
+                  _inputAuthorController.clear();
                   selection = newSelection;
                 });
               },
               segments: const <ButtonSegment<_AddBookOptions>> [
                 ButtonSegment(
-                  icon: Icon(Icons.fiber_dvr),
+                  icon: Icon(Icons.search),
                   value: _AddBookOptions.search,
                   label: Text("search"),
                 ),
               ButtonSegment(
-                icon: Icon(Icons.bookmark_add),
+                icon: Icon(Icons.camera_alt_sharp),
                 value: _AddBookOptions.scan,
                 label: Text("scan"),
               ),
               ButtonSegment(
-                icon: Icon(Icons.back_hand),
+                icon: Icon(Icons.draw_sharp),
                 value: _AddBookOptions.custom,
                 label: Text("manual entry"),
               ),
