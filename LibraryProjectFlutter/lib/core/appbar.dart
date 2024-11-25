@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/friends_page.dart';
+import 'friends_page.dart';
 import 'homepage.dart';
 import 'profile.dart';
 import 'settings.dart';

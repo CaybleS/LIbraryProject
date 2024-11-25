@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/add_book_page.dart';
-import 'package:library_project/book_page.dart';
-import 'package:library_project/database.dart';
+import 'package:library_project/add_book/add_book_homepage.dart'; // todo i changed file structure for these, ensure its good for all headers
+import 'book_page.dart';
+import 'database.dart';
 import 'book.dart';
 import 'appbar.dart';
 
@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
 
   void addBookButtonClicked() async {
     await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => AddBookPage(widget.user)));
+        MaterialPageRoute(builder: (context) => AddBookHomepage(widget.user)));
     await updateList(_showing);
     setState(() {});
   }

@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:library_project/friends_page.dart';
+import 'friends_page.dart';
 import 'book.dart';
 
 final dbReference = FirebaseDatabase.instance.ref();

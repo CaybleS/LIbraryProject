@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:library_project/appbar.dart';
+import 'appbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Settings extends StatelessWidget {
