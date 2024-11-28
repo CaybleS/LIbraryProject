@@ -18,6 +18,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   );
   bool cameraIsInitialized = false; // to display progress indicator when initializing camera
   bool isScanning = false; // to prevent overlapping scans
+  bool hasPopped = false;
   final Map<String, int> isbnFrequencies = {};
 
   @override
@@ -59,7 +60,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void processBarcodeValue(String? isbn) {
     if (isbn != null) {
       isbnFrequencies[isbn] = (isbnFrequencies[isbn] ?? 0) + 1; // new frequnecies will be initialized to 0 and then incremented here
-      if (isbnFrequencies[isbn]! > 3 && mounted) {
+      if (isbnFrequencies[isbn]! > 3 && mounted && !hasPopped) {
+        hasPopped = true;
         Navigator.pop(context, isbn);
         }
       }
