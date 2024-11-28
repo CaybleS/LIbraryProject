@@ -70,7 +70,9 @@ class _SearchBookState extends State<SearchBook> {
     else {
       await searchWithOpenLibrary();
     }
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
 String getSearchFailMessage() {
@@ -84,7 +86,7 @@ String getSearchFailMessage() {
 }
 
 Widget displaySearchResults() {
-  if (searchQueryController.text.isNotEmpty) {
+  if (searchQueryController.text.isNotEmpty) { // todo maybe add an error message if user doesn't enter text. Maybe a nice place where messages can go in general idk
     hasSearched = true;
     searchQueryController.clear();
   }
@@ -204,14 +206,13 @@ Widget displaySearchResults() {
           height: 5,
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
             setState(() {
               isSearching = true;
             });
-            searchForBooks().then((_) { // triggers this setState when it finishes
-              setState(() {
-                isSearching = false;
-              });
+            await searchForBooks();
+            setState(() {
+              isSearching = false;
             });
           },
           style: ElevatedButton.styleFrom(

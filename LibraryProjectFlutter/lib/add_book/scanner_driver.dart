@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:library_project/core/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/add_book/scanner_screen.dart';
-  
+
 class ScannerDriver extends StatefulWidget {
   final User user;
 
@@ -17,7 +17,7 @@ class ScannerDriver extends StatefulWidget {
 class _ScannerDriverState extends State<ScannerDriver> {
   bool hasScanned = false;
   bool searchError = false;
-  bool noResults = false; // this only occurs if no results occur from the search query, implying that the scanned ISBN is wrong (likely due to bad barcode)
+  bool noResults = false; // this only occurs if no results occur from the successful (200) search query, implying that the scanned ISBN is wrong (likely due to bad barcode)
   Book? bookFromISBNScan;
   String? scannedISBN;
 
@@ -27,22 +27,28 @@ class _ScannerDriverState extends State<ScannerDriver> {
     noResults = false; // need to reset this here if we scan again, since its only relevant to the last isbn search result
     scannedISBN = await openBarcodeScanner(context);
     bookFromISBNScan = await isbnSearchWithGoogle(scannedISBN);
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<String> openBarcodeScanner(BuildContext context) async {
     // isbn can be null if user goes back from camera viewfinder without scanning
     final String isbn = await Navigator.push(context, MaterialPageRoute(builder: (context) => const ScannerScreen())) ?? "no barcode found";
-    setState(() {
+    if (isbn != "no barcode found") { // maybe improve this cond, its just meant to show the simple scan button when user pops from scan screen and no "error w/scan" message
       hasScanned = true;
-    });
+    }
+    if (mounted) {
+      setState(() {});
+    }
     return isbn;
   }
 
   Future<Book> isbnSearchWithOpenLibrary(String? isbn) async {
-    // this should never be shown, since searchError will be true if this gets returned
+    // this should never be shown since an error message should print instead if response.statusCode isnt 200
     Book bookFromISBNScan = Book("No title found", "No author found", true, SharedHelperUtil.defaultBookCover);
     if (isbn == null) {
+      searchError = true;
       return bookFromISBNScan;
     }
     final String endpoint = "https://openlibrary.org/search.json?q=$isbn&limit=1";
@@ -71,7 +77,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
   }
 
   Future<Book> isbnSearchWithGoogle(String? isbn) async {
-    // this should never be shown, since searchError will be true if this gets returned
+    // this should never be shown since an error message should print instead if response.statusCode isnt 200
     Book bookFromISBNScan = Book("No title found", "No author found", true, SharedHelperUtil.defaultBookCover);
     if (isbn == null) {
       return bookFromISBNScan;
@@ -100,6 +106,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
   }
 
   Widget addScannedBook(Book? scannedBook, BuildContext context, User user) {
+    // 3 fail conditions to check, else show the scanned book
     if (scannedBook == null) {
       return const Text("");
     }
@@ -124,6 +131,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
               ),
             ),
           ),
+          // TODO is this caused when the user just goes back without scanning? It appears so actaully... breh fix that blud mby some cond after returning from the push
           const Text( // TODO maybe add a message like this for all users to see before getting here, that some lower quality paperback barcodes can be impossible to accurately scan
             "The scanner was unable to determine the book. Likely due to poor lighting, camera position, or degraded barcode (some barcodes can be deformed, making scanning impossible).",
             style: TextStyle(fontSize: 20),
@@ -210,8 +218,8 @@ class _ScannerDriverState extends State<ScannerDriver> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // yes this is a nested ternary operator, and yes its weird to read
         !hasScanned
+          // so if no scan yet, display the button to open scanner. Written this way to align with control flow of user
           ? SizedBox(
               height: 50,
               width: 160,
@@ -227,6 +235,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
                 ),
               ),
             )
+          // and if we did scan display 1 of these 2 things
           : (bookFromISBNScan == null)
               ? const CircularProgressIndicator(
                   color: Colors.deepPurpleAccent,
