@@ -8,17 +8,16 @@ class SharedHelperUtil {
   // its my personal api key, if anyone wants me to use one from shared email i can, i probably should tbh and then just cancel it when we do .env stuff but whatever
   static const String apiKey = "AIzaSyAqHeGVVwSiWJLfVMjF8K5gBbQcNucKuQY";
 
-  static void addBookToLibrary(BuildContext context, String title, String author, String coverUrl, User user) {
-    Book book = Book(title, author, true, coverUrl);
-    book.setId(addBook(book, user));
+  static void addBookToLibrary(BuildContext context, Book searchedBook, User user) {
+
+    searchedBook.setId(addBook(searchedBook, user));
     Navigator.pop(context);
   }
 
-  static void addBookToLibraryFromScan(BuildContext context, String title, String author, String coverUrl, User user) {
-    Book book = Book(title, author, true, coverUrl);
-    book.setId(addBook(book, user));
+  static void addBookToLibraryFromScan(BuildContext context, Book scannedBook, User user) {
+    scannedBook.setId(addBook(scannedBook, user));
     Navigator.pop(context);
-    // todo probably for this AND the search maybe consider adding a mechanism to allow for quick scan/search again instead of popping to homepage...
+    // TODO probably for this AND the search maybe consider adding a mechanism to allow for quick scan/search again instead of popping to homepage...
     // idk which would be better though, literally no clue
   }
 }

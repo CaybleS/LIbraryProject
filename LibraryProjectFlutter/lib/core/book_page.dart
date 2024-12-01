@@ -11,7 +11,8 @@ class BookPage extends StatefulWidget {
 
 class _BookPageState extends State<BookPage> {
   void changeStatus() {
-    widget.book.available = !widget.book.available;
+    widget.book.dateLent = widget.book.isLent ? null : DateTime.now().toUtc(); // ensuring dateLent is stored in UTC so time zones aren't a concern
+    widget.book.isLent = !widget.book.isLent;
     widget.book.update();
     setState(() {});
   }
@@ -20,12 +21,12 @@ class _BookPageState extends State<BookPage> {
     String availableTxt;
     Color availableTxtColor;
 
-    if (widget.book.available) {
-      availableTxt = "Available";
-      availableTxtColor = const Color(0xFF43A047);
-    } else {
+    if (widget.book.isLent) {
       availableTxt = "Lent";
       availableTxtColor = Colors.red;
+    } else {
+      availableTxt = "Available";
+      availableTxtColor = const Color(0xFF43A047);
     }
 
     return Text(
@@ -69,7 +70,17 @@ class _BookPageState extends State<BookPage> {
                     SizedBox(
                         width: 200,
                         child: Text(widget.book.author,
-                            style: const TextStyle(fontSize: 25)))
+                            style: const TextStyle(fontSize: 25))),
+                    const SizedBox(height: 5),
+                    SizedBox(
+                        width: 200,
+                        child: Text(widget.book.description,
+                            style: const TextStyle(fontSize: 12),
+                            softWrap: true,
+                            maxLines: 10,
+                            overflow: TextOverflow.ellipsis,
+                        ),
+                    ),
                   ])
                 ],
               ),
@@ -82,13 +93,27 @@ class _BookPageState extends State<BookPage> {
                 height: 10,
               ),
               ElevatedButton(
-                  onPressed: () {
-                    changeStatus();
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                  child: const Text('Switch status',
-                      style: TextStyle(fontSize: 16, color: Colors.black)))
+                onPressed: () {
+                  changeStatus();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                child: const Text('Switch status',
+                  style: TextStyle(fontSize: 16, color: Colors.black)),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  widget.book.remove();
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 202, 35, 23)),
+                child: const Text('Remove book from library',
+                  style: TextStyle(fontSize: 16, color: Colors.black)),
+              ),
             ],
           ),
         ));

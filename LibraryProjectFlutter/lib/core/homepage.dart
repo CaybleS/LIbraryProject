@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push(context, MaterialPageRoute(builder: (ctx) {
       return BookPage(_userLibrary[index]);
     }));
+    await updateList(_showing);
     setState(() {});
   }
 
@@ -69,7 +70,7 @@ class _HomePageState extends State<HomePage> {
         break;
       case "lent":
         for (int i = 0; i < _userLibrary.length; i++) {
-          if (!_userLibrary[i].available) {
+          if (_userLibrary[i].isLent) {
             _shownList.add(i);
           }
         }
@@ -202,12 +203,12 @@ class _HomePageState extends State<HomePage> {
                           String availableTxt;
                           Color availableTxtColor;
 
-                          if (_userLibrary[_shownList[index]].available) {
-                            availableTxt = "Available";
-                            availableTxtColor = const Color(0xFF43A047);
-                          } else {
+                          if (_userLibrary[_shownList[index]].isLent) {
                             availableTxt = "Lent";
                             availableTxtColor = Colors.red;
+                          } else {
+                            availableTxt = "Available";
+                            availableTxtColor = const Color(0xFF43A047);
                           }
 
                           Icon favIcon;

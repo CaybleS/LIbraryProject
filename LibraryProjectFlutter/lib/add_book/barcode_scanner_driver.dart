@@ -4,65 +4,66 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:library_project/core/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
-import 'package:library_project/add_book/scanner_screen.dart';
+import 'package:library_project/add_book/barcode_scanner_screen.dart';
 
-class ScannerDriver extends StatefulWidget {
+class BarcodeScannerDriver extends StatefulWidget {
   final User user;
 
   @override
-  State<ScannerDriver> createState() => _ScannerDriverState();
-  const ScannerDriver(this.user, {super.key});
+  State<BarcodeScannerDriver> createState() => _BarcodeScannerDriverState();
+  const BarcodeScannerDriver(this.user, {super.key});
 }
 
-class _ScannerDriverState extends State<ScannerDriver> {
+class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
   bool hasScanned = false;
   bool searchError = false;
   bool noResults = false; // this only occurs if no results occur from the successful (200) search query, implying that the scanned ISBN is wrong (likely due to bad barcode)
+  bool cameraSetupFail = false;
   Book? bookFromISBNScan;
-  String? scannedISBN;
 
   Future<void> openScannerAndParseISBN() async {
+    // need to reset these here if we scan again, since its only relevant to the last isbn search result
     bookFromISBNScan = null;
-    scannedISBN = null;
-    noResults = false; // need to reset this here if we scan again, since its only relevant to the last isbn search result
-    scannedISBN = await openBarcodeScanner(context);
-    bookFromISBNScan = await isbnSearchWithGoogle(scannedISBN);
+    noResults = false;
+    String? scannedISBN = await openBarcodeScanner(context);
+    hasScanned = (scannedISBN != null);
+    if (scannedISBN == "Camera setup failed. Please ensure permissions are setup correctly.") {
+      cameraSetupFail = true;
+    }
+    if (scannedISBN == null) {
+      return;
+    }
+    // these 2 setStates show the circular progress indicator while api search is occuring, or the results when its done
+    if (mounted) {
+      setState(() {});
+    }
+    await isbnSearchWithGoogle(scannedISBN);
     if (mounted) {
       setState(() {});
     }
   }
 
-  Future<String> openBarcodeScanner(BuildContext context) async {
+  Future<String?> openBarcodeScanner(BuildContext context) async {
     // isbn can be null if user goes back from camera viewfinder without scanning
-    final String isbn = await Navigator.push(context, MaterialPageRoute(builder: (context) => const ScannerScreen())) ?? "no barcode found";
-    if (isbn != "no barcode found") { // maybe improve this cond, its just meant to show the simple scan button when user pops from scan screen and no "error w/scan" message
-      hasScanned = true;
-    }
-    if (mounted) {
-      setState(() {});
-    }
+    final String? isbn = await Navigator.push(context, MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()));
     return isbn;
   }
 
-  Future<Book> isbnSearchWithOpenLibrary(String? isbn) async {
-    // this should never be shown since an error message should print instead if response.statusCode isnt 200
-    Book bookFromISBNScan = Book("No title found", "No author found", true, SharedHelperUtil.defaultBookCover);
-    if (isbn == null) {
-      searchError = true;
-      return bookFromISBNScan;
-    }
-    final String endpoint = "https://openlibrary.org/search.json?q=$isbn&limit=1";
+  Future<void> isbnSearchWithOpenLibrary(String isbn) async {
+    final String endpoint = "https://openlibrary.org/search.json?isbn=$isbn&limit=1";
     try {
       final response = await http.get(Uri.parse(endpoint));
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['docs'][0] ?? [];
-        String title, author, coverUrl;
+        String title, author, coverUrl, description, categories;
         title = bookResponse?['title'] ?? "No title found";
         author = bookResponse?['author_name']?[0] ?? "No author found";
         coverUrl = bookResponse?['cover_i'] != null
           ? "https://covers.openlibrary.org/b/id/${bookResponse?['cover_i']}-M.jpg"
           : SharedHelperUtil.defaultBookCover;
-        bookFromISBNScan = Book(title, author, true, coverUrl);
+        description = "Description not available"; // openlibrary doesnt store descriptions
+        categories = "Categories not available";
+        bookFromISBNScan = Book(title, author, coverUrl, description, categories);
       } else if (response.statusCode == 429) {
         searchError = true;
         // mby should do something here idk
@@ -73,28 +74,24 @@ class _ScannerDriverState extends State<ScannerDriver> {
     } catch(e) {
       noResults = true;
     }
-    return bookFromISBNScan;
   }
 
-  Future<Book> isbnSearchWithGoogle(String? isbn) async {
-    // this should never be shown since an error message should print instead if response.statusCode isnt 200
-    Book bookFromISBNScan = Book("No title found", "No author found", true, SharedHelperUtil.defaultBookCover);
-    if (isbn == null) {
-      return bookFromISBNScan;
-    }
+  Future<void> isbnSearchWithGoogle(String isbn) async {
     searchError = false;
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn&key=${SharedHelperUtil.apiKey}&maxResults=1";
     try {
       final response = await http.get(Uri.parse(endpoint));
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['items'][0] ?? [];
-        String title, author, coverUrl;
-        title = (bookResponse?['volumeInfo']?['title']) ?? "No title found";
-        author = (bookResponse?['volumeInfo']?['authors']?[0]) ?? "No author found";
-        coverUrl = (bookResponse?['volumeInfo']?['imageLinks']?['thumbnail']) ?? SharedHelperUtil.defaultBookCover;
-        bookFromISBNScan = Book(title, author, true, coverUrl);
+        String title, author, coverUrl, description, categories;
+        title = bookResponse?['volumeInfo']?['title'] ?? "No title found";
+        author = bookResponse?['volumeInfo']?['authors']?[0] ?? "No author found";
+        coverUrl = bookResponse?['volumeInfo']?['imageLinks']?['thumbnail'] ?? SharedHelperUtil.defaultBookCover;
+        description = bookResponse?['volumeInfo']?['description'] ?? "No description found";
+        categories = bookResponse?['volumeInfo']?['categories']?.join(", ") ?? "No categories found";
+        bookFromISBNScan = Book(title, author, coverUrl, description, categories);
       } else if (response.statusCode == 429) {
-        bookFromISBNScan = await isbnSearchWithOpenLibrary(isbn);
+        await isbnSearchWithOpenLibrary(isbn);
       }
       else {
         searchError = true;
@@ -102,16 +99,40 @@ class _ScannerDriverState extends State<ScannerDriver> {
     } catch(e) {
       noResults = true;
     }
-    return bookFromISBNScan;
   }
 
   Widget addScannedBook(Book? scannedBook, BuildContext context, User user) {
-    // 3 fail conditions to check, else show the scanned book
+    // fail conditions to check, else show the scanned book
+    if (cameraSetupFail) {
+      return const Text("Camera setup failed. Please ensure permissions are setup correctly.");
+    }
     if (scannedBook == null) {
       return const Text("");
     }
     if (searchError) {
-      return const Text("Error with barcode scan. Please try again later!");
+      return Column(
+        children: [
+          SizedBox(
+            height: 60,
+            width: 300,
+            child: ElevatedButton(
+              onPressed: () async {
+                await openScannerAndParseISBN();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
+              ),
+              child: const Text("Scan Again",
+                style: TextStyle(fontSize: 16, color: Colors.black),
+              ),
+            ),
+          ),
+          const Text(
+            "Error with barcode scan. Please try again later.",
+            style: TextStyle(fontSize: 20),
+          ),
+        ],
+      );
     }
     if (noResults) {
       return Column(
@@ -131,7 +152,6 @@ class _ScannerDriverState extends State<ScannerDriver> {
               ),
             ),
           ),
-          // TODO is this caused when the user just goes back without scanning? It appears so actaully... breh fix that blud mby some cond after returning from the push
           const Text( // TODO maybe add a message like this for all users to see before getting here, that some lower quality paperback barcodes can be impossible to accurately scan
             "The scanner was unable to determine the book. Likely due to poor lighting, camera position, or degraded barcode (some barcodes can be deformed, making scanning impossible).",
             style: TextStyle(fontSize: 20),
@@ -139,6 +159,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
         ],
       );
     }
+    // end of error prints, now we will show the book
     String title = scannedBook.title;
     String author = scannedBook.author;
     String coverUrl = scannedBook.coverUrl;
@@ -183,7 +204,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
             width: 300,
             child: ElevatedButton(
               onPressed: () {
-                SharedHelperUtil.addBookToLibraryFromScan(context, title, author, coverUrl, user);
+                SharedHelperUtil.addBookToLibraryFromScan(context, scannedBook, user);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
@@ -236,7 +257,7 @@ class _ScannerDriverState extends State<ScannerDriver> {
               ),
             )
           // and if we did scan display 1 of these 2 things
-          : (bookFromISBNScan == null)
+          : (bookFromISBNScan == null && !cameraSetupFail)
               ? const CircularProgressIndicator(
                   color: Colors.deepPurpleAccent,
                   backgroundColor: Colors.grey,

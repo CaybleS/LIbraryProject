@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/core/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 
 class CustomBookAdd extends StatelessWidget {
@@ -47,7 +48,8 @@ class CustomBookAdd extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              SharedHelperUtil.addBookToLibrary(context, _inputTitleController.text, _inputAuthorController.text, SharedHelperUtil.defaultBookCover, user);
+              Book customAddedBook = Book(_inputTitleController.text, _inputAuthorController.text, SharedHelperUtil.defaultBookCover, "No description found", "No categories found", isManualAdded: true);
+              SharedHelperUtil.addBookToLibrary(context, customAddedBook, user);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromRGBO(129, 199, 132, 1),

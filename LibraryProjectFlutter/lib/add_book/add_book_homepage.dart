@@ -3,12 +3,11 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/book.dart';
 import 'package:library_project/add_book/search_book.dart';
-import 'package:library_project/add_book/scanner_driver.dart';
+import 'package:library_project/add_book/barcode_scanner_driver.dart';
 import 'package:library_project/add_book/custom_book_add.dart';
 
-enum _AddBookOptions {search, scan, custom}
+enum _AddBookOptions {search, barcodeScan, customEntry}
 
 class AddBookHomepage extends StatefulWidget {
   final User user;
@@ -20,15 +19,14 @@ class AddBookHomepage extends StatefulWidget {
 
 class _AddBookHomepageState extends State<AddBookHomepage> {
   Set<_AddBookOptions> selection = <_AddBookOptions>{_AddBookOptions.search};
-  Book? bookFromISBNScan;
 
   Widget printSelectionOption(_AddBookOptions selection) {
     switch (selection) {
       case _AddBookOptions.search:
         return SearchBook(widget.user);
-      case _AddBookOptions.scan:
-        return ScannerDriver(widget.user);
-      case _AddBookOptions.custom:
+      case _AddBookOptions.barcodeScan:
+        return BarcodeScannerDriver(widget.user);
+      case _AddBookOptions.customEntry:
         return CustomBookAdd(widget.user);
     }
   }
@@ -65,12 +63,12 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
                 ),
                 ButtonSegment(
                   icon: Icon(Icons.camera_alt_sharp),
-                  value: _AddBookOptions.scan,
-                  label: Text("scan"),
+                  value: _AddBookOptions.barcodeScan,
+                  label: Text("barcode scan"),
                 ),
                 ButtonSegment(
                   icon: Icon(Icons.draw_sharp),
-                  value: _AddBookOptions.custom,
+                  value: _AddBookOptions.customEntry,
                   label: Text("manual entry"),
                 ),
               ],

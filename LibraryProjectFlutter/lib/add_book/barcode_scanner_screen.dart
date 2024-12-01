@@ -4,21 +4,21 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
-class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
+class BarcodeScannerScreen extends StatefulWidget {
+  const BarcodeScannerScreen({super.key});
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   late CameraController cameraController;
   final BarcodeScanner barcodeScanner = BarcodeScanner(
-    formats: [BarcodeFormat.ean8, BarcodeFormat.ean13], // note that isbn10 is not supported by these formats. Need to test isbn10 books and see if other formats support it
+    formats: [BarcodeFormat.ean8, BarcodeFormat.ean13], // note that isbn10 is not supported by these formats. TODO Need to test isbn10 books and see if other formats support it
   );
   bool cameraIsInitialized = false; // to display progress indicator when initializing camera
   bool isScanning = false; // to prevent overlapping scans
-  bool hasPopped = false;
+  bool hasPopped = false; // prevents multiple pops which WILL happen because of how fast the scanner processes
   final Map<String, int> isbnFrequencies = {};
 
   @override
@@ -47,8 +47,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
       await cameraController.initialize();
     }
     catch(e) {
-      // TODO just do better
-      print("i dont know why but the camera didnt initialize. How will I handle this idk!");
+      if (mounted && !hasPopped) {
+        hasPopped = true;
+        // in this case I just return the error msg instead of an ISBN, and the scanner driver checks if the ISBN is this error message and prints an error if so
+        Navigator.pop(context, "Camera setup failed. Please ensure permissions are setup correctly.");
+      }
     }
     cameraIsInitialized = true;
     if (mounted) {
@@ -63,9 +66,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
       if (isbnFrequencies[isbn]! > 3 && mounted && !hasPopped) {
         hasPopped = true;
         Navigator.pop(context, isbn);
-        }
       }
     }
+  }
 
   void openCamera() {
     cameraController.startImageStream((CameraImage image) async {
@@ -117,7 +120,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 child: Align(
                   alignment: Alignment.center,
                   child: Container(
-                    width: 350, // todo update this to better support many sizes when that is figured out
+                    width: 350,
                     height: 200,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.red, width: 2),
