@@ -42,6 +42,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       // use either low or medium here, because higher scanning resolutions mean slower scans in general. I think low is best, but tweak this alongside the isbn frequenies
       // map to ensure the scanner accurately scans the barcode (fast scans + ensuring the first isbn to occur N times gets selected seems really solid)
       ResolutionPreset.low,
+      enableAudio: false, // so it doesnt ask to record audio when opening camera
     );
     try {
       await cameraController.initialize();

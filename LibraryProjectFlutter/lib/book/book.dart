@@ -1,5 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
-import 'database.dart';
+import 'package:library_project/core/database.dart';
 
 // more can be added here based on what users want
 class Book {
@@ -10,6 +10,13 @@ class Book {
   String coverUrl;
   String description;
   String categories;
+  // this is such a mess, its gotta be designed to optimize reads, idk how to do this yet. In general this stuff may all be added tho.
+  // Isbn is needed for add book duplicate checking (which will also use title, author stuff also as a fallback)
+  // String? isbn;
+  // int? bookCondition;
+  // String? publicBookNotes;
+  // int? rating;
+  // bool? hasRead;
   DateTime? dateLent;
   DateTime? dateToReturn;
   String? borrowerId;

@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
-import 'book_page.dart';
+import 'package:library_project/book/book.dart';
+import 'package:library_project/book/book_page.dart';
 import 'database.dart';
-import 'book.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {

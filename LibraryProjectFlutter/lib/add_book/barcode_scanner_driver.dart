@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:library_project/core/book.dart';
+import 'package:library_project/book/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/add_book/barcode_scanner_screen.dart';
 
@@ -16,21 +16,25 @@ class BarcodeScannerDriver extends StatefulWidget {
 
 class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
   bool hasScanned = false;
-  bool searchError = false;
-  bool noResults = false; // this only occurs if no results occur from the successful (200) search query, implying that the scanned ISBN is wrong (likely due to bad barcode)
-  bool cameraSetupFail = false;
+  bool otherSearchError = false;
+  bool noBooksFoundError = false; // this only occurs if no results occur from the successful (200) search query, implying that the scanned ISBN is wrong (likely due to bad barcode)
+  bool cameraSetupError = false;
+  bool noResponseError = false; // this detects lack of internet connection (or api being down maybe)
   Book? bookFromISBNScan;
 
   Future<void> openScannerAndParseISBN() async {
     // need to reset these here if we scan again, since its only relevant to the last isbn search result
     bookFromISBNScan = null;
-    noResults = false;
+    otherSearchError = false;
+    noBooksFoundError = false;
+    cameraSetupError = false;
+    noResponseError = false;
     String? scannedISBN = await openBarcodeScanner(context);
     hasScanned = (scannedISBN != null);
     if (scannedISBN == "Camera setup failed. Please ensure permissions are setup correctly.") {
-      cameraSetupFail = true;
+      cameraSetupError = true;
     }
-    if (scannedISBN == null) {
+    if (scannedISBN == null || cameraSetupError) {
       return;
     }
     // these 2 setStates show the circular progress indicator while api search is occuring, or the results when its done
@@ -38,6 +42,9 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
       setState(() {});
     }
     await isbnSearchWithGoogle(scannedISBN);
+    if (bookFromISBNScan == null) {
+      noBooksFoundError = true;
+    }
     if (mounted) {
       setState(() {});
     }
@@ -51,8 +58,9 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
 
   Future<void> isbnSearchWithOpenLibrary(String isbn) async {
     final String endpoint = "https://openlibrary.org/search.json?isbn=$isbn&limit=1";
+    http.Response? response;
     try {
-      final response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint));
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['docs'][0] ?? [];
         String title, author, coverUrl, description, categories;
@@ -64,23 +72,25 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
         description = "Description not available"; // openlibrary doesnt store descriptions
         categories = "Categories not available";
         bookFromISBNScan = Book(title, author, coverUrl, description, categories);
-      } else if (response.statusCode == 429) {
-        searchError = true;
-        // mby should do something here idk
       }
       else {
-        searchError = true;
+        otherSearchError = true;
       }
     } catch(e) {
-      noResults = true;
+      if (response == null) {
+        noResponseError = true;
+      }
+      else {
+        otherSearchError = true;
+      }
     }
   }
 
   Future<void> isbnSearchWithGoogle(String isbn) async {
-    searchError = false;
+    http.Response? response;
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn&key=${SharedHelperUtil.apiKey}&maxResults=1";
     try {
-      final response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint));
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['items'][0] ?? [];
         String title, author, coverUrl, description, categories;
@@ -90,51 +100,29 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
         description = bookResponse?['volumeInfo']?['description'] ?? "No description found";
         categories = bookResponse?['volumeInfo']?['categories']?.join(", ") ?? "No categories found";
         bookFromISBNScan = Book(title, author, coverUrl, description, categories);
-      } else if (response.statusCode == 429) {
-        await isbnSearchWithOpenLibrary(isbn);
       }
       else {
-        searchError = true;
+        await isbnSearchWithOpenLibrary(isbn);
       }
     } catch(e) {
-      noResults = true;
+      if (response == null) {
+        noResponseError = true;
+      }
+      else {
+        otherSearchError = true;
+      }
     }
   }
 
-  Widget addScannedBook(Book? scannedBook, BuildContext context, User user) {
+  Widget addScannedBook(BuildContext context, User user) {
     // fail conditions to check, else show the scanned book
-    if (cameraSetupFail) {
+    if (cameraSetupError) {
       return const Text("Camera setup failed. Please ensure permissions are setup correctly.");
     }
-    if (scannedBook == null) {
-      return const Text("");
+    if (bookFromISBNScan == null) { // Would this never be null, also does there need to be a set state when setting bookFromISBN to null in openScannerAndParseISBN()?
+      return const Text("Test cuz I dont think this condition can be met... TODO change me! (it was empty txt before)");
     }
-    if (searchError) {
-      return Column(
-        children: [
-          SizedBox(
-            height: 60,
-            width: 300,
-            child: ElevatedButton(
-              onPressed: () async {
-                await openScannerAndParseISBN();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
-              ),
-              child: const Text("Scan Again",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
-          ),
-          const Text(
-            "Error with barcode scan. Please try again later.",
-            style: TextStyle(fontSize: 20),
-          ),
-        ],
-      );
-    }
-    if (noResults) {
+    if (noBooksFoundError) {
       return Column(
         children: [
           SizedBox(
@@ -159,10 +147,35 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
         ],
       );
     }
+    if (otherSearchError) { // in general otherSearchError should be the last explicit error (the lowest priority one to show to the user)
+      return Column(
+        children: [
+          SizedBox(
+            height: 60,
+            width: 300,
+            child: ElevatedButton(
+              onPressed: () async {
+                await openScannerAndParseISBN();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
+              ),
+              child: const Text("Scan Again",
+                style: TextStyle(fontSize: 16, color: Colors.black),
+              ),
+            ),
+          ),
+          const Text(
+            "Error with barcode scan. Please try again later.",
+            style: TextStyle(fontSize: 20),
+          ),
+        ],
+      );
+    }
     // end of error prints, now we will show the book
-    String title = scannedBook.title;
-    String author = scannedBook.author;
-    String coverUrl = scannedBook.coverUrl;
+    String title = bookFromISBNScan!.title;
+    String author = bookFromISBNScan!.author;
+    String coverUrl = bookFromISBNScan!.coverUrl;
     Widget image = Image.network(coverUrl.toString());
     return Card(
       margin: const EdgeInsets.all(5),
@@ -204,7 +217,7 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
             width: 300,
             child: ElevatedButton(
               onPressed: () {
-                SharedHelperUtil.addBookToLibraryFromScan(context, scannedBook, user);
+                SharedHelperUtil.addBookToLibraryFromScan(context, bookFromISBNScan!, user);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
@@ -257,13 +270,13 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
               ),
             )
           // and if we did scan display 1 of these 2 things
-          : (bookFromISBNScan == null && !cameraSetupFail)
+          : (bookFromISBNScan == null && !cameraSetupError)
               ? const CircularProgressIndicator(
                   color: Colors.deepPurpleAccent,
                   backgroundColor: Colors.grey,
                   strokeWidth: 5.0,
                 )
-              : addScannedBook(bookFromISBNScan, context, widget.user)
+              : addScannedBook(context, widget.user)
       ],
     );
   }
