@@ -119,9 +119,6 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
     if (cameraSetupError) {
       return const Text("Camera setup failed. Please ensure permissions are setup correctly.");
     }
-    if (bookFromISBNScan == null) { // Would this never be null, also does there need to be a set state when setting bookFromISBN to null in openScannerAndParseISBN()?
-      return const Text("Test cuz I dont think this condition can be met... TODO change me! (it was empty txt before)");
-    }
     if (noBooksFoundError) {
       return Column(
         children: [
@@ -270,7 +267,7 @@ class _BarcodeScannerDriverState extends State<BarcodeScannerDriver> {
               ),
             )
           // and if we did scan display 1 of these 2 things
-          : (bookFromISBNScan == null && !cameraSetupError)
+          : (bookFromISBNScan == null && !noBooksFoundError && !cameraSetupError)
               ? const CircularProgressIndicator(
                   color: Colors.deepPurpleAccent,
                   backgroundColor: Colors.grey,
