@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_page.dart';
-import 'database.dart';
+import '../database/database.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,11 +19,25 @@ class _HomePageState extends State<HomePage> {
   String _showing = "all";
   List<int> _shownList = [];
   List<Book> _userLibrary = [];
+  List<LentBookInfo> _booksLentToMe = [];
+  bool _usingBooksLentToMe = false;
 
   @override
   void initState() {
     super.initState();
-    updateList(_showing);
+    _loadInitialData();
+  }
+
+  // need to get user library when page first starts but the initState cant await anything, so it needs to be awaited here
+  Future<void> _loadInitialData() async {
+    // fun fact: this function ONLY needs to be called once, straight up. Since dart passes objects by reference, we can just update this list in
+    // other files as its appended to or removed from. This should also work with friends and other stuff as well. Its more coupling + complexity
+    // but saves many DB reads so its optimal for sure. Currently this is my approach, but I also thought of using path_provider and storing books
+    // in app documents directory json file with a last modified timestamp and just comparing that to a database's last modified timestamp and if same use local
+    // files. This was a solution to allow users to track lent books even with no internet connection but it also can be used to optimize reads I think.
+    _userLibrary = await getUserLibrary(widget.user);
+    _booksLentToMe = await getLentToMeUserLibrary(widget.user);
+    await updateList(_showing);
   }
 
   void filterButtonClicked() {
@@ -31,16 +45,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   void bookClicked(int index) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (ctx) {
-      return BookPage(_userLibrary[index]);
-    }));
+    if (_usingBooksLentToMe) {
+      return;
+    }
+    String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(_userLibrary[index], widget.user)));
+    if (retVal != null) {
+      _userLibrary.removeAt(index);
+      _shownList.removeAt(index);
+    }
     await updateList(_showing);
     setState(() {});
   }
 
   void addBookButtonClicked() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => AddBookHomepage(widget.user)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => AddBookHomepage(widget.user, _userLibrary)));
     await updateList(_showing);
     setState(() {});
   }
@@ -55,7 +73,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> updateList(String state) async {
     _shownList.clear();
-    _userLibrary = await getUserLibrary(widget.user);
+    _usingBooksLentToMe = false;
 
     switch (state) {
       case "all":
@@ -70,16 +88,23 @@ class _HomePageState extends State<HomePage> {
         break;
       case "lent":
         for (int i = 0; i < _userLibrary.length; i++) {
-          if (_userLibrary[i].isLent) {
+          if (_userLibrary[i].lentDbPath != null) {
             _shownList.add(i);
           }
         }
+        break;
+      case "lentToMe":
+        _usingBooksLentToMe = true;
+        _booksLentToMe = await getLentToMeUserLibrary(widget.user);
+        _shownList = Iterable<int>.generate(_booksLentToMe.length).toList();
         break;
       default:
         break;
     }
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void favoriteButtonClicked(int index) {
@@ -91,7 +116,8 @@ class _HomePageState extends State<HomePage> {
     List<Color> buttonColor = [
       const Color.fromRGBO(129, 199, 132, 1),
       const Color.fromRGBO(129, 199, 132, 1),
-      const Color.fromRGBO(129, 199, 132, 1)
+      const Color.fromRGBO(129, 199, 132, 1),
+      const Color.fromRGBO(129, 199, 132, 1),
     ];
 
     switch (_showing) {
@@ -104,46 +130,60 @@ class _HomePageState extends State<HomePage> {
       case "lent":
         buttonColor[2] = const Color.fromARGB(255, 117, 117, 117);
         break;
+      case "lentToMe":
+        buttonColor[3] = const Color.fromARGB(255, 117, 117, 117);
+        break;
       default:
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       mainAxisSize: MainAxisSize.max,
       children: [
         ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0]),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[0], padding: const EdgeInsets.all(8),
+            ),
             onPressed: () => {
                   if (_showing == "all") {null} else changeDisplay("all")
                 },
             child: const Text(
               "All",
-              style: TextStyle(color: Colors.black, fontSize: 20),
+              style: TextStyle(color: Colors.black, fontSize: 16),
             )),
-        const SizedBox(
-          width: 10,
-        ),
         ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1]),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[1], padding: const EdgeInsets.all(8),
+            ),
             onPressed: () => {
                   if (_showing == "fav") {null} else changeDisplay("fav")
                 },
             child: const Text(
               "Favorites",
-              style: TextStyle(color: Colors.black, fontSize: 20),
+              style: TextStyle(color: Colors.black, fontSize: 16),
             )),
-        const SizedBox(
-          width: 10,
-        ),
         ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: buttonColor[2]),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[2], padding: const EdgeInsets.all(8),
+            ),
             onPressed: () => {
                   if (_showing == "lent") {null} else changeDisplay("lent")
                 },
             child: const Text(
               "Lent",
-              style: TextStyle(color: Colors.black, fontSize: 20),
-            ))
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            )),
+        ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[3], padding: const EdgeInsets.all(8),
+            ),
+            onPressed: () => {
+                  if (_showing == "lentToMe") {null} else changeDisplay("lentToMe")
+                },
+            child: const Text(
+              "Lent to me",
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            )),
       ],
     );
   }
@@ -195,15 +235,13 @@ class _HomePageState extends State<HomePage> {
                     child: ListView.builder(
                         itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
+                          List<Book> shownLibrary = _usingBooksLentToMe ?  _booksLentToMe.map((item) => item.book).toList() : _userLibrary;
                           Widget image;
-                          image = Image.network(
-                            _userLibrary[_shownList[index]].coverUrl.toString(),
-                            fit: BoxFit.fill,
-                          );
+                          image = shownLibrary[_shownList[index]].getCoverImage();
                           String availableTxt;
                           Color availableTxtColor;
 
-                          if (_userLibrary[_shownList[index]].isLent) {
+                          if (shownLibrary[_shownList[index]].lentDbPath != null) {
                             availableTxt = "Lent";
                             availableTxtColor = Colors.red;
                           } else {
@@ -213,7 +251,7 @@ class _HomePageState extends State<HomePage> {
 
                           Icon favIcon;
 
-                          if (_userLibrary[_shownList[index]].favorite) {
+                          if (shownLibrary[_shownList[index]].favorite) {
                             favIcon = const Icon(Icons.favorite);
                           } else {
                             favIcon = const Icon(Icons.favorite_border);
@@ -250,7 +288,7 @@ class _HomePageState extends State<HomePage> {
                                                     alignment:
                                                         Alignment.topLeft,
                                                     child: Text(
-                                                      _userLibrary[_shownList[index]].title,
+                                                      shownLibrary[_shownList[index]].title ?? "No title found",
                                                       style: const TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 20),
@@ -262,7 +300,7 @@ class _HomePageState extends State<HomePage> {
                                                     alignment:
                                                         Alignment.topLeft,
                                                     child: Text(
-                                                      _userLibrary[_shownList[index]].author,
+                                                      shownLibrary[_shownList[index]].author ?? "No author found",
                                                       style: const TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16),
@@ -272,7 +310,7 @@ class _HomePageState extends State<HomePage> {
                                                     )),
                                               ],
                                             ))),
-                                    SizedBox(
+                                    _usingBooksLentToMe ? const SizedBox.shrink() : SizedBox(
                                       height: 100,
                                       width: 70,
                                       child: Align(

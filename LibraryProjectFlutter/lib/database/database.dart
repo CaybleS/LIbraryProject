@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/book/book.dart';
-import 'friends_page.dart';
+import '../core/friends_page.dart';
 
 final dbReference = FirebaseDatabase.instance.ref();
 
@@ -28,6 +28,44 @@ Future<List<Book>> getUserLibrary(User user) async {
   }
 
   return books;
+}
+
+DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
+  var id = dbReference.child('booksLent/$borrowerId/').push();
+  id.set(lentBook.toJson(bookDbRef.path));
+  return id;
+}
+
+Future<void> removeLentBookInfo(String lentDbPath) async {
+  DatabaseEvent event = await dbReference.child(lentDbPath).once();
+  if (event.snapshot.value != null) {
+    removeRef(event.snapshot.ref);
+  }
+}
+
+Future<LentBookInfo> getLentBook(Book book) async {
+  DatabaseEvent event = await dbReference.child('${book.lentDbPath}').once();
+  LentBookInfo lentBook = createLentBookInfo(book, event.snapshot.value);
+  return lentBook;
+}
+
+Future<List<LentBookInfo>> getLentToMeUserLibrary(User user) async {
+  DatabaseEvent event = await dbReference.child('booksLent/${user.uid}').once();
+  List<LentBookInfo> lentBookInfoList = [];
+
+  if (event.snapshot.value != null) {
+    for (var child in event.snapshot.children) {
+      dynamic record = child.value;
+      String bookPath = record['bookDbPath'];
+      DatabaseEvent bookRecordEvent = await dbReference.child(bookPath).once();
+      if (bookRecordEvent.snapshot.value != null) {
+        Book book = createBook(bookRecordEvent.snapshot.value);
+        LentBookInfo lentBookInfo = createLentBookInfo(book, child.value); // child.value is the booksLent record data
+        lentBookInfoList.add(lentBookInfo);
+      }
+    }
+  }
+  return lentBookInfoList;
 }
 
 Future<bool> userExists(String id) async {

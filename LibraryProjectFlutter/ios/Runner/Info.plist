@@ -45,10 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- these 4 lines are used for camera access in add_book functionality -->
+	<!-- these 4 lines are used for camera/photo access functionality -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to scan QR codes</string>
+	<string>This app needs camera access to scan barcode and book covers</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs photos access to get QR codes from photo library</string>
+	<string>This app needs photos access to get barcodes, book covers, and profile pictures from photo library</string>
 </dict>
 </plist>
