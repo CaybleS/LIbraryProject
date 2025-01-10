@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/core/friends_page.dart';
-import 'package:library_project/misc_util/get_current_time.dart';
+import 'package:library_project/misc_util/misc_helper_functions.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
 class BookLendPage extends StatefulWidget {
@@ -35,7 +35,7 @@ class _BookLendPageState extends State<BookLendPage> {
     super.dispose();
   }
 
-  Future<void> _getFriendsList() async {
+  Future<void> _getFriendsList() async { // TODO maybe this should be retrieved before going to this page, id say so
     _friends = await getFriends(widget.user);
     _friendsListLoaded = true;
     if (mounted) {
@@ -44,7 +44,7 @@ class _BookLendPageState extends State<BookLendPage> {
   }
 
   void _resetErrors() {
-    // I don't even know where to call this but its here, so yeah. Don't even know if its needed tbh, why the crud did i make this i dont rember
+    // its not used yet but should probably be called for the input validation stuff to verify each input independently
     _invalidFriendIdError = false;
     _noTextInputError = false;
   }
@@ -72,7 +72,7 @@ class _BookLendPageState extends State<BookLendPage> {
         SizedBox(
           height: 300,
           child: ListView.builder(
-          itemCount: _friends.length,
+          itemCount: _friends.length, // TODO should this list be sorted by friend username, alphabetically. I think so imo.
           itemBuilder: (BuildContext context, int index) {
             return InkWell(
             onTap: () {
@@ -80,19 +80,25 @@ class _BookLendPageState extends State<BookLendPage> {
                 _selectedFriendId = _friends[index].friendId;
               });
             },
-            child: SizedBox(
-              height: 100,
-              width: double.infinity,
-              child: ListTile(
-                leading: const Icon(Icons.person),
-                title: Text(_friends[index].friendId), // TODO update this with real username when thats added
-                subtitle: Text('ID: ${_friends[index].friendId}'),
-                tileColor: (_selectedFriendId == _friends[index].friendId) ? Colors.green : null,
-              ),
-            ),
-            );
-          }
-          ),
+            child: Card(
+              margin: const EdgeInsets.all(5),
+              color: (_selectedFriendId == _friends[index].friendId) ? Colors.green : null,
+              child: Row(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                    child: Icon(Icons.person),
+                  ),
+                  Column(
+                    children: [
+                      Text(_friends[index].friendId), // TODO update this with real username when thats added I'd say
+                      Text('ID: ${_friends[index].friendId}'),
+                    ],
+                  ),
+                ],
+              )
+            ));
+          }),
         ),
         const SizedBox(
           height: 10,
@@ -166,7 +172,7 @@ class _BookLendPageState extends State<BookLendPage> {
         padding: const EdgeInsets.all(10),
         child: _friendsListLoaded
             ? _displayLendForm()
-            : SharedWidgets.displayCircularProgressIndicator(),
+            : Align(alignment: Alignment.topCenter, child: SharedWidgets.displayCircularProgressIndicator()),
       ),
     );
   }

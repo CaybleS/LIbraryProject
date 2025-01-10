@@ -22,7 +22,7 @@ class SharedWidgets {
         filled: true,
         fillColor: Colors.white,
         hintText: hintText,
-        hintStyle: const TextStyle(fontSize: 16, color: Colors.grey),
+        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
         border: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(25.0)),
         ),
@@ -88,5 +88,54 @@ class SharedWidgets {
         ),
       ),
     );
+  }
+
+  static void displayPositiveFeedbackDialog(BuildContext context, String msgToShow) {
+    bool hasPopped = false;
+    showDialog(
+      context: context,
+      builder: (context) {
+        Future.delayed(const Duration(milliseconds: 750), () { // feel free to change duration as you see fit
+          if (context.mounted && !hasPopped) {
+            hasPopped = true;
+            Navigator.pop(context);
+          }
+        });
+        return Dialog( // this may make this longer since it overrides the child's set width, but it styles text in a way I like so
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black,
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  msgToShow,
+                  style: const TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                const SizedBox(width: 20),
+                const Icon(
+                  Icons.check,
+                  color: Colors.green,
+                  size: 35,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    // in cases where users click off this dialog, closing it, it can sometimes do 2 pops if they click off at a similar time as when it auto-pops; this prevents that
+    ).then((_) {
+      hasPopped = true;
+    });
   }
 }

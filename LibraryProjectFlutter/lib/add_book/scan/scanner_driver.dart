@@ -15,7 +15,7 @@ class ScannerDriver {
   bool _noResponseError = false; // this detects lack of internet connection (or api being down maybe)
   bool _invalidISBNError = false;
   bool _invalidBarcodePhotoError = false;
-  // TODO need to test this error by disallowing photo gallery permissions, idk how to test it on an emulator. Also test with custom_add when its added there.
+  // TODO need to test this error by disallowing photo gallery permissions, idk how to test it on an emulator. Also test with custom_add when its added there
   bool _noPhotoGalleryAccessError = false;
   Book? _bookFromISBNScan;
   late final User _user;
@@ -119,7 +119,6 @@ class ScannerDriver {
   }
 
   // ensure that bookFromISBNScan is not null before calling this
-  // TODO still need to finish this, idk why its so hard to style
   void _displayScannerSuccessDialog(BuildContext context) {
     String title = _bookFromISBNScan!.title ?? "No title found";
     String author = _bookFromISBNScan!.author ?? "No author found";
@@ -131,6 +130,7 @@ class ScannerDriver {
           child: Container(
             height: 300,
             width: 300,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -145,52 +145,55 @@ class ScannerDriver {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               mainAxisSize: MainAxisSize.max,
               children: [
-                const Text(
-                  "Book found!",
-                  style: TextStyle(fontSize: 20, color: Colors.black),
+                const Padding(
+                  padding: EdgeInsets.all(5),
+                  child: Text(
+                    "Book found!",
+                    style: TextStyle(fontSize: 20, color: Colors.black),
+                  ),
                 ),
-                Row(
+                Expanded(
+                  child: Row(
                     children: [
-                      SizedBox(
-                        width: 90,
-                        height: 120,
+                      Flexible(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(10, 3, 3, 3),
-                          child: image,
+                          child: AspectRatio(
+                            aspectRatio: 0.7,
+                            child: image,
+                          ),
                         ),
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          SizedBox(
-                            width: 190,
-                            height: 50,
-                            child: Text(
-                              title,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 16, color: Colors.black),
-                              softWrap: true,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Expanded(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 175, maxWidth: 200),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Text(
+                                title,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 16, color: Colors.black),
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                author,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 14, color: Colors.black),
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 5),
-                          SizedBox(
-                            width: 190,
-                            height: 50,
-                            child: Text(
-                              author,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 14, color: Colors.black),
-                              softWrap: true,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
+                  ),
                 ),
                 SizedBox(
                   width: 200,

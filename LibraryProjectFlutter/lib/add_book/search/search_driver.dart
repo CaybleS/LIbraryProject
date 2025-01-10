@@ -107,7 +107,7 @@ class SearchDriver {
     return "";
   }
 
-  Future<void> _bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) async {
+  void _bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) {
     addBookToLibrary(bookToAdd, _user, _userLibrary, context);
     _alreadyAddedBooks.clear(); // need to clear it since 2 of this same book can be in the search results (rather than just setting listview index to true)
     setState(() {});
@@ -118,7 +118,7 @@ class SearchDriver {
       return BookDetailsScreen(bookToView, isBookAlreadyAdded);
     }));
     if (retVal != null && context.mounted) {
-      await _bookAddButtonClicked(bookToView, context, setState);
+      _bookAddButtonClicked(bookToView, context, setState);
     }
   }
 
@@ -199,7 +199,6 @@ class SearchDriver {
             },
             child: SizedBox(
               height: 100,
-              width: double.infinity,
               child: Card(
               margin: const EdgeInsets.all(5),
               child: Row(
@@ -209,12 +208,11 @@ class SearchDriver {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 3, 10, 3),
                       child: AspectRatio(
-                      aspectRatio: 0.75,
+                      aspectRatio: 0.7,
                       child: image,
                     ),
                   ),
                   Expanded(
-                    flex: 2,
                     child: Align(
                       alignment: Alignment.topLeft,
                       child: Column(
@@ -248,7 +246,6 @@ class SearchDriver {
                   ),
                   SizedBox(
                     width: 100,
-                    //flex: 1, // needs to be constrained so "Book already added" doesnt take up extra space, hence the lower flex factor
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: isBookAlreadyAdded
@@ -258,8 +255,8 @@ class SearchDriver {
                           style: TextStyle(fontSize: 12, color: Colors.black),
                         )
                       : ElevatedButton(
-                        onPressed: () async {
-                          await _bookAddButtonClicked(currentBook, context, setState);
+                        onPressed: () {
+                          _bookAddButtonClicked(currentBook, context, setState);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.pink,

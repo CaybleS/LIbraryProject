@@ -90,10 +90,11 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     if (mounted && scannedISBN != null) {
       await _bookScanInstance.scannerSearchByIsbn(context, scannedISBN);
     }
-    if (scannedISBN != null) {
-      // putting the scanned ISBN into the search query, for better user experience, done after the search rather than before
-      _searchQueryController.text = scannedISBN;
-    }
+    // this is commented out just because I decided not to include it, but its arguably good to have so I'm not deleting its implementation
+    // if (scannedISBN != null) {
+    //   // putting the scanned ISBN into the search query, for better user experience, done after the search rather than before
+    //   _searchQueryController.text = scannedISBN;
+    // }
     setState(() {
       _displayProgressIndicator = false;
     });
@@ -117,7 +118,6 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColor.skyBlue,
-        minimumSize: const Size(0, 0),
         padding: const EdgeInsets.all(8),
       ),
       child: Text(
@@ -151,10 +151,10 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 1), // these basically only do things cuz of the row's mainAxisAlignment
+                    const SizedBox.shrink(), // these only do things cuz of the row's mainAxisAlignment
                     _otherOptionButton("Scan Barcode", _scanButtonClicked),
                     _otherOptionButton("Add Manually", _customAddButtonClicked),
-                    const SizedBox(width: 1),
+                    const SizedBox.shrink(),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -166,7 +166,6 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColor.skyBlue,
-                      minimumSize: const Size(0, 0),
                       padding: const EdgeInsets.all(8),
                     ),
                     child: const Text(

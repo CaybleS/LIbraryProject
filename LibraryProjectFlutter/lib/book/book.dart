@@ -6,19 +6,21 @@ import 'package:library_project/database/database.dart';
 class Book {
   String? title;
   String? author;
-  String? lentDbPath; // stored so that 1.) books are flagged as lent and 2.) books can be mapped to lent books in that part of the database
+  String? lentDbKey; // stored so that 1.) books are flagged as lent and 2.) books can be mapped to lent books in that part of the database
   bool favorite = false;
   String? coverUrl;
-  // if custom book add will have custom images (as it should) needs to be stored somewhere, with link to it, but can also be stored in temp for optimization
-  // in this case, would it require 2 things? Ahhhh...
+  // if custom book add will have custom images (as it should) needs to be stored somewhere, with link to it. This is what coverPath is intended to be, whenever thats implemented.
   //String? coverPath;
+  String? borrowerId;
   String? description;
-  String? googleBooksId;
+  String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)
   int? bookCondition;
   String? publicBookNotes;
   int? rating;
   bool? hasRead;
   bool isManualAdded; // needed because manually added books should be changable by users
+  DateTime? dateLent;
+  DateTime? dateToReturn;
   late DatabaseReference _id;
 
   Book(
@@ -42,26 +44,32 @@ class Book {
     updateBook(this, _id);
   }
 
-  void remove(String uid) {
-    if (lentDbPath != null) {
-      removeLentBookInfo(lentDbPath!);
+  void remove() {
+    if (lentDbKey != null && borrowerId != null) {
+      removeLentBookInfo(lentDbKey!, borrowerId!);
     }
     removeRef(_id);
   }
 
   // note that this function assumes the borrowerId is valid, so this value should be protected before function call
   void lendBook(DateTime dateLent, DateTime dateToReturn, String borrowerId, String lenderId) {
-    LentBookInfo lentBookInfo = LentBookInfo(dateLent, dateToReturn, borrowerId, lenderId);
+    LentBookInfo lentBookInfo = LentBookInfo(lenderId);
+    this.dateLent = dateLent;
+    this.dateToReturn = dateToReturn;
     DatabaseReference lentToMeId = addLentBookInfo(_id, lentBookInfo, borrowerId);
-    lentDbPath = lentToMeId.path;
+    this.borrowerId = borrowerId;
+    lentDbKey = lentToMeId.key;
     update();
   }
 
   void returnBook() {
     // I dont know if this can ever be null, dont think so, but just to be safe I check
-    if (lentDbPath != null) {
-      removeLentBookInfo(lentDbPath!);
-      lentDbPath = null;
+    if (lentDbKey != null && borrowerId != null) {
+      removeLentBookInfo(lentDbKey!, borrowerId!);
+      lentDbKey = null;
+      borrowerId = null;
+      dateLent = null;
+      dateToReturn = null;
       update();
     }
   }
@@ -70,12 +78,19 @@ class Book {
     return {
       'title': title,
       'author': author,
-      'lentDbPath': lentDbPath,
+      'lentDbKey': lentDbKey,
       'favorite': favorite,
       'coverUrl': coverUrl,
       'description': description,
       'googleBooksId': googleBooksId,
       'isManualAdded': isManualAdded,
+      'borrowerId' : borrowerId,
+      'bookCondition' : bookCondition,
+      'publicBookNotes' : publicBookNotes,
+      'rating' : rating,
+      'hasRead' : hasRead,
+      'dateLent': dateLent?.toIso8601String(),
+      'dateToReturn': dateToReturn?.toIso8601String(),
     };
   }
 
@@ -111,41 +126,38 @@ Book createBook(record) {
     googleBooksId: record['googleBooksId'],
     isManualAdded: record['isManualAdded'],
   );
-  book.lentDbPath = record['lentDbPath'];
+  book.lentDbKey = record['lentDbKey'];
   book.favorite = record['favorite'];
-
+  book.borrowerId = record['borrowerId'];
+  book.bookCondition = record['bookCondition'];
+  book.publicBookNotes = record['publicBookNotes'];
+  book.rating = record['rating'];
+  book.hasRead = record['hasRead'];
+  book.dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;
+  book.dateToReturn = record['dateToReturn'] != null ? DateTime.parse(record['dateToReturn']) : null;
   return book;
 }
 
 class LentBookInfo {
-  String? bookDbPath;
-  DateTime? dateLent;
-  DateTime? dateToReturn;
-  String? borrowerId;
+  String? bookDbKey;
   String? lenderId;
   late Book book;
-  // not storing id because to my knowledge (which may be wrong) its not needed since I delete this object's db records through the book object
+  // not storing id because to my knowledge its not needed since I delete this object's db records through the book object
 
-  LentBookInfo(this.dateLent, this.dateToReturn, this.borrowerId, this.lenderId);
+  LentBookInfo(this.lenderId);
 
-  Map<String, dynamic> toJson(String bookDbPath) {
+  Map<String, dynamic> toJson(String bookDbKey) {
     return {
-      'bookDbPath': bookDbPath,
-      'dateLent': dateLent?.toIso8601String(),
-      'dateToReturn': dateToReturn?.toIso8601String(),
-      'borrowerId': borrowerId,
+      'bookDbKey': bookDbKey,
       'lenderId' : lenderId,
     };
   }
 }
 
 LentBookInfo createLentBookInfo(Book book, dynamic record) {
-  DateTime? dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;
-  DateTime? dateToReturn = record['dateToReturn'] != null ? DateTime.parse(record['dateToReturn']) : null;
-  String? borrowerId = record['borrowerId'];
   String? lenderId = record['lenderId'];
-  LentBookInfo lentBook = LentBookInfo(dateLent, dateToReturn, borrowerId, lenderId);
+  LentBookInfo lentBook = LentBookInfo(lenderId);
   lentBook.book = book;
-  lentBook.bookDbPath = record['bookDbPath'];
+  lentBook.bookDbKey = record['bookDbKey'];
   return lentBook;
 }

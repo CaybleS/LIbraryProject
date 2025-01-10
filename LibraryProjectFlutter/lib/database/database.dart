@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/book/book.dart';
-import '../core/friends_page.dart';
+import 'package:library_project/misc_util/misc_helper_functions.dart';
+import 'package:library_project/core/friends_page.dart';
 
 final dbReference = FirebaseDatabase.instance.ref();
 
@@ -31,41 +32,45 @@ Future<List<Book>> getUserLibrary(User user) async {
 }
 
 DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
-  var id = dbReference.child('booksLent/$borrowerId/').push();
-  id.set(lentBook.toJson(bookDbRef.path));
+  DatabaseReference id = dbReference.child('booksLent/$borrowerId/').push();
+  id.set(lentBook.toJson(bookDbRef.key!));
   return id;
 }
 
-Future<void> removeLentBookInfo(String lentDbPath) async {
-  DatabaseEvent event = await dbReference.child(lentDbPath).once();
+Future<void> removeLentBookInfo(String lentDbKey, String borrowerId) async {
+  DatabaseEvent event = await dbReference.child('booksLent/$borrowerId/$lentDbKey').once();
   if (event.snapshot.value != null) {
     removeRef(event.snapshot.ref);
   }
 }
 
-Future<LentBookInfo> getLentBook(Book book) async {
-  DatabaseEvent event = await dbReference.child('${book.lentDbPath}').once();
-  LentBookInfo lentBook = createLentBookInfo(book, event.snapshot.value);
-  return lentBook;
-}
-
-Future<List<LentBookInfo>> getLentToMeUserLibrary(User user) async {
+// what is this function doing? It returns the checksum, which needs to be updated, to the homepage, and
+// takes in the LentBookInfo list, by reference, to modify it as needed or do nothing to it.
+Future<String> getLentToMeUserLibrary(List<LentBookInfo> lentBookInfoList, User user, String currentChecksum) async {
   DatabaseEvent event = await dbReference.child('booksLent/${user.uid}').once();
-  List<LentBookInfo> lentBookInfoList = [];
+  List<dynamic> listOfRecords = [];
 
   if (event.snapshot.value != null) {
-    for (var child in event.snapshot.children) {
+    for (DataSnapshot child in event.snapshot.children) {
       dynamic record = child.value;
-      String bookPath = record['bookDbPath'];
-      DatabaseEvent bookRecordEvent = await dbReference.child(bookPath).once();
-      if (bookRecordEvent.snapshot.value != null) {
-        Book book = createBook(bookRecordEvent.snapshot.value);
-        LentBookInfo lentBookInfo = createLentBookInfo(book, child.value); // child.value is the booksLent record data
+      listOfRecords.add(record);
+    }
+  }
+  String checksum = await calcLentBooksChecksum(listOfRecords);
+  if (checksum != currentChecksum) {
+    lentBookInfoList.clear();
+    for (dynamic record in listOfRecords) {
+      String lenderId = record['lenderId'];
+      String bookDbKey = record['bookDbKey'];
+      DatabaseEvent getBookEvent = await dbReference.child('books/$lenderId/$bookDbKey').once();
+      if (getBookEvent.snapshot.value != null) {
+        Book book = createBook(getBookEvent.snapshot.value);
+        LentBookInfo lentBookInfo = createLentBookInfo(book, record);
         lentBookInfoList.add(lentBookInfo);
       }
     }
   }
-  return lentBookInfoList;
+  return checksum;
 }
 
 Future<bool> userExists(String id) async {

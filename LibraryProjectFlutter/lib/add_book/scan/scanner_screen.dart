@@ -42,7 +42,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     List<CameraDescription> cameras = await availableCameras();
     _cameraController = CameraController(
       cameras.first,
-      // use either low or medium here, because higher scanning resolutions mean slower scans in general. I think low is best, but tweak this alongside the isbn frequenies
+      // use either low or medium here, because higher scanning resolutions mean slower scans in general. I think low is best, but tweak this alongside the isbn frequencies
       // map to ensure the scanner accurately scans the barcode (fast scans + ensuring the first isbn to occur N times gets selected seems really solid)
       ResolutionPreset.low,
       enableAudio: false, // so it doesnt ask to record audio when opening camera
@@ -66,7 +66,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   void _processBarcodeValue(String? isbn) {
     if (isbn != null) {
-      _isbnFrequencies[isbn] = (_isbnFrequencies[isbn] ?? 0) + 1; // new frequnecies will be initialized to 0 and then incremented here
+      _isbnFrequencies[isbn] = (_isbnFrequencies[isbn] ?? 0) + 1; // new frequencies will be initialized to 0 and then incremented here
       if (_isbnFrequencies[isbn]! > 3 && mounted && !_hasPopped) { // cant guarantee with certainty that 3 is optimal, but its close to optimal at least
         _hasPopped = true;
         Navigator.pop(context, isbn);
@@ -128,9 +128,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
         _hasPopped = true;
         Navigator.pop(context, barcodes.first.rawValue);
       }
-    } catch (e) {
+      else { // generally this just triggers when barcodes.isNotEmpty is false meaning the barcode is empty (no barcode found)
+        if (mounted) {
+          Navigator.pop(context, "No barcode found on image."); // signaling to scanner_driver that no barcode was found on the image
+        }
+      }
+    } catch (e) { // dont know when this would trigger, might need another error for it idk
       if (mounted) {
-        Navigator.pop(context, "No barcode found on image."); // signaling to scanner_driver that no barcode was found on the image
+        Navigator.pop(context, "No barcode found on image.");
       }
     }
   }
@@ -162,11 +167,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
             children: [
               CameraPreview(_cameraController),
               Container(
-                width: 250, // this will overflow with a screen size of <250 I think but is that even something I should account for via fittedbox? Much of the app prob fails w/that...
+                width: 250,
                 height: 150,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.red, width: 2),
-                ),
+                decoration: BoxDecoration(border: Border.all(color: Colors.red, width: 2)),
               ),
             ],
           )
