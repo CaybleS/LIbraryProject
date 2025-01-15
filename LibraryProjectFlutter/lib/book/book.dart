@@ -29,7 +29,35 @@ class Book {
       this.coverUrl,
       this.description,
       this.googleBooksId,
-      this.isManualAdded = false});
+      this.isManualAdded = false}
+  );
+
+  // probably couldve written this better but it works so im not touching it
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other.runtimeType != runtimeType || other is! Book) {
+      return false;
+    }
+    if (googleBooksId != null && (googleBooksId == other.googleBooksId)) {
+      return true;
+    }
+    // I want to compare titles and authors as lowercase but I need to make sure nothing is null first
+    if (title == null || other.title == null || author == null || other.author == null) {
+      return false;
+    }
+    if (title!.toLowerCase() == other.title!.toLowerCase() && author!.toLowerCase() == other.author!.toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(googleBooksId, title?.toLowerCase(), author?.toLowerCase());
+  }
 
   void favoriteButtonClicked() {
     favorite = !favorite;
@@ -94,7 +122,6 @@ class Book {
     };
   }
 
-  // maybe this should be in a more UI-related file, I think its fine tho
   Image getCoverImage() {
     // if (coverPath != null) {
     //   return Image.asset(
@@ -110,7 +137,7 @@ class Book {
       );
     } else {
       return Image.asset(
-        "assets/no_cover.jpg".toString(),
+        "assets/no_cover.jpg",
         fit: BoxFit.fill,
       );
     }

@@ -22,8 +22,12 @@ class SearchDriver {
 
   SearchDriver(this._user, this._userLibrary);
 
-  void resetLastSearchValues() {
+  void clearAlreadyAddedBooks() {
     _alreadyAddedBooks.clear();
+  }
+
+  void resetLastSearchValues() {
+    clearAlreadyAddedBooks();
     _searchQueryBooks.clear();
     _otherSearchError = false;
     _noBooksFoundError = false;
@@ -108,7 +112,7 @@ class SearchDriver {
   }
 
   void _bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) {
-    addBookToLibrary(bookToAdd, _user, _userLibrary, context);
+    addBookToLibrary(bookToAdd, _user, context);
     _alreadyAddedBooks.clear(); // need to clear it since 2 of this same book can be in the search results (rather than just setting listview index to true)
     setState(() {});
   }
@@ -184,7 +188,7 @@ class SearchDriver {
           if (_alreadyAddedBooks[index] == null) { // going through all books in user's library for this index in ListView (only done once due to this check)
             _alreadyAddedBooks[index] = false;
             for (int i = 0; i < _userLibrary.length; i++) {
-              if (areBooksSame(currentBook, _userLibrary[i])) {
+              if (currentBook == _userLibrary[i]) {
                 _alreadyAddedBooks[index] = true;
               }
             }

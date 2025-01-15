@@ -74,7 +74,8 @@ class ScannerDriver {
   // the last digit of an ISBN is a check digit. It basically just lets computer systems know that the barcode is correct. If
   // a degraded barcode is scanned (causing 1 number to be off) I don't think the check digit will remain the same, but it depends.
   // Basically the last digit in an isbn is computed from all the other digits from some checksum algorithm.
-  // this is pretty extra tbh but it should cause better user experience since they will usually get error instead of "no search results" when barcode is degraded
+  // this is pretty extra tbh but it should cause better user experience since they will usually get error instead of "no search results"
+  // when barcode is degraded. I implemented this for an isbn10 to isbn13 converter which wasn't needed but its still useful here so whatever.
   bool _isValidCheckDigit(String isbn) {
     if (isbn.length != 13) { // keeping this check just to be safe
       return false;
@@ -212,7 +213,7 @@ class ScannerDriver {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      addBookToLibrary(_bookFromISBNScan!, _user, _userLibrary, context);
+                      addBookToLibrary(_bookFromISBNScan!, _user, context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColor.skyBlue,
@@ -307,7 +308,7 @@ class ScannerDriver {
     }
     // checking if book is already in user's library
     for (int i = 0; i < _userLibrary.length; i++) {
-      if (areBooksSame(_bookFromISBNScan, _userLibrary[i])) {
+      if (_bookFromISBNScan == _userLibrary[i]) {
         return "You already have this book added.";
       }
     }

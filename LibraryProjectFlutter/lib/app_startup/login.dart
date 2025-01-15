@@ -37,7 +37,7 @@ class _LoginBodyState extends State<LoginBody> {
             {
               this.user = user,
               Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => PersistentBottomBar(user)))
+                  MaterialPageRoute(builder: (context) => PersistentBottomBar(user))) // the bottombar will load the necessary pages when it exists
             }
         });
   }

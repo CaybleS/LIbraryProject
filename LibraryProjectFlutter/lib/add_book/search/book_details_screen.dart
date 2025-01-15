@@ -41,15 +41,16 @@ class BookDetailsScreen extends StatelessWidget {
                           child: Text(
                             _bookToView.title ?? "No title found",
                             style: const TextStyle(fontSize: 20),
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(height: 5),
                         Flexible(
                           child: Text(
                             _bookToView.author ?? "No author found",
                             style: const TextStyle(fontSize: 16),
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

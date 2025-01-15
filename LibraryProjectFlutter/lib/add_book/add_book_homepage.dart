@@ -10,10 +10,11 @@ import 'package:library_project/ui/colors.dart';
 class AddBookHomepage extends StatefulWidget {
   final User user;
   final List<Book> userLibrary;
+  final ValueNotifier<int> refreshNotifier;
 
   @override
   State<AddBookHomepage> createState() => _AddBookHomepageState();
-  const AddBookHomepage(this.user, this.userLibrary, {super.key});
+  const AddBookHomepage(this.user, this.userLibrary, this.refreshNotifier, {super.key});
 }
 
 class _AddBookHomepageState extends State<AddBookHomepage> {
@@ -22,6 +23,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   late ScannerDriver _bookScanInstance;
   bool _displayProgressIndicator = false; // used to display CircularProgressIndicator whenever necessary
   bool _noInput = false;
+  late final VoidCallback _pageOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
 
   @override
   void initState() {
@@ -35,11 +37,23 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     // done because I cant access widget.<anything> before initState, hence the late object initialization
     _bookSearchInstance = SearchDriver(widget.user, widget.userLibrary);
     _bookScanInstance = ScannerDriver(widget.user, widget.userLibrary);
+    _pageOpenedListener = () {
+      if (widget.refreshNotifier.value == 1) {
+        // whats happening here? Basically this refreshes the already added books if we are on this page, if
+        // userLibrary has been updated. This will currently ONLY occur if userLibrary was updated in another instance
+        // of the app on homepage, but if users are, in the future, able to remove added books 
+        // on this search page, it should work for that also.
+        _bookSearchInstance.clearAlreadyAddedBooks();
+        setState(() {});
+      }
+    };
+    widget.refreshNotifier.addListener(_pageOpenedListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
+    widget.refreshNotifier.removeListener(_pageOpenedListener);
     super.dispose();
   }
 

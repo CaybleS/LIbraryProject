@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,7 +30,7 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
     _editTitleController.text = widget.book.title!;
     _editAuthorController.text = widget.book.author!;
     for (int i = 0; i < widget.userLibrary.length; i++) {
-      if (areBooksSame(widget.book, widget.userLibrary[i])) {
+      if (widget.book == widget.userLibrary[i]) {
         _userLibraryIndexOfThisBook = i;
         break;
       }
@@ -48,13 +47,13 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
   void _checkInputs(String titleInput, String authorInput) {
     _resetErrors();
     Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
-    if (_newCoverImage == null && areBooksSame(customAddedBook, widget.book)) {
+    if (_newCoverImage == null && customAddedBook == widget.book) {
       _noChangeError = true;
     }
     for (int i = 0; i < widget.userLibrary.length; i++) {
       // ensuring we don't change the custom added book to any books already added while also allowing it to change if we dont change title and author
       // and only change cover image
-      if (areBooksSame(customAddedBook, widget.userLibrary[i]) && i != _userLibraryIndexOfThisBook) {
+      if (customAddedBook == widget.userLibrary[i] && i != _userLibraryIndexOfThisBook) {
         _bookAlreadyAddedError = true;
         break;
       }

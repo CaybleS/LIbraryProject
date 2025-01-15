@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/book/book.dart';
-import 'package:library_project/misc_util/misc_helper_functions.dart';
 import 'package:library_project/core/friends_page.dart';
+import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
 
@@ -14,21 +14,6 @@ DatabaseReference addBook(Book book, User user) {
 
 void updateBook(Book book, DatabaseReference id) {
   id.update(book.toJson());
-}
-
-Future<List<Book>> getUserLibrary(User user) async {
-  DatabaseEvent event = await dbReference.child('books/${user.uid}/').once();
-  List<Book> books = [];
-
-  if (event.snapshot.value != null) {
-    for (var child in event.snapshot.children) {
-      Book book = createBook(child.value);
-      book.setId(dbReference.child('books/${user.uid}/${child.key}'));
-      books.add(book);
-    }
-  }
-
-  return books;
 }
 
 DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
@@ -44,21 +29,37 @@ Future<void> removeLentBookInfo(String lentDbKey, String borrowerId) async {
   }
 }
 
-// what is this function doing? It returns the checksum, which needs to be updated, to the homepage, and
-// takes in the LentBookInfo list, by reference, to modify it as needed or do nothing to it.
-Future<String> getLentToMeUserLibrary(List<LentBookInfo> lentBookInfoList, User user, String currentChecksum) async {
-  DatabaseEvent event = await dbReference.child('booksLent/${user.uid}').once();
-  List<dynamic> listOfRecords = [];
-
-  if (event.snapshot.value != null) {
-    for (DataSnapshot child in event.snapshot.children) {
-      dynamic record = child.value;
-      listOfRecords.add(record);
+// instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
+// The same is done with the lent to me books. It feteches them initially and updates the in-memory list as needed
+// and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
+StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(List<Book> userLibrary, User user, Function ownedBooksUpdated) {
+  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
+  StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+    userLibrary.clear();
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        Book book = createBook(child.value);
+        book.setId(dbReference.child('books/${user.uid}/${child.key}'));
+        userLibrary.add(book);
+      }
     }
-  }
-  String checksum = await calcLentBooksChecksum(listOfRecords);
-  if (checksum != currentChecksum) {
-    lentBookInfoList.clear();
+    ownedBooksUpdated();
+  });
+  return ownedSubscription; // returning this only to be able to properly dispose of it
+}
+
+StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
+  DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
+  // so only the books lent data changes are tracked, so even if lent books themselves are updated, this doesnt get fired
+  StreamSubscription<DatabaseEvent> lentToMeSubscription = lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
+    List<dynamic> listOfRecords = [];
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        dynamic record = child.value;
+        listOfRecords.add(record);
+      }
+    }
+    booksLentToMe.clear();
     for (dynamic record in listOfRecords) {
       String lenderId = record['lenderId'];
       String bookDbKey = record['bookDbKey'];
@@ -66,11 +67,12 @@ Future<String> getLentToMeUserLibrary(List<LentBookInfo> lentBookInfoList, User 
       if (getBookEvent.snapshot.value != null) {
         Book book = createBook(getBookEvent.snapshot.value);
         LentBookInfo lentBookInfo = createLentBookInfo(book, record);
-        lentBookInfoList.add(lentBookInfo);
+        booksLentToMe.add(lentBookInfo);
       }
     }
-  }
-  return checksum;
+    lentToMeBooksUpdated();
+  });
+  return lentToMeSubscription;
 }
 
 Future<bool> userExists(String id) async {

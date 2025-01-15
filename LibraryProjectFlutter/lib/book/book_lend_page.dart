@@ -61,6 +61,7 @@ class _BookLendPageState extends State<BookLendPage> {
 
   Widget _displayLendForm() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           "Friend to lend to:",
@@ -69,8 +70,7 @@ class _BookLendPageState extends State<BookLendPage> {
         const SizedBox(
           height: 5,
         ),
-        SizedBox(
-          height: 300,
+        Flexible(
           child: ListView.builder(
           itemCount: _friends.length, // TODO should this list be sorted by friend username, alphabetically. I think so imo.
           itemBuilder: (BuildContext context, int index) {
@@ -168,7 +168,7 @@ class _BookLendPageState extends State<BookLendPage> {
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
-      body: Container(
+      body: Padding(
         padding: const EdgeInsets.all(10),
         child: _friendsListLoaded
             ? _displayLendForm()

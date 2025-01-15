@@ -1,6 +1,6 @@
 // TODO this page. Remove these comments when done
 // what can be on it?
-// 1.) book condition slider, some segmented button or something with some middle nullable default value - do for sure IMO
+// 1.) book condition slider, some segmented button or something with some middle nullable default value
 // 2.) test box with public book notes - seems good to do, maybe call it "public comments" or something idk
 // 3.) text box with private book notes - idk about this one but most of my uncertainty is due to concerns about the UI being complex and hard to understand with 2 text boxes
 // 4.) review/rating - could be some rating segmented button with middle nullable default value
@@ -49,32 +49,28 @@ class _BookPageState extends State<BookPage> {
   }
 
   void processSelectionOption(_ReadStatus selection) {
-    bool changedSomething = false;
     switch (selection) {
       case _ReadStatus.hasNotRead:
         if (widget.book.hasRead != false) {
           widget.book.hasRead = false;
           widget.book.update();
-          changedSomething = true;
+          setState(() {});
           break;
         }
       case _ReadStatus.hasRead:
         if (widget.book.hasRead != true) {
           widget.book.hasRead = true;
           widget.book.update();
-          changedSomething = true;
+          setState(() {});
           break;
         }
       case _ReadStatus.unknown:
         if (widget.book.hasRead != null) {
           widget.book.hasRead = null;
           widget.book.update();
-          changedSomething = true;
+          setState(() {});
           break;
         }
-    }
-    if (changedSomething) {
-      setState(() {});
     }
   }
 
@@ -100,7 +96,6 @@ class _BookPageState extends State<BookPage> {
     return ElevatedButton(
       onPressed: () async {
         await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user)));
-        // await getLentBookInfo();
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -179,7 +174,9 @@ class _BookPageState extends State<BookPage> {
                     child: ElevatedButton(
                       onPressed: () {
                         bookToRemove.remove();
-                        Navigator.pop(context, "removed");
+                        // if the book is removed I need to pop the dialog and then pop again so this is how I make this happen
+                        // for some reason just having 2 pops here wouldnt work when I added persistent bottombar but this does
+                        Navigator.pop(context, "removed"); // signaling to the outside of the dialog to pop from the page it was called from
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -194,24 +191,25 @@ class _BookPageState extends State<BookPage> {
         ),
       ),
     );
-    if (retVal != null && mounted) { // signaling to homepage that a book was removed so it knows to refresh
-      Navigator.pop(context, "removed");
+    if (retVal != null && mounted) {
+      Navigator.pop(context);
     }
   }
   
-  // TODO this ui is not responsive and also looks bad (me when i ... add stuff and dont make it look ,good!!)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.blue,
-        ),
-        backgroundColor: Colors.grey[400],
-        body: Container(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: [
-              Row(
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
+      ),
+      backgroundColor: Colors.grey[400],
+      body: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            Flexible(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
                     height: 220,
@@ -224,88 +222,92 @@ class _BookPageState extends State<BookPage> {
                   const SizedBox(
                     width: 10,
                   ),
-                  Column(children: [
-                    SizedBox(
-                        width: 200,
-                        child: Text(
-                          widget.book.title ?? "No title found",
-                          style: const TextStyle(fontSize: 30),
-                        )),
-                    const SizedBox(height: 5),
-                    SizedBox(
-                        width: 200,
-                        child: Text(widget.book.author ?? "No author found",
-                            style: const TextStyle(fontSize: 25))),
-                    const SizedBox(height: 5),
-                    SizedBox(
-                        width: 200,
-                        child: Text(widget.book.description ?? "No description found",
-                            style: const TextStyle(fontSize: 12),
-                            softWrap: true,
-                            maxLines: 10,
+                  Flexible( 
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.book.title ?? "No title found",
+                            style: const TextStyle(fontSize: 20),
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                        const SizedBox(height: 5),
+                        Flexible(
+                          child: Text(
+                            widget.book.author ?? "No author found",
+                            style: const TextStyle(fontSize: 16),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Text(
+                              widget.book.description ?? "No description found",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ])
+                  ),
                 ],
               ),
-              const SizedBox(
-                height: 10,
-              ),
-              const Text("Status:", style: TextStyle(fontSize: 22)),
-              _displayStatus(),
-              const SizedBox(
-                height: 10,
-              ),
-              (widget.book.lentDbKey != null) ? _returnBookButton() : _lendBookButton(),
-              const SizedBox(
-                height: 10,
-              ),
-              ElevatedButton(
+            ),
+            const SizedBox(height: 10),
+            const Text("Status:", style: TextStyle(fontSize: 22)),
+            _displayStatus(),
+            const SizedBox(height: 10),
+            (widget.book.lentDbKey != null) ? _returnBookButton() : _lendBookButton(),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () async {
+                await _displayConfirmRemoveDialog(widget.book);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 202, 35, 23)),
+              child: const Text("Remove book from library", style: TextStyle(fontSize: 16, color: Colors.black)),
+            ),
+            (widget.book.isManualAdded && widget.book.lentDbKey == null) // book needs to be manually added AND not lent out, to be able to edit title/author stuff
+            ? ElevatedButton(
                 onPressed: () async {
-                  await _displayConfirmRemoveDialog(widget.book);
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddedBookEdit(widget.book, widget.user, widget.userLibrary)));
+                  setState(() {});
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 202, 35, 23)),
-                child: const Text("Remove book from library",
-                  style: TextStyle(fontSize: 16, color: Colors.black)),
-              ),
-              (widget.book.isManualAdded && widget.book.lentDbKey == null) // book needs to be manually added AND not lent out, to be able to edit title/author stuff
-              ? ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddedBookEdit(widget.book, widget.user, widget.userLibrary)));
-                    setState(() {});
-                  },
-                  child: const Text("edit manually added book here"),
-                )
-              : const SizedBox.shrink(),
-              const SizedBox(height: 10),
-              SegmentedButton<_ReadStatus>(
-                selected: selection,
-                onSelectionChanged: (Set<_ReadStatus> newSelection) {
-                  selection = newSelection;
-                  processSelectionOption(newSelection.single);
-                },
-                segments: const <ButtonSegment<_ReadStatus>> [
-                  ButtonSegment(
-                    icon: Icon(Icons.bookmark_remove),
-                    value: _ReadStatus.hasNotRead,
-                    label: Text("Has no read"),
-                  ),
-                  ButtonSegment(
-                    icon: Icon(Icons.question_mark),
-                    value: _ReadStatus.unknown,
-                    label: Text("default"),
-                  ),
-                  ButtonSegment(
-                    icon: Icon(Icons.book),
-                    value: _ReadStatus.hasRead,
-                    label: Text("Has read"),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ));
+                child: const Text("edit manually added book here"),
+              )
+            : const SizedBox.shrink(),
+            const SizedBox(height: 10),
+            SegmentedButton<_ReadStatus>(
+              selected: selection,
+              onSelectionChanged: (Set<_ReadStatus> newSelection) {
+                selection = newSelection;
+                processSelectionOption(newSelection.single);
+              },
+              segments: const <ButtonSegment<_ReadStatus>> [
+                ButtonSegment(
+                  icon: Icon(Icons.bookmark_remove),
+                  value: _ReadStatus.hasNotRead,
+                  label: Text("Has no read"),
+                ),
+                ButtonSegment(
+                  icon: Icon(Icons.question_mark),
+                  value: _ReadStatus.unknown,
+                  label: Text("default"),
+                ),
+                ButtonSegment(
+                  icon: Icon(Icons.book),
+                  value: _ReadStatus.hasRead,
+                  label: Text("Has read"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

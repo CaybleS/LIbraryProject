@@ -20,11 +20,11 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   void initState() {
     super.initState();
     _subscription = InternetConnection().onStatusChange.listen((status) {
-      if (status == InternetStatus.disconnected) {
-        _showNoInternetSnackbar();
-      }
-      else if (status == InternetStatus.connected) {
+      if (status == InternetStatus.connected) {
         _dismissNoInternetSnackbar();
+      }
+      else if (status == InternetStatus.disconnected) {
+        _showNoInternetSnackbar();
       }
     });
     _listener = AppLifecycleListener(

@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {
   final User user;
   final List<Book> userLibrary;
+  final List<LentBookInfo> booksLentToMe;
   final ValueNotifier<int> refreshNotifier;
 
-  const HomePage(this.user, this.userLibrary, this.refreshNotifier, {super.key});
+  const HomePage(this.user, this.userLibrary, this.booksLentToMe, this.refreshNotifier, {super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -20,13 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _showing = "all";
   List<int> _shownList = [];
-  final List<LentBookInfo> _booksLentToMe = [];
   bool _usingBooksLentToMe = false;
-  // What does this checksum do? Books lent to a user are stored in the database under the receiver, and only store data needed to find the book's path in the database
-  // (not the book itself), so a checksum is computed from this minimum info and if its different from last time we know the books lent to this user changed without
-  // even fetching the books themselves. Without this we would need to update booksLentToMe list everytime even if it remains the same. This is only possible since we
-  // store basically only the book's database path under each user's list of books lent to them.
-  String _lentBooksChecksum = "";
   late final VoidCallback _pageOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
 
   @override
@@ -37,7 +32,6 @@ class _HomePageState extends State<HomePage> {
         _updateList(_showing);
       }
     };
-    _updateList(_showing);
     widget.refreshNotifier.addListener(_pageOpenedListener);
   }
 
@@ -47,37 +41,28 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> _getBooksLentToMe() async {
-    // this takes in books lent to me list by reference and updates it if the user's books lent to them changed
-    _lentBooksChecksum = await getLentToMeUserLibrary(_booksLentToMe, widget.user, _lentBooksChecksum);
-  }
-
   void _filterButtonClicked() {
     //TODO
   }
 
   void _bookClicked(int index) async {
     if (_usingBooksLentToMe) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(_booksLentToMe[index], widget.user)));
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(widget.booksLentToMe[index], widget.user)));
     }
     else {
-      String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(widget.userLibrary[index], widget.user, widget.userLibrary)));
-      if (retVal != null) { // this signals that on this page the user clicked the "remove book" button
-        widget.userLibrary.removeAt(index);
-      }
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(widget.userLibrary[index], widget.user, widget.userLibrary)));
     }
-    await _updateList(_showing);
   }
 
   Future<void> _changeDisplay(String state) async {
-    await _updateList(state);
+    _updateList(state);
 
     setState(() {
       _showing = state;
     });
   }
 
-  Future<void> _updateList(String state) async {
+  void _updateList(String state) {
     _shownList.clear();
     _usingBooksLentToMe = false;
 
@@ -101,15 +86,12 @@ class _HomePageState extends State<HomePage> {
         break;
       case "lentToMe":
         _usingBooksLentToMe = true;
-        await _getBooksLentToMe();
-        _shownList = Iterable<int>.generate(_booksLentToMe.length).toList();
+        _shownList = Iterable<int>.generate(widget.booksLentToMe.length).toList();
         break;
       default:
         break;
     }
-    if (mounted) {
-      setState(() {});
-    }
+    setState(() {});
   }
 
   void _favoriteButtonClicked(int index) {
@@ -119,10 +101,10 @@ class _HomePageState extends State<HomePage> {
 
   Widget _displayShowButtons() {
     List<Color> buttonColor = [
-      const Color.fromRGBO(129, 199, 132, 1),
-      const Color.fromRGBO(129, 199, 132, 1),
-      const Color.fromRGBO(129, 199, 132, 1),
-      const Color.fromRGBO(129, 199, 132, 1),
+      AppColor.skyBlue,
+      AppColor.skyBlue,
+      AppColor.skyBlue,
+      AppColor.skyBlue,
     ];
 
     switch (_showing) {
@@ -183,7 +165,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: displayAppBar(context, widget.user, "home"),
       backgroundColor: Colors.grey[400],
-      body: Container(
+      body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
           children: [
@@ -213,7 +195,7 @@ class _HomePageState extends State<HomePage> {
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
                   // BooksLentToMe stores each book as part of the object so we just create a list of books from it if needed
-                  List<Book> shownLibrary = _usingBooksLentToMe ? _booksLentToMe.map((item) => item.book).toList() : widget.userLibrary;
+                  List<Book> shownLibrary = _usingBooksLentToMe ? widget.booksLentToMe.map((item) => item.book).toList() : widget.userLibrary;
                   Widget coverImage = shownLibrary[_shownList[index]].getCoverImage();
                   String availableTxt;
                   Color availableTxtColor;

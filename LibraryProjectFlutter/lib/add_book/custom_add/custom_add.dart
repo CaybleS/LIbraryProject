@@ -53,7 +53,7 @@ class _CustomAddState extends State<CustomAdd> {
     _resetErrors();
     Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
     for (int i = 0; i < widget.userLibrary.length; i++) {
-      if (areBooksSame(customAddedBook, widget.userLibrary[i])) {
+      if (customAddedBook == widget.userLibrary[i]) {
         _bookAlreadyAddedError = true;
         break;
       }
@@ -65,7 +65,7 @@ class _CustomAddState extends State<CustomAdd> {
     else {
       // ordered this way so that we pop to add book homepage before showing book added dialog
       Navigator.pop(context, "added");
-      addBookToLibrary(customAddedBook, widget.user, widget.userLibrary, context);
+      addBookToLibrary(customAddedBook, widget.user, context);
     }
   }
 
