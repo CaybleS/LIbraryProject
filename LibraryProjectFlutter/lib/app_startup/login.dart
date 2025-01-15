@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/persistent_bottombar.dart';
 import 'auth.dart';
-import 'homepage.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -37,7 +37,7 @@ class _LoginBodyState extends State<LoginBody> {
             {
               this.user = user,
               Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => HomePage(user)))
+                  MaterialPageRoute(builder: (context) => PersistentBottomBar(user))) // the bottombar will load the necessary pages when it exists
             }
         });
   }

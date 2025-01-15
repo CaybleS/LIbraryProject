@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/friends_page.dart';
-import 'homepage.dart';
+import 'friends_page.dart';
 import 'profile.dart';
 import 'settings.dart';
 
@@ -9,8 +8,7 @@ PreferredSizeWidget displayAppBar(
     BuildContext context, User user, String curPage) {
   void goToHome() {
     if (curPage != "home") {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => HomePage(user)));
+      Navigator.popUntil(context, (Route<dynamic> route) => route.isFirst); // as long as we pushReplacement to the homepage initially, this will always take us there
     }
   }
 
