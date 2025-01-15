@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'appbar.dart';
+import '../appbar.dart';
 
 class Profile extends StatelessWidget {
   final User user;
@@ -27,7 +27,7 @@ class Profile extends StatelessWidget {
                                 "assets/profile_pic.jpg",
                                 fit: BoxFit.cover,
                               ))),
-                      Column(children: [
+                      const Column(children: [
                         Text(
                           "Profile Name",
                           style: TextStyle(fontSize: 30),
@@ -74,8 +74,8 @@ class Profile extends StatelessWidget {
                         height: 130,
                         width: 500,
                         child: Container(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
+                          padding: const EdgeInsets.all(10),
+                          child: const Text(
                               "Generic long bio text. I am going to say a few things. This is a profile. A person is going to talk about themselves in a few sentences. Let's get things going.",
                               style: TextStyle(color: Colors.black, fontSize: 18),),
                         )),

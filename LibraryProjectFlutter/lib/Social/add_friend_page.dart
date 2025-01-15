@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'database.dart';
+import '../Firebase/database.dart';
 
 class AddFriendPage extends StatefulWidget {
   final User user;

@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/add_book_page.dart';
-import 'package:library_project/book_page.dart';
-import 'package:library_project/database.dart';
-import 'book.dart';
+import 'package:library_project/Books/add_book_page.dart';
+import 'package:library_project/Books/book_page.dart';
+import 'package:library_project/Firebase/database.dart';
+import 'Books/book.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {
@@ -40,8 +40,7 @@ class _HomePageState extends State<HomePage> {
   void addBookButtonClicked() async {
     await Navigator.push(context,
         MaterialPageRoute(builder: (context) => AddBookPage(widget.user)));
-    await updateList(_showing);
-    setState(() {});
+    updateList(_showing);
   }
 
   Future<void> changeDisplay(String state) async {
@@ -194,127 +193,10 @@ class _HomePageState extends State<HomePage> {
                     child: ListView.builder(
                         itemCount: _shownList.length,
                         itemBuilder: (BuildContext context, int index) {
-                          Widget image;
-                          image = Image.network(
-                            _userLibrary[_shownList[index]].coverUrl.toString(),
-                            fit: BoxFit.fill,
-                          );
-                          String availableTxt;
-                          Color availableTxtColor;
-
-                          if (_userLibrary[_shownList[index]].available) {
-                            availableTxt = "Available";
-                            availableTxtColor = const Color(0xFF43A047);
-                          } else {
-                            availableTxt = "Lent";
-                            availableTxtColor = Colors.red;
-                          }
-
-                          Icon favIcon;
-
-                          if (_userLibrary[_shownList[index]].favorite) {
-                            favIcon = const Icon(Icons.favorite);
-                          } else {
-                            favIcon = const Icon(Icons.favorite_border);
-                          }
-
-                          return InkWell(
-                              onTap: () {bookClicked(_shownList[index]);},
-                              child: Card(
-                                  margin: const EdgeInsets.all(5),
-                                  child: Row(children: [
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    SizedBox(
-                                      height: 100,
-                                      width: 70,
-                                      child: image,
-                                    ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    SizedBox(
-                                        width: 190,
-                                        height: 100,
-                                        child: Align(
-                                            alignment: Alignment.topLeft,
-                                            child: Column(
-                                              children: [
-                                                const SizedBox(
-                                                  height: 10,
-                                                  width: 80,
-                                                ),
-                                                Align(
-                                                    alignment:
-                                                        Alignment.topLeft,
-                                                    child: Text(
-                                                      _userLibrary[_shownList[index]].title,
-                                                      style: const TextStyle(
-                                                          color: Colors.black,
-                                                          fontSize: 20),
-                                                      softWrap: true,
-                                                      maxLines: 2,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    )),
-                                                Align(
-                                                    alignment:
-                                                        Alignment.topLeft,
-                                                    child: Text(
-                                                      _userLibrary[_shownList[index]].author,
-                                                      style: const TextStyle(
-                                                          color: Colors.black,
-                                                          fontSize: 16),
-                                                      softWrap: true,
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    )),
-                                              ],
-                                            ))),
-                                    SizedBox(
-                                      height: 100,
-                                      width: 70,
-                                      child: Align(
-                                          alignment: Alignment.topRight,
-                                          child: Column(
-                                            children: [
-                                              const Align(
-                                                alignment: Alignment.topRight,
-                                                child: Text(
-                                                  "Status:",
-                                                  style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 16),
-                                                  softWrap: true,
-                                                ),
-                                              ),
-                                              Align(
-                                                alignment: Alignment.topRight,
-                                                child: Text(
-                                                  availableTxt,
-                                                  style: TextStyle(
-                                                      color: availableTxtColor,
-                                                      fontSize: 16),
-                                                  softWrap: true,
-                                                ),
-                                              ),
-                                              Align(
-                                                alignment:
-                                                    Alignment.bottomRight,
-                                                child: IconButton(
-                                                  onPressed: () => {
-                                                    favoriteButtonClicked(
-                                                        _shownList[index])
-                                                  },
-                                                  icon: favIcon,
-                                                  splashColor: Colors.white,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ],
-                                          )),
-                                    )
-                                  ])));
+                          return _userLibrary[_shownList[index]].getCard(
+                              favoriteButtonClicked,
+                              bookClicked,
+                              _shownList[index]);
                         }))
               ],
             )));
