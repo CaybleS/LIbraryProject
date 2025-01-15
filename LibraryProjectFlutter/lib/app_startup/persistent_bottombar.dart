@@ -23,12 +23,14 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
   int _prevIndex = 0;
   final List<Book> _userLibrary = [];
   final List<LentBookInfo> _booksLentToMe = [];
+  final List<Friend> _friends = [];
   // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
   // its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
   final ValueNotifier<int> _refreshNotifier = ValueNotifier<int>(-1);
   final List<Widget> _pagesList = List.filled(5, const SizedBox.shrink());
   late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
   late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
+  late StreamSubscription<DatabaseEvent> _friendsSubscription;
 
   @override
   void initState() {
@@ -38,7 +40,8 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     FirebaseDatabase.instance.setPersistenceEnabled(true);
     _userLibrarySubscription = setupUserLibrarySubscription(_userLibrary, widget.user, _ownedBooksUpdated);
     _lentToMeSubscription = setupLentToMeSubscription(_booksLentToMe, widget.user, _lentToMeBooksUpdated);
-    _pagesList[0] = HomePage(widget.user, _userLibrary, _booksLentToMe, _refreshNotifier);
+    _friendsSubscription = setupFriendsSubscription(_friends, widget.user, _friendsUpdated);
+    _pagesList[0] = HomePage(widget.user, _userLibrary, _booksLentToMe, _friends, _refreshNotifier);
     _pagesList[1] = AddBookHomepage(widget.user, _userLibrary, _refreshNotifier);
     _pagesList[2] = FriendsPage(widget.user);
     _pagesList[3] = Profile(widget.user);
@@ -49,6 +52,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
   void dispose() {
     _userLibrarySubscription.cancel();
     _lentToMeSubscription.cancel();
+    _friendsSubscription.cancel();
     super.dispose();
   }
 
@@ -63,6 +67,13 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
 
   void _lentToMeBooksUpdated() {
     // if we are on the pages which care about books lent to the user we refresh it
+    if (_selectedIndex == 0) {
+      _refreshNotifier.value = -1;
+      _refreshNotifier.value = _selectedIndex;
+    }
+  }
+
+  void _friendsUpdated() {
     if (_selectedIndex == 0) {
       _refreshNotifier.value = -1;
       _refreshNotifier.value = _selectedIndex;

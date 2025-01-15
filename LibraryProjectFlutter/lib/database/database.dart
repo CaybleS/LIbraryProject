@@ -75,6 +75,22 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> b
   return lentToMeSubscription;
 }
 
+StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends, User user, Function friendsUpdated) {
+  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
+  StreamSubscription<DatabaseEvent> friendsSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+    friends.clear();
+    if (event.snapshot.value != null) {
+      for (var child in event.snapshot.children) {
+        Friend friend = Friend('${child.key}');
+        friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
+        friends.add(friend);
+      }
+    }
+    friendsUpdated();
+  });
+  return friendsSubscription;
+}
+
 Future<bool> userExists(String id) async {
   DatabaseEvent event = await dbReference.child('users/$id').once();
   return (event.snapshot.value != null);

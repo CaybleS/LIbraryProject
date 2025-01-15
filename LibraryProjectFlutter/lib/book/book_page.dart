@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
+import 'package:library_project/core/friends_page.dart';
 
 enum _ReadStatus {hasNotRead, unknown, hasRead}
 
@@ -21,7 +22,8 @@ class BookPage extends StatefulWidget {
   final Book book;
   final User user;
   final List<Book> userLibrary;
-  const BookPage(this.book, this.user, this.userLibrary, {super.key});
+  final List<Friend> friends;
+  const BookPage(this.book, this.user, this.userLibrary, this.friends, {super.key});
 
   @override
   State<BookPage> createState() => _BookPageState();
@@ -95,7 +97,7 @@ class _BookPageState extends State<BookPage> {
   Widget _lendBookButton() {
     return ElevatedButton(
       onPressed: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user)));
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user, widget.friends)));
         setState(() {});
       },
       style: ElevatedButton.styleFrom(

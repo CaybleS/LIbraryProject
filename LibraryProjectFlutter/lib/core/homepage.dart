@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
+import 'package:library_project/core/friends_page.dart';
 import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 
@@ -10,9 +11,10 @@ class HomePage extends StatefulWidget {
   final User user;
   final List<Book> userLibrary;
   final List<LentBookInfo> booksLentToMe;
+  final List<Friend> friends;
   final ValueNotifier<int> refreshNotifier;
 
-  const HomePage(this.user, this.userLibrary, this.booksLentToMe, this.refreshNotifier, {super.key});
+  const HomePage(this.user, this.userLibrary, this.booksLentToMe, this.friends, this.refreshNotifier, {super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -50,7 +52,7 @@ class _HomePageState extends State<HomePage> {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(widget.booksLentToMe[index], widget.user)));
     }
     else {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(widget.userLibrary[index], widget.user, widget.userLibrary)));
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(widget.userLibrary[index], widget.user, widget.userLibrary, widget.friends)));
     }
   }
 
