@@ -26,7 +26,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
   @override
   void initState() {
     super.initState();
-    setupInitialStuff(_userLibrary, _booksLentToMe, _friends, widget.user);
+    setupDatabaseSubscriptions(_userLibrary, _booksLentToMe, _friends, widget.user);
     _pagesList[homepageIndex] = HomePage(widget.user, _userLibrary, _booksLentToMe, _friends, refreshNotifier);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user, _userLibrary, refreshNotifier);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);
@@ -43,8 +43,14 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
 
   @override
   void dispose() {
-    cancelInitialStuff();
+    // Note that some things are done in strange ways since many of these variables are in appwide_setup and are thus not tied to the
+    // lifecycle of this bottombar, so instead of removing them I basically just reset them here.
+    for (GlobalKey<NavigatorState> key in navigatorKeys) {
+      key.currentState?.dispose();
+    }
+    cancelDatabaseSubscriptions();
     refreshBottombar.removeListener(_refreshBottombarListener);
+    resetBottombarValues();
     super.dispose();
   }
 
@@ -101,7 +107,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
-        onTap: onItemTapped,
+        onTap: bottombarItemTapped,
       ),
     );
   }

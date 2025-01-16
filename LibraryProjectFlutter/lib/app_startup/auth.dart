@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/database/database.dart';
 // import 'package:library_project/database/firebase_options.dart';
 import 'login.dart';
@@ -50,15 +51,16 @@ void logout(context) async {
     for (var data in _auth.currentUser!.providerData) {
       debugPrint(data.providerId);
       if (data.providerId == "google.com") {
+        cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
         await signOutGoogle();
       }
     }
   }
   await _auth.signOut();
 
-  //TODO: I think the bottom bar navigators might be messing with this logout, but not sure
-  Navigator.pushReplacement(
-      context, MaterialPageRoute(builder: (context) => const LoginPage()));
+  // we cant use the 5 bottombar navigators to do this logout, we use the root navigator
+  Navigator.of(context, rootNavigator: true).pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginPage()));
 }
 
 Future<User?> logIn(String email, String password) async {

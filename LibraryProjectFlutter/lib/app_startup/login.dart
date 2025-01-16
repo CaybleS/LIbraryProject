@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/create_account_screen.dart';
 import 'package:library_project/app_startup/persistent_bottombar.dart';
@@ -34,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
     FirebaseAuth auth = FirebaseAuth.instance;
+    FirebaseDatabase.instance.setPersistenceEnabled(true);
 
     if (auth.currentUser != null) {
       user = auth.currentUser;
