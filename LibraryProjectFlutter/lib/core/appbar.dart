@@ -1,36 +1,22 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'friends_page.dart';
-import 'profile.dart';
-import 'settings.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 
-PreferredSizeWidget displayAppBar(
-    BuildContext context, User user, String curPage) {
+PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPage) {
   void goToHome() {
-    if (curPage != "home") {
-      Navigator.popUntil(context, (Route<dynamic> route) => route.isFirst); // as long as we pushReplacement to the homepage initially, this will always take us there
-    }
+    onItemTapped(homepageIndex);
   }
 
   void goToProfile() {
-    if (curPage != "profile") {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => Profile(user)));
-    }
+    onItemTapped(profileIndex);
   }
 
   void goToSettings() {
-    if (curPage != "settings") {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => Settings(user)));
-    }
+    onItemTapped(settingsIndex);
   }
 
   void goToFriends() {
-    if (curPage != "friends") {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => FriendsPage(user)));
-    }
+    onItemTapped(friendsPageIndex);
   }
 
   return AppBar(

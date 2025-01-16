@@ -15,8 +15,7 @@ class ScannerDriver {
   bool _noResponseError = false; // this detects lack of internet connection (or api being down maybe)
   bool _invalidISBNError = false;
   bool _invalidBarcodePhotoError = false;
-  // TODO need to test this error by disallowing photo gallery permissions, idk how to test it on an emulator. Also test with custom_add when its added there
-  bool _noPhotoGalleryAccessError = false;
+  bool _unknownScannerScreenError = false; // no idea what would trigger this, its a mystery to me (unknown)
   Book? _bookFromISBNScan;
   late final User _user;
   late final List<Book> _userLibrary;
@@ -26,7 +25,7 @@ class ScannerDriver {
   Future<String?> runScanner(BuildContext context) async {
     _resetLastScanValues();
     String? scannedISBN = await _openBarcodeScanner(context);
-    if (scannedISBN == "Camera setup failed. Please ensure permissions are setup correctly.") {
+    if (scannedISBN == "Camera access denied. Please enable it in your device settings.") {
       scannedISBN = null;
       _cameraSetupError = true;
     }
@@ -34,15 +33,15 @@ class ScannerDriver {
       scannedISBN = null;
       _invalidBarcodePhotoError = true;
     }
-    if (scannedISBN == "Failed to access photo gallery.") {
+    if (scannedISBN == "An unexpected error occurred. Please try again later.") {
       scannedISBN = null;
-      _noPhotoGalleryAccessError = true;
+      _unknownScannerScreenError = true;
     }
     // All ISBNs are expected to be length 13 (isbn10 barcodes don't exist as far as I know; if old books have a barcode on them its a UPC), so I just check for that length
     if (scannedISBN != null && (scannedISBN.length != 13 || !_isValidCheckDigit(scannedISBN))) {
       _invalidISBNError = true;
     }
-    if (_cameraSetupError || _invalidISBNError || _invalidBarcodePhotoError || _noPhotoGalleryAccessError) {
+    if (_cameraSetupError || _invalidISBNError || _invalidBarcodePhotoError || _unknownScannerScreenError) {
       String errorMessage = _getScanFailMessage();
       if (context.mounted) {
         SharedWidgets.displayErrorDialog(context, errorMessage);
@@ -110,7 +109,7 @@ class ScannerDriver {
     _noResponseError = false;
     _invalidISBNError = false;
     _invalidBarcodePhotoError = false;
-    _noPhotoGalleryAccessError = false;
+    _unknownScannerScreenError = false;
   }
 
   Future<String?> _openBarcodeScanner(BuildContext context) async {
@@ -279,6 +278,7 @@ class ScannerDriver {
         _noResponseError = true;
       }
       else {
+        // this gets executed if there are no [items] in the response body AKA no results. It can happen sometimes even with correct isbn.
         await _isbnSearchWithOpenLibrary(isbn);
       }
     }
@@ -286,7 +286,7 @@ class ScannerDriver {
 
   String _getScanFailMessage() {
     if (_cameraSetupError) {
-      return "Camera setup failed. Please ensure that camera access is enabled in your device settings.";
+      return "Camera access denied. Please enable it in your device settings.";
     }
     if (_noBooksFoundError) {
       return "The scanner couldn't identify the book. Likely due to poor lighting, an unclear camera angle, or a damaged barcode.";
@@ -300,8 +300,8 @@ class ScannerDriver {
     if (_invalidBarcodePhotoError) {
       return "There was no barcode found on this image. It may be too small for the scanner to detect.";
     }
-    if (_noPhotoGalleryAccessError) {
-      return "Failed to access photo gallery. Please ensure that photo access is enabled in your device settings.";
+    if (_unknownScannerScreenError) {
+      return "An unexpected error occurred. Please try again later.";
     }
     if (_otherSearchError) { // IMPORTANT: in general otherSearchError should be the last explicit error (the lowest priority scan-fail to show to the user)
       return "An unexpected error occurred while scanning the barcode. Please try again later.";

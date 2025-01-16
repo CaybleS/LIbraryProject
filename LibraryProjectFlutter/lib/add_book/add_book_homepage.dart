@@ -159,7 +159,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
                   "Add Books",
                   style: TextStyle(fontSize: 20, color: Colors.black),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 SharedWidgets.displayTextField("Search titles, authors, or keywords", _searchQueryController, _noInput, "Please enter some text"),
                 const SizedBox(height: 8),
                 Row(

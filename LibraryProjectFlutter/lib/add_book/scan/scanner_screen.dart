@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'; // using over mobile_scanner cuz its better! better user experience with this one! 3.5MB more tho
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/colors.dart';
@@ -50,11 +50,21 @@ class _ScannerScreenState extends State<ScannerScreen> {
     try {
       await _cameraController.initialize();
     }
-    catch(e) {
-      if (mounted && !_hasPopped) {
+    on CameraException catch (e) {
+      if (e.code == "CameraAccessDenied" && mounted && !_hasPopped) {
         _hasPopped = true;
         // in this case I just return the error msg instead of an ISBN, and the scanner driver checks if the ISBN is this error message and prints an error if so
-        Navigator.pop(context, "Camera setup failed. Please ensure permissions are setup correctly.");
+        Navigator.pop(context, "Camera access denied. Please enable it in your device settings.");
+      }
+      else if (mounted && !_hasPopped) {
+        _hasPopped = true;
+        Navigator.pop(context, "An unexpected error occurred. Please try again later.");
+      }
+    }
+    catch (e) {
+      if (mounted && !_hasPopped) {
+        _hasPopped = true;
+        Navigator.pop(context, "An unexpected error occurred. Please try again later.");
       }
     }
     _cameraIsInitialized = true;
@@ -113,9 +123,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
     late XFile? file;
     try {
       file = await ImagePicker().pickImage(source: ImageSource.gallery);
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context, "Failed to access photo gallery."); // signaling to scanner_driver that photo gallery could not be accessed
+    } on PlatformException catch (e) {
+      if (e.code != "already_active" && mounted && !_hasPopped) {
+        _hasPopped = true;
+        Navigator.pop(context, "An unexpected error occurred. Please try again later.");
+      }
+    }
+    catch (e) {
+      if (mounted && !_hasPopped) {
+        _hasPopped = true;
+        Navigator.pop(context, "An unexpected error occurred. Please try again later.");
       }
     }
     if (!mounted || file == null) {

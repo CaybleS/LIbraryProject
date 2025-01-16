@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
@@ -83,10 +84,14 @@ class _CustomAddState extends State<CustomAdd> {
   Future<void> _addCoverFromFile(BuildContext context) async {
     try {
       _coverImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-    } catch (e) {
-      // do some signaling that photo gallery was inaccessible
+    } on PlatformException catch (e) {
+      if (e.code != "already_active" && context.mounted) {
+        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
+      }
+    }
+    catch (e) {
       if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "Failed to access photo gallery. Please ensure that photo access is enabled in your device settings.");
+        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
       }
     }
   }
@@ -94,10 +99,20 @@ class _CustomAddState extends State<CustomAdd> {
   Future<void> _addCoverFromCamera(BuildContext context) async {
     try {
       _coverImage = await ImagePicker().pickImage(source: ImageSource.camera);
-    } catch (e) {
-      // do some signaling that camera was inaccessible
+    } on PlatformException catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      if (e.code == "camera_access_denied") {
+        SharedWidgets.displayErrorDialog(context, "Camera access denied. Please enable it in your device settings.");
+      }
+      else if (e.code != "already_active") {
+        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
+      }
+    }
+    catch (e) {
       if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "Camera setup failed. Please ensure that camera access is enabled in your device settings.");
+        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
       }
     }
   }
@@ -110,21 +125,20 @@ class _CustomAddState extends State<CustomAdd> {
       ),
       backgroundColor: Colors.grey[400],
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(25, 8, 25, 8),
+        padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
         child: Column(
           children: [
             const Text(
               "Add Custom Book Here",
               style: TextStyle(fontSize: 20, color: Colors.black),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Flexible(
               child: Row(
                 children: [
                   const SizedBox(
                     width: 60,
-                    child: Text("Title:",
-                    style: TextStyle(fontSize: 16, color: Colors.black)),
+                    child: Text("Title:", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
                   Flexible(child: SharedWidgets.displayTextField("Enter title here", _inputTitleController, _noTitleInput, "Please enter a title")),
                 ],
@@ -142,10 +156,9 @@ class _CustomAddState extends State<CustomAdd> {
                 ],
               )
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Flexible(
               child: Row(
-                mainAxisSize: MainAxisSize.max,
                 children: [
                   const SizedBox(
                     width: 60,
@@ -165,10 +178,11 @@ class _CustomAddState extends State<CustomAdd> {
                           ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 13),
                   Flexible(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         ElevatedButton(
                           onPressed: () async {
@@ -234,8 +248,6 @@ class _CustomAddState extends State<CustomAdd> {
                         if (author.isEmpty) {
                           _noAuthorInput = true;
                         }
-                        // ensures that title and author are both not null, since null titles or authors for manually added books can cause errors in custom added book edit file
-                        // not to mention for custom added books there just should be title and author both given
                         if (_noTitleInput || _noAuthorInput) {
                           setState(() {});
                           return;
