@@ -6,19 +6,19 @@ import '../Social/message_home.dart';
 
 PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPage) {
   void goToHome() {
-    onItemTapped(homepageIndex);
+    bottombarItemTapped(homepageIndex);
   }
 
   void goToProfile() {
-    onItemTapped(profileIndex);
+    bottombarItemTapped(profileIndex);
   }
 
   void goToSettings() {
-    onItemTapped(settingsIndex);
+    bottombarItemTapped(settingsIndex);
   }
 
   void goToFriends() {
-    onItemTapped(friendsPageIndex);
+    bottombarItemTapped(friendsPageIndex);
   }
 
   void goToMessages() {

@@ -17,22 +17,29 @@ late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
 // its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
-final ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
-final ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
+ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
+ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 int selectedIndex = 0;
-int _prevIndex = 0;
+int prevIndex = 0;
 
-void setupInitialStuff(List<Book> userLibrary, List<LentBookInfo> booksLentToMe, List<Friend> friends, User user) {
-  FirebaseDatabase.instance.setPersistenceEnabled(true);
+void setupDatabaseSubscriptions(List<Book> userLibrary, List<LentBookInfo> booksLentToMe, List<Friend> friends, User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
 }
 
-void cancelInitialStuff() {
+void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
+}
+
+// everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
+void resetBottombarValues() {
+  refreshBottombar = ValueNotifier<bool>(false);
+  refreshNotifier = ValueNotifier<int>(-1);
+  selectedIndex = 0;
+  prevIndex = 0;
 }
 
 void _ownedBooksUpdated() {
@@ -69,17 +76,17 @@ final List<GlobalKey<NavigatorState>> navigatorKeys = [
 ];
 
 // both the bottombar and the appbar call this function
-void onItemTapped(int index) {
+void bottombarItemTapped(int index) {
   if (index == selectedIndex) {
     // If the user taps the current tab, pop to the root route of that tab
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
   } else {
     // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
     // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
-    navigatorKeys[_prevIndex].currentState?.popUntil((route) => route.isFirst);
+    navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
   }
   refreshNotifier.value = index;
-  _prevIndex = index;
+  prevIndex = index;
 }
