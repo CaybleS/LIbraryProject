@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Firebase/database.dart';
+import '../database/database.dart';
 import 'add_friend_page.dart';
-import '../appbar.dart';
+import '../core/appbar.dart';
 
 class FriendsPage extends StatefulWidget {
   final User user;
