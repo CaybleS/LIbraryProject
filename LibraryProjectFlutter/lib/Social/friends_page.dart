@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../database/database.dart';
 import 'add_friend_page.dart';
-import 'appbar.dart';
+import '../core/appbar.dart';
 
 class FriendsPage extends StatefulWidget {
   final User user;
@@ -111,7 +110,7 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: displayAppBar(context, widget.user, "settings"),
+      appBar: displayAppBar(context, widget.user, "friends"),
       backgroundColor: Colors.grey[400],
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
@@ -274,6 +273,8 @@ class FriendList extends StatelessWidget {
 
 class Friend {
   String friendId;
+  String? name;
+  String? email;
   late DatabaseReference _id;
 
   void setId(DatabaseReference id) {

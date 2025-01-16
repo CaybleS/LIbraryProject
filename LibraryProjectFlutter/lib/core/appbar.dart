@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'friends_page.dart';
+import '../Social/friends_page.dart';
 import 'profile.dart';
 import 'settings.dart';
+import '../app_startup/auth.dart';
+import '../Social/message_home.dart';
 
 PreferredSizeWidget displayAppBar(
     BuildContext context, User user, String curPage) {
@@ -33,6 +35,13 @@ PreferredSizeWidget displayAppBar(
     }
   }
 
+  void goToMessages() {
+    if (curPage != "message") {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => MessageHome(user)));
+    }
+  }
+
   return AppBar(
     backgroundColor: Colors.blue,
     leading: MenuAnchor(
@@ -43,7 +52,9 @@ PreferredSizeWidget displayAppBar(
             onPressed: () => {goToProfile()}, child: const Icon(Icons.person)),
         MenuItemButton(
             onPressed: () => {goToSettings()},
-            child: const Icon(Icons.settings))
+            child: const Icon(Icons.settings)),
+        MenuItemButton(
+            onPressed: () => {logout(context)}, child: const Icon(Icons.logout))
       ],
       builder: (context, controller, child) {
         return IconButton(
@@ -63,7 +74,18 @@ PreferredSizeWidget displayAppBar(
     ),
     actions: [
       IconButton(
-          onPressed: () {goToFriends();}, icon: const Icon(Icons.person_add_alt_1, size: 30)),
+          onPressed: () {
+            goToMessages();
+          },
+          icon: const Icon(Icons.message_rounded, size: 30)),
+      const SizedBox(
+        width: 10,
+      ),
+      IconButton(
+          onPressed: () {
+            goToFriends();
+          },
+          icon: const Icon(Icons.person_add_alt_1, size: 30)),
       const SizedBox(
         width: 10,
       )

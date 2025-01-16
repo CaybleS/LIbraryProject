@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/book/book.dart';
-import 'package:library_project/core/friends_page.dart';
+import 'package:library_project/Social/chat.dart';
+import '../Social/friends_page.dart';
 import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
@@ -149,4 +150,62 @@ Future<List<Friend>> getFriends(User user) async {
   }
 
   return friends;
+}
+
+Future<List<ChatShort>> getChatList(User user) async {
+  DatabaseEvent event = await dbReference
+      .child('chatsByUser/${user.uid}/')
+      .once();
+  List<ChatShort> chats = [];
+
+  if (event.snapshot.value != null) {
+    for (var child in event.snapshot.children) {
+      ChatShort chat = await createChatDisplay(child.value);
+      chat.roomID = child.key!;
+      chats.add(chat);
+    }
+  }
+
+  return chats;
+}
+
+Future<Map<String, dynamic>> getChatInfo(String roomID) async {
+  DatabaseEvent event = await dbReference.child('chatInfo/$roomID').once();
+  Map<String, dynamic> map = {};
+
+  if (event.snapshot.value != null) {
+    Map<String, dynamic> tempMap = Map<String, dynamic>.from(event.snapshot.value as Map);
+
+    map['type'] = tempMap['type'];
+
+    Map<String, String> memberMap = {};
+    Map<String, String> memberIDs = Map<String, String>.from(tempMap['members'] as Map);
+
+    for (var child in memberIDs.values) {
+      memberMap[child] = await getUserDisplayName(child);
+    }
+
+    if (map['type'] == "group") {
+      map['name'] = tempMap['name'];
+    }
+
+    map['members'] = memberMap;
+  }
+
+  return map;
+}
+
+Future<String> getUserDisplayName(String id) async {
+  String name = "";
+  DatabaseEvent userInfo = await dbReference.child('users/$id').once();
+  if (userInfo.snapshot.value != null) {
+    Map data = userInfo.snapshot.value as Map;
+    if (data.containsKey('name')) {
+      name = data['name'];
+    } else {
+      name = id;
+    }
+  }
+
+  return name;
 }
