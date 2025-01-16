@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book.dart';
-import 'package:library_project/core/friends_page.dart';
+import '../Social/friends_page.dart';
 import 'package:library_project/core/homepage.dart';
 import 'package:library_project/core/profile.dart';
 import 'package:library_project/core/settings.dart';

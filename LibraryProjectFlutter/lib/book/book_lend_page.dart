@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
-import 'package:library_project/core/friends_page.dart';
+import '../Social/friends_page.dart';
 import 'package:library_project/misc_util/misc_helper_functions.dart';
 
 class BookLendPage extends StatefulWidget {

@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
-import 'package:library_project/core/friends_page.dart';
+import '../Social/friends_page.dart';
 
 enum _ReadStatus {hasNotRead, unknown, hasRead}
 
