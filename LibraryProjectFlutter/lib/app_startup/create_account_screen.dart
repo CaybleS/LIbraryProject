@@ -1,8 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Firebase/auth.dart';
-
-import '../homepage.dart';
+import 'package:library_project/app_startup/persistent_bottombar.dart';
+import 'auth.dart';
 
 class CreateAccount extends StatefulWidget {
   const CreateAccount({super.key});
@@ -52,7 +51,7 @@ class _CreateAccountState extends State<CreateAccount> {
         setState(() {});
       } else {
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomePage(user)));
+            context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
       }
     }
   }

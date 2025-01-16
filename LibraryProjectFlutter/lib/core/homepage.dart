@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
-import 'package:library_project/core/friends_page.dart';
+import '../Social/friends_page.dart';
 import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 

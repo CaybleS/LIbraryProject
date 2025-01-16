@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Firebase/database.dart';
+import 'package:library_project/database/database.dart';
 import 'package:library_project/Social/friends_page.dart';
 import 'chat_screen.dart';
 

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Firebase/database.dart';
+import 'package:library_project/database/database.dart';
 import 'package:library_project/Social/chat.dart';
 import 'package:library_project/Social/chat_screen.dart';
 import 'package:library_project/Social/create_chat.dart';
-import '../appbar.dart';
+import '../core/appbar.dart';
 
 class MessageHome extends StatefulWidget {
   final User user;

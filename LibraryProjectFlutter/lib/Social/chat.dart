@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../Firebase/database.dart';
+import '../database/database.dart';
 
 class ChatShort {
   // late DatabaseReference _id;

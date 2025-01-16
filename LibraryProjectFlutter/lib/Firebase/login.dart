@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Firebase/create_account_screen.dart';
+import 'package:library_project/app_startup/create_account_screen.dart';
 import 'auth.dart';
 import '../homepage.dart';
 import 'firebase_options.dart';
