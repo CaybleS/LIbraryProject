@@ -32,27 +32,25 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void initial() async {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     FirebaseAuth auth = FirebaseAuth.instance;
     FirebaseDatabase.instance.setPersistenceEnabled(true);
 
     if (auth.currentUser != null) {
       user = auth.currentUser;
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
     }
   }
 
   void click() {
     signInWithGoogle().then((user) => {
-          if (user != null)
-            {
-              this.user = user,
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => PersistentBottomBar(user))) // the bottombar will load the necessary pages when it exists
-            }
-        });
+      if (user != null)
+        {
+          this.user = user,
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)))
+          // the bottombar will load the necessary pages when it exists
+        }
+    });
   }
 
   Widget googleLoginButton() {
@@ -67,8 +65,7 @@ class _LoginPageState extends State<LoginPage> {
                 Image(image: AssetImage('assets/google_logo.png'), height: 35),
                 Padding(
                     padding: EdgeInsets.only(left: 10),
-                    child: Text('Sign in with Google',
-                        style: TextStyle(color: Colors.grey, fontSize: 25)))
+                    child: Text('Sign in with Google', style: TextStyle(color: Colors.grey, fontSize: 25)))
               ],
             )));
   }
@@ -97,8 +94,7 @@ class _LoginPageState extends State<LoginPage> {
         loginErr = "Incorrect Email or Password";
         setState(() {});
       } else {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
       }
     }
   }
@@ -107,12 +103,23 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-        // appBar: AppBar(
-        //   backgroundColor: Colors.blue,
-        // ),
+        appBar: AppBar(
+          backgroundColor: Colors.blue,
+          title: const Text(
+            'ShelfSwap',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 28,
+            ),
+          ),
+          centerTitle: true,
+          // actions: [
+          //  TODO: add app logo
+          // ],
+        ),
         backgroundColor: Colors.grey[400],
-        body: Align(
-          alignment: Alignment.center,
+        body: SingleChildScrollView(
           child: Column(
             children: [
               SizedBox(height: size.height * 0.05),
@@ -153,15 +160,13 @@ class _LoginPageState extends State<LoginPage> {
                       hintStyle: const TextStyle(color: Colors.grey),
                       fillColor: Colors.white,
                       filled: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                 ),
               ),
               SizedBox(
                 height: size.height * 0.01,
               ),
-              Text(emailErr,
-                  style: const TextStyle(fontSize: 20, color: Colors.red)),
+              Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
               SizedBox(
                 height: size.height * 0.01,
               ),
@@ -175,43 +180,32 @@ class _LoginPageState extends State<LoginPage> {
                       hintStyle: const TextStyle(color: Colors.grey),
                       fillColor: Colors.white,
                       filled: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                 ),
               ),
               SizedBox(
                 height: size.height * 0.01,
               ),
-              Text(pswdErr,
-                  style: const TextStyle(fontSize: 20, color: Colors.red)),
+              Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
               SizedBox(
                 height: size.height * 0.015,
               ),
-              Text(loginErr,
-                  style: const TextStyle(fontSize: 20, color: Colors.red)),
+              Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
               SizedBox(
                 height: size.height * 0.05,
               ),
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromRGBO(129, 199, 132, 1)),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
                     onPressed: () => {loginBtnClicked()},
                     child: const Text(
                       "Log In",
                       style: TextStyle(color: Colors.black, fontSize: 22),
                     )),
                 ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromRGBO(129, 199, 132, 1)),
-                    onPressed: () => {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const CreateAccount()))
-                        },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                    onPressed: () =>
+                    {Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()))},
                     child: const Text(
                       "Create Account",
                       style: TextStyle(color: Colors.black, fontSize: 22),
@@ -221,6 +215,9 @@ class _LoginPageState extends State<LoginPage> {
                 height: size.height * 0.025,
               ),
               googleLoginButton(),
+              SizedBox(
+                height: size.height * 0.05,
+              ),
             ],
           ),
         ));

@@ -12,6 +12,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'ShelfSwap',
       // Instead of going to LoginPage the internet connectivity checker is first inserted above the navigator so that it can show an error anywhere
       // if no internet connection is detected regardless of navigation. LoginPage is still the next page but takes as input LoginPage and runs it when its setup.
       builder: (context, child) {

@@ -15,8 +15,8 @@ class ChatScreen extends StatefulWidget {
   final User user;
   List<Friend> inChat;
   String name;
-  ChatScreen(this.user,
-      {this.roomID = "", this.inChat = const [], this.name = "", super.key});
+
+  ChatScreen(this.user, {this.roomID = "", this.inChat = const [], this.name = "", super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -76,15 +76,13 @@ class _ChatScreenState extends State<ChatScreen> {
     await Future.delayed(const Duration(milliseconds: 100));
     scrollController.jumpTo(scrollController.position.maxScrollExtent);
     scrollController.addListener(() {
-      if (scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
+      if (scrollController.position.userScrollDirection == ScrollDirection.reverse) {
         if (arrowVisible == true) {
           setState(() {
             arrowVisible = false;
           });
         }
-      } else if (scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
+      } else if (scrollController.position.userScrollDirection == ScrollDirection.forward) {
         if (arrowVisible == false) {
           setState(() {
             arrowVisible = true;
@@ -127,13 +125,11 @@ class _ChatScreenState extends State<ChatScreen> {
           'lastTime': msgMap['sentTime']
         };
 
-        DatabaseReference newMsgRef =
-            dbRef.child('messages/${widget.roomID}/').push();
+        DatabaseReference newMsgRef = dbRef.child('messages/${widget.roomID}/').push();
         newMsgRef.set(msgMap);
 
         for (var n in names.keys) {
-          DatabaseReference tempRef =
-              dbRef.child('chatsByUser/$n/${widget.roomID}');
+          DatabaseReference tempRef = dbRef.child('chatsByUser/$n/${widget.roomID}');
           tempRef.update(shortMap);
         }
 
@@ -170,20 +166,17 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.roomID = chatListRef.key!;
         dbRef.child('messages/${widget.roomID}/').push().set(msgMap);
 
-        DatabaseReference tempRef =
-            dbRef.child('chatsByUser/${widget.user.uid}/${widget.roomID}');
+        DatabaseReference tempRef = dbRef.child('chatsByUser/${widget.user.uid}/${widget.roomID}');
         tempRef.set(shortMap);
         for (Friend f in widget.inChat) {
           if (type == "individual") {
             shortMap['name'] = widget.user.uid;
           }
-          DatabaseReference tempRef =
-              dbRef.child('chatsByUser/${f.friendId}/${widget.roomID}');
+          DatabaseReference tempRef = dbRef.child('chatsByUser/${f.friendId}/${widget.roomID}');
           tempRef.set(shortMap);
         }
 
-        DatabaseReference chatInfoRef =
-            dbRef.child('chatInfo/${widget.roomID}');
+        DatabaseReference chatInfoRef = dbRef.child('chatInfo/${widget.roomID}');
         chatInfoRef.set(chatInfoMap);
 
         messageController.clear();
@@ -208,8 +201,7 @@ class _ChatScreenState extends State<ChatScreen> {
       String filename = const Uuid().v1();
       int status = 1;
 
-      final Reference imageRef =
-          FirebaseStorage.instance.ref().child('chatImages/$filename');
+      final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
       debugPrint("reference created");
 
       var uploadTask = await imageRef.putFile(image).catchError((error) {
@@ -232,13 +224,11 @@ class _ChatScreenState extends State<ChatScreen> {
             'lastTime': msgMap['sentTime']
           };
 
-          DatabaseReference newMsgRef =
-              dbRef.child('messages/${widget.roomID}/').push();
+          DatabaseReference newMsgRef = dbRef.child('messages/${widget.roomID}/').push();
           newMsgRef.set(msgMap);
 
           for (var n in names.keys) {
-            DatabaseReference tempRef =
-                dbRef.child('chatsByUser/$n/${widget.roomID}');
+            DatabaseReference tempRef = dbRef.child('chatsByUser/$n/${widget.roomID}');
             tempRef.update(shortMap);
           }
         } else {
@@ -272,20 +262,17 @@ class _ChatScreenState extends State<ChatScreen> {
           widget.roomID = chatListRef.key!;
           dbRef.child('messages/${widget.roomID}/').push().set(msgMap);
 
-          DatabaseReference tempRef =
-              dbRef.child('chatsByUser/${widget.user.uid}/${widget.roomID}');
+          DatabaseReference tempRef = dbRef.child('chatsByUser/${widget.user.uid}/${widget.roomID}');
           tempRef.set(shortMap);
           for (Friend f in widget.inChat) {
             if (type == "individual") {
               shortMap['name'] = widget.user.uid;
             }
-            DatabaseReference tempRef =
-                dbRef.child('chatsByUser/${f.friendId}/${widget.roomID}');
+            DatabaseReference tempRef = dbRef.child('chatsByUser/${f.friendId}/${widget.roomID}');
             tempRef.set(shortMap);
           }
 
-          DatabaseReference chatInfoRef =
-              dbRef.child('chatInfo/${widget.roomID}');
+          DatabaseReference chatInfoRef = dbRef.child('chatInfo/${widget.roomID}');
           chatInfoRef.set(chatInfoMap);
 
           roomExists = true;
@@ -306,26 +293,22 @@ class _ChatScreenState extends State<ChatScreen> {
       returnWidget = StreamBuilder(
           stream: dbRef
               .child('messages/${widget.roomID}')
-              //.orderByChild('sentTime')
+          //.orderByChild('sentTime')
               .onValue,
           builder: (context, snapshot) {
-            if (snapshot.hasData &&
-                !snapshot.hasError &&
-                snapshot.data!.snapshot.value != null) {
-              Map<dynamic, dynamic> messages =
-                  snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+            if (snapshot.hasData && !snapshot.hasError && snapshot.data!.snapshot.value != null) {
+              Map<dynamic, dynamic> messages = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
               List<dynamic> chatList = messages.values.toList();
               chatList.sort((a, b) => a['sentTime'].compareTo(b['sentTime']));
 
               return ListView.builder(
                   controller: scrollController,
+                  padding: const EdgeInsets.all(10),
                   itemCount: chatList.length,
                   itemBuilder: (BuildContext context, int index) {
-                    bool isSender =
-                        widget.user.uid == chatList[index]['sender'];
+                    bool isSender = widget.user.uid == chatList[index]['sender'];
                     List<Widget> messageBlock = [];
-                    DateTime time =
-                        DateTime.parse(chatList[index]['sentTime']).toLocal();
+                    DateTime time = DateTime.parse(chatList[index]['sentTime']).toLocal();
 
                     if (!isSender && type == "group") {
                       messageBlock.add(Text(names[chatList[index]['sender']]!));
@@ -339,8 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         constraints: BoxConstraints(maxWidth: size.width * 0.9),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: isSender ? Colors.blue[100] : Colors.white),
+                            borderRadius: BorderRadius.circular(10), color: isSender ? Colors.blue[100] : Colors.white),
                         child: Text(
                           chatList[index]['message'],
                           style: const TextStyle(fontSize: 20),
@@ -348,9 +330,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ));
                     } else if (chatList[index]['type'] == 'image') {
                       messageBlock.add(ConstrainedBox(
-                        constraints: BoxConstraints(
-                            maxWidth: size.width * 0.5,
-                            maxHeight: size.height * 0.5),
+                        constraints: BoxConstraints(maxWidth: size.width * 0.5, maxHeight: size.height * 0.5),
                         child: Image.network(chatList[index]['message']),
                       ));
                     }
@@ -362,12 +342,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     bool newDay = (index == 0);
                     if (!newDay) {
-                      DateTime prevTime =
-                          DateTime.parse(chatList[index - 1]['sentTime'])
-                              .toLocal();
-                      newDay = !(time.year == prevTime.year &&
-                          time.month == prevTime.month &&
-                          time.day == prevTime.day);
+                      DateTime prevTime = DateTime.parse(chatList[index - 1]['sentTime']).toLocal();
+                      newDay =
+                      !(time.year == prevTime.year && time.month == prevTime.month && time.day == prevTime.day);
                     }
 
                     List<Widget> withDate = [];
@@ -375,9 +352,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       withDate.add(Text(DateFormat.yMEd().format(time)));
                     }
                     withDate.add(Container(
-                        alignment: isSender
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
+                        alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: messageBlock,
@@ -413,40 +388,35 @@ class _ChatScreenState extends State<ChatScreen> {
                 )),
           ),
         ),
-        body: Align(
-          alignment: Alignment.center,
-          child: Column(
-            children: [
-              SizedBox(
-                  height: size.height * 0.85,
-                  child: Container(
-                      padding: const EdgeInsets.all(10), child: returnWidget)),
-              SizedBox(
-                  width: size.width * 0.95,
-                  child: TextField(
-                    controller: messageController,
-                    decoration: InputDecoration(
-                        hintText: 'Message',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        prefixIcon: IconButton(
-                            onPressed: () {
-                              uploadImage();
-                            },
-                            icon: const Icon(Icons.camera_alt)),
-                        prefixIconColor: Colors.blue,
-                        suffixIcon: IconButton(
-                            onPressed: () {
-                              sendMessage();
-                            },
-                            icon: const Icon(Icons.send_rounded)),
-                        suffixIconColor: Colors.blue),
-                  ))
-            ],
-          ),
+        body: Column(
+          children: [
+            Expanded(
+              child: returnWidget,
+            ),
+            Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2 , vertical: 4),
+                child: TextField(
+                  controller: messageController,
+                  decoration: InputDecoration(
+                      hintText: 'Message',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: IconButton(
+                          onPressed: () {
+                            uploadImage();
+                          },
+                          icon: const Icon(Icons.camera_alt)),
+                      prefixIconColor: Colors.blue,
+                      suffixIcon: IconButton(
+                          onPressed: () {
+                            sendMessage();
+                          },
+                          icon: const Icon(Icons.send_rounded)),
+                      suffixIconColor: Colors.blue),
+                ))
+          ],
         ));
   }
 }
