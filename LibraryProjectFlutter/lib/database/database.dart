@@ -64,6 +64,8 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> b
     for (dynamic record in listOfRecords) {
       String lenderId = record['lenderId'];
       String bookDbKey = record['bookDbKey'];
+      // this is unnecessary database reads btw since odds are booksLentToMe already stores most of this information, the fix is complicated and
+      // so for now I'll just stick to what works
       DatabaseEvent getBookEvent = await dbReference.child('books/$lenderId/$bookDbKey').once();
       if (getBookEvent.snapshot.value != null) {
         Book book = createBook(getBookEvent.snapshot.value);
@@ -77,8 +79,8 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> b
 }
 
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends, User user, Function friendsUpdated) {
-  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
-  StreamSubscription<DatabaseEvent> friendsSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+  DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
+  StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) {
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {

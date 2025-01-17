@@ -20,7 +20,8 @@ late StreamSubscription<DatabaseEvent> _friendsSubscription;
 ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
 ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 int selectedIndex = 0;
-int prevIndex = 0;
+int _prevIndex = 0;
+bool showBottombar = true;
 
 void setupDatabaseSubscriptions(List<Book> userLibrary, List<LentBookInfo> booksLentToMe, List<Friend> friends, User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
@@ -39,7 +40,7 @@ void resetBottombarValues() {
   refreshBottombar = ValueNotifier<bool>(false);
   refreshNotifier = ValueNotifier<int>(-1);
   selectedIndex = 0;
-  prevIndex = 0;
+  _prevIndex = 0;
 }
 
 void _ownedBooksUpdated() {
@@ -83,10 +84,10 @@ void bottombarItemTapped(int index) {
   } else {
     // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
     // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
-    navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
+    navigatorKeys[_prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
   }
   refreshNotifier.value = index;
-  prevIndex = index;
+  _prevIndex = index;
 }
