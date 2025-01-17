@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'dart:convert';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
@@ -114,7 +115,11 @@ class ScannerDriver {
 
   Future<String?> _openBarcodeScanner(BuildContext context) async {
     // isbn can be null if user goes back from camera viewfinder without scanning
+    showBottombar = false;
+    refreshBottombar.value = true;
     final String? isbn = await Navigator.push(context, MaterialPageRoute(builder: (context) => const ScannerScreen()));
+    showBottombar = true;
+    refreshBottombar.value = true;
     return isbn;
   }
 
