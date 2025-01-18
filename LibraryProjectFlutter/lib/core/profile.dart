@@ -2,14 +2,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'appbar.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   final User user;
+
   const Profile(this.user, {super.key});
+
+  @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: displayAppBar(context, user, "profile"),
+        appBar: displayAppBar(context, widget.user, "profile"),
         backgroundColor: Colors.grey[400],
         body: Card(
             margin: const EdgeInsets.all(10),
@@ -21,27 +34,35 @@ class Profile extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ClipOval(
-                          child: SizedBox(
-                              width: 100,
-                              child: Image.asset(
-                                "assets/profile_pic.jpg",
-                                fit: BoxFit.cover,
-                              ))),
-                      const Column(children: [
-                        Text(
-                          "Profile Name",
-                          style: TextStyle(fontSize: 30),
+                        child: SizedBox(
+                          width: 100,
+                          child: _auth.currentUser!.photoURL != null
+                              ? Image.network(
+                                  _auth.currentUser!.photoURL!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.asset(
+                                  "assets/profile_pic.jpg",
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                        Text(
-                          "Friend Id",
-                          style: TextStyle(fontSize: 20),
-                        )
-                      ])
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _auth.currentUser!.displayName!,
+                            style: const TextStyle(fontSize: 30),
+                          ),
+                          Text(
+                            _auth.currentUser!.email!,
+                            style: const TextStyle(fontSize: 20),
+                          )
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(
-                    height: 10,
-                  ),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -76,8 +97,9 @@ class Profile extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           child: const Text(
-                              "Generic long bio text. I am going to say a few things. This is a profile. A person is going to talk about themselves in a few sentences. Let's get things going.",
-                              style: TextStyle(color: Colors.black, fontSize: 18),),
+                            "Generic long bio text. I am going to say a few things. This is a profile. A person is going to talk about themselves in a few sentences. Let's get things going.",
+                            style: TextStyle(color: Colors.black, fontSize: 18),
+                          ),
                         )),
                   )
                 ],

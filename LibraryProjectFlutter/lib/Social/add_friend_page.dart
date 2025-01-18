@@ -17,8 +17,11 @@ class _AddFriendPageState extends State<AddFriendPage> {
   void onSubmit(BuildContext context) async {
     String id = controller.text;
     if (await userExists(id)) {
-      sendFriendRequest(widget.user, id);
-      Navigator.pop(context);
+      print('--------------------------------------------------');
+      print('--------------------------------------------------');
+      // TODO: get friends id
+      // sendFriendRequest(widget.user, id);
+      // Navigator.pop(context);
     } else {
       setState(() {
         _msg = "User not found";
@@ -38,7 +41,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
             child: Column(
               children: [
                 const Text(
-                  "Friend's ID:",
+                  "Friend's Email:",
                   style: TextStyle(fontSize: 20),
                 ),
                 const SizedBox(

@@ -1,6 +1,83 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/database.dart';
+
+class Chat {
+  String id;
+  String title;
+  String lastMessage;
+  DateTime lastMessageTime;
+  String lastMessageSender;
+
+  Chat({
+    required this.id,
+    required this.title,
+    required this.lastMessage,
+    required this.lastMessageTime,
+    required this.lastMessageSender,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'lastMessage': lastMessage,
+      'lastMessageTime': lastMessageTime.toIso8601String(),
+      'lastMessageSender': lastMessageSender,
+    };
+  }
+
+  factory Chat.fromJson(Map<String, dynamic> json) {
+    return Chat(
+      id: json['id'],
+      title: json['title'],
+      lastMessage: json['lastMessage'],
+      lastMessageTime: DateTime.parse(json['lastMessageTime']),
+      lastMessageSender: json['lastMessageSender'],
+    );
+  }
+}
+
+class Message {
+  String id;
+  String text;
+  User sender;
+  String? replyTo;
+  User? userReply;
+  DateTime date;
+
+  Message({
+    required this.id,
+    required this.text,
+    required this.sender,
+    required this.date,
+    this.replyTo,
+    this.userReply,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'text': text,
+      'sender': sender.uid,
+      'replyTo': replyTo,
+      'userReply': userReply?.uid,
+      'date': date.toIso8601String(),
+    };
+  }
+
+  factory Message.fromJson(Map<String, dynamic> json, User sender, User? userReply) {
+    return Message(
+      id: json['id'],
+      text: json['text'],
+      sender: sender,
+      replyTo: json['replyTo'],
+      userReply: userReply,
+      date: DateTime.parse(json['date']),
+    );
+  }
+}
 
 class ChatShort {
   // late DatabaseReference _id;
@@ -12,8 +89,7 @@ class ChatShort {
   String? displayName;
   DateTime lastTime;
 
-  ChatShort(this.type, this.name, this.lastMsg, this.lastTime,
-      [this.lastSender]);
+  ChatShort(this.type, this.name, this.lastMsg, this.lastTime, [this.lastSender]);
 
   Map<String, dynamic> toJson() {
     return {
@@ -43,10 +119,8 @@ class ChatShort {
     startOfDay = DateTime(startOfDay.year, startOfDay.month, startOfDay.day);
 
     if (lastMsgSent.isBefore(startOfDay)) {
-      if (lastMsgSent
-          .isBefore(DateTime.now().subtract(const Duration(days: 7)))) {
-        if (lastMsgSent.isBefore(
-            DateTime(startOfDay.year - 1, startOfDay.month, startOfDay.day))) {
+      if (lastMsgSent.isBefore(DateTime.now().subtract(const Duration(days: 7)))) {
+        if (lastMsgSent.isBefore(DateTime(startOfDay.year - 1, startOfDay.month, startOfDay.day))) {
           timeText = DateFormat.yMMMd().format(lastMsgSent);
         } else {
           timeText = DateFormat.MMMd().format(lastMsgSent);
@@ -104,8 +178,7 @@ class ChatShort {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 displayName!,
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 20),
+                                style: const TextStyle(color: Colors.black, fontSize: 20),
                                 softWrap: true,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -114,8 +187,7 @@ class ChatShort {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 lastMessage,
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 16),
+                                style: const TextStyle(color: Colors.black, fontSize: 16),
                                 softWrap: true,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -136,9 +208,7 @@ class ChatShort {
                       ),
                       Align(
                           alignment: Alignment.centerRight,
-                          child: Text(timeText,
-                              style: const TextStyle(
-                                  color: Colors.black, fontSize: 16)))
+                          child: Text(timeText, style: const TextStyle(color: Colors.black, fontSize: 16)))
                     ],
                   ))
             ])));
@@ -146,8 +216,7 @@ class ChatShort {
 }
 
 Future<ChatShort> createChatDisplay(record) async {
-  ChatShort chat = ChatShort(record['type'], record['name'], record['lastMsg'],
-      DateTime.parse(record['lastTime']));
+  ChatShort chat = ChatShort(record['type'], record['name'], record['lastMsg'], DateTime.parse(record['lastTime']));
 
   if (record.containsKey('lastSender')) {
     chat.lastSender = record['lastSender'];

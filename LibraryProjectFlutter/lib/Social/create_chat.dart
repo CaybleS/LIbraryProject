@@ -6,6 +6,7 @@ import 'chat_screen.dart';
 
 class CreateChatScreen extends StatefulWidget {
   final User user;
+
   const CreateChatScreen(this.user, {super.key});
 
   @override
@@ -23,6 +24,13 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     super.initState();
 
     getList();
+    getAppFriends();
+
+  }
+
+  getAppFriends() async {
+    final friends =await getFriends(widget.user);
+    print(friends);
   }
 
   void getList() async {
@@ -103,143 +111,131 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         splashColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
-      body: Align(
-        alignment: Alignment.center,
-        child: Column(children: [
-          SizedBox(
-            height: size.height * 0.02,
-          ),
-          SizedBox(
-              width: size.width * .9,
-              child: Autocomplete<Friend>(
-                fieldViewBuilder: (context, textEditingController, focusNode,
-                    onFieldSubmitted) {
-                  controller = textEditingController;
-                  return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      onSubmitted: (String value) => onFieldSubmitted,
-                      decoration: InputDecoration(
-                          hintText: 'Add Friend',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          suffixIcon: InkWell(
-                              onTap: controller.clear,
-                              child: const Icon(Icons.close)),
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10))));
-                },
-                displayStringForOption: (option) => displayString(option),
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  if (textEditingValue.text == '') {
-                    return const Iterable<Friend>.empty();
-                  } else {
-                    return friendsVisible.where((Friend friend) {
-                      return displayString(friend)
-                          .toLowerCase()
-                          .contains(controller.text.toLowerCase());
-                    });
-                  }
-                },
-                onSelected: (option) {
-                  debugPrint("Selected: ${option.friendId}");
-                  controller.text = '';
-                  addFriend(option);
-                },
-              )),
-          SizedBox(
-            height: size.height * 0.02,
-          ),
-          SizedBox(
-              height: size.height * .7,
-              width: size.width * .97,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Autocomplete<Friend>(
+              fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                controller = textEditingController;
+                return TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    onSubmitted: (String value) => onFieldSubmitted,
+                    decoration: InputDecoration(
+                        hintText: 'Add Friend',
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        suffixIcon: InkWell(onTap: controller.clear, child: const Icon(Icons.close)),
+                        fillColor: Colors.white,
+                        filled: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))));
+              },
+              displayStringForOption: (option) => displayString(option),
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text == '') {
+                  return const Iterable<Friend>.empty();
+                } else {
+                  return friendsVisible.where((Friend friend) {
+                    return displayString(friend).toLowerCase().contains(controller.text.toLowerCase());
+                  });
+                }
+              },
+              onSelected: (option) {
+                debugPrint("Selected: ${option.friendId}");
+                controller.text = '';
+                addFriend(option);
+              },
+            ),
+            const SizedBox(height: 20),
+            Expanded(
               child: ListView.builder(
-                  itemCount: inChat.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    String nameTxt = "";
-                    String emailTxt = "";
+                itemCount: inChat.length,
+                itemBuilder: (BuildContext context, int index) {
+                  String nameTxt = "";
+                  String emailTxt = "";
 
-                    if (inChat[index].name != null) {
-                      nameTxt = inChat[index].name!;
-                      if (inChat[index].email != null) {
-                        emailTxt = inChat[index].email!;
-                      } else {
-                        emailTxt = inChat[index].friendId;
-                      }
+                  if (inChat[index].name != null) {
+                    nameTxt = inChat[index].name!;
+                    if (inChat[index].email != null) {
+                      emailTxt = inChat[index].email!;
                     } else {
-                      if (inChat[index].email != null) {
-                        nameTxt = inChat[index].email!;
-                        emailTxt = inChat[index].friendId;
-                      } else {
-                        nameTxt = inChat[index].friendId;
-                      }
+                      emailTxt = inChat[index].friendId;
                     }
+                  } else {
+                    if (inChat[index].email != null) {
+                      nameTxt = inChat[index].email!;
+                      emailTxt = inChat[index].friendId;
+                    } else {
+                      nameTxt = inChat[index].friendId;
+                    }
+                  }
 
-                    return Card(
-                        margin: const EdgeInsets.all(5),
-                        child: Row(children: [
-                          SizedBox(
-                            width: size.width * 0.03,
-                          ),
-                          SizedBox(
-                              width: size.width * 0.6,
-                              height: size.height * 0.095,
-                              child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Column(
-                                    children: [
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            nameTxt,
-                                            style: const TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 20),
-                                            softWrap: true,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          )),
-                                      Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            emailTxt,
-                                            style: const TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                            softWrap: true,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          )),
-                                    ],
-                                  ))),
-                          SizedBox(
-                              height: size.height * 0.095,
-                              width: size.width * 0.3,
-                              child: Column(
-                                children: [
-                                  SizedBox(
-                                    height: size.height * 0.035,
-                                  ),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: InkWell(
-                                      onTap: () {
-                                        removeFriend(index);
-                                      },
-                                      child: const Icon(Icons.close),
+                  return Card(
+                    margin: const EdgeInsets.all(5),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: size.width * 0.03,
+                        ),
+                        SizedBox(
+                            width: size.width * 0.6,
+                            height: size.height * 0.095,
+                            child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: size.height * 0.02,
                                     ),
-                                  ),
-                                ],
-                              ))
-                        ]));
-                  })),
-          SizedBox(
-            width: size.width * 0.9,
-            child: Visibility(
+                                    Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          nameTxt,
+                                          style: const TextStyle(color: Colors.black, fontSize: 20),
+                                          softWrap: true,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )),
+                                    Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          emailTxt,
+                                          style: const TextStyle(color: Colors.black, fontSize: 16),
+                                          softWrap: true,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )),
+                                  ],
+                                ))),
+                        SizedBox(
+                          height: size.height * 0.095,
+                          width: size.width * 0.3,
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: size.height * 0.035,
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: InkWell(
+                                  onTap: () {
+                                    removeFriend(index);
+                                  },
+                                  child: const Icon(Icons.close),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(
+              width: size.width * 0.9,
+              child: Visibility(
                 visible: inChat.length > 1,
                 child: TextField(
                   controller: groupNameController,
@@ -248,11 +244,12 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                       hintStyle: const TextStyle(color: Colors.grey),
                       fillColor: Colors.white,
                       filled: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10))),
-                )),
-          )
-        ]),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../core/appbar.dart';
 
 class FriendsPage extends StatefulWidget {
   final User user;
+
   const FriendsPage(this.user, {super.key});
 
   @override
@@ -32,8 +33,7 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   void addFriendClicked() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => AddFriendPage(widget.user)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => AddFriendPage(widget.user)));
     updateLists();
   }
 
@@ -46,7 +46,7 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget displayNavigationButtons() {
     List<Color> buttonColor = [
       const Color.fromRGBO(129, 199, 132, 1),
-      const Color.fromRGBO(129, 199, 132, 1)
+      const Color.fromRGBO(129, 199, 132, 1),
     ];
 
     switch (_selected) {
@@ -64,29 +64,34 @@ class _FriendsPageState extends State<FriendsPage> {
       mainAxisSize: MainAxisSize.max,
       children: [
         ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0]),
-            onPressed: () => {
-                  if (_selected == "list") {null} else changeDisplay("list")
-                },
-            child: const Text(
-              "Friends List",
-              style: TextStyle(color: Colors.black, fontSize: 20),
-            )),
-        const SizedBox(
-          width: 10,
+          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0]),
+          onPressed: () {
+            if (_selected == "list") {
+              return;
+            } else {
+              changeDisplay("list");
+            }
+          },
+          child: const Text(
+            "Friends List",
+            style: TextStyle(color: Colors.black, fontSize: 20),
+          ),
         ),
+        const SizedBox(width: 10),
         ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1]),
-            onPressed: () => {
-                  if (_selected == "requests")
-                    {null}
-                  else
-                    changeDisplay("requests")
-                },
-            child: const Text(
-              "Friend Requests",
-              style: TextStyle(color: Colors.black, fontSize: 20),
-            )),
+          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1]),
+          onPressed: () {
+            if (_selected == "requests") {
+              return;
+            } else {
+              changeDisplay("requests");
+            }
+          },
+          child: const Text(
+            "Friend Requests",
+            style: TextStyle(color: Colors.black, fontSize: 20),
+          ),
+        ),
       ],
     );
   }
@@ -122,14 +127,63 @@ class _FriendsPageState extends State<FriendsPage> {
             size: 30,
           )),
       body: Container(
-          padding: const EdgeInsets.all(10),
-          child: Column(children: [displayNavigationButtons(), displayList()])),
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            displayNavigationButtons(),
+            const SizedBox(height: 10),
+            Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(20)),
+                color: Colors.white,
+              ),
+              padding: const EdgeInsets.all(15),
+              child: Row(
+                children: [
+                  ClipOval(
+                    child: SizedBox(
+                      width: 50,
+                      child: Image.asset(
+                        "assets/profile_pic.jpg",
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'milad',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'online',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            displayList(),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class FriendRequestList extends StatelessWidget {
   const FriendRequestList(this.requests, this.callback, {super.key});
+
   final List<Request> requests;
   final Function() callback;
 
@@ -171,8 +225,7 @@ class FriendRequestList extends StatelessWidget {
                           alignment: Alignment.topLeft,
                           child: Text(
                             requests[index].senderId,
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 20),
+                            style: const TextStyle(color: Colors.black, fontSize: 20),
                             softWrap: true,
                           )),
                     ),
@@ -186,22 +239,14 @@ class FriendRequestList extends StatelessWidget {
                                 onPressed: () {
                                   acceptClicked(index);
                                 },
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromRGBO(76, 175, 80, 1)),
-                                child: const Text('Accept',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.black))),
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(76, 175, 80, 1)),
+                                child: const Text('Accept', style: TextStyle(fontSize: 16, color: Colors.black))),
                             ElevatedButton(
                                 onPressed: () {
                                   denyClicked(index);
                                 },
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromRGBO(244, 67, 54, 1)),
-                                child: const Text('Deny',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.black)))
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(244, 67, 54, 1)),
+                                child: const Text('Deny', style: TextStyle(fontSize: 16, color: Colors.black)))
                           ],
                         )),
                   ]));
@@ -231,6 +276,7 @@ Request createRequest(record, String id) {
 
 class FriendList extends StatelessWidget {
   const FriendList(this.friends, {super.key});
+
   final List<Friend> friends;
 
   @override
@@ -261,8 +307,7 @@ class FriendList extends StatelessWidget {
                           alignment: Alignment.topLeft,
                           child: Text(
                             friends[index].friendId,
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 20),
+                            style: const TextStyle(color: Colors.black, fontSize: 20),
                             softWrap: true,
                           )),
                     ),
@@ -276,6 +321,11 @@ class Friend {
   String? name;
   String? email;
   late DatabaseReference _id;
+
+  @override
+  String toString() {
+    return 'Friend{friendId: $friendId, name: $name, email: $email, _id: $_id}';
+  }
 
   void setId(DatabaseReference id) {
     _id = id;

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/create_account_screen.dart';
 import 'package:library_project/app_startup/persistent_bottombar.dart';
 import 'package:library_project/database/firebase_options.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 import 'auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -20,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   String emailErr = "";
   String pswdErr = "";
   String loginErr = "";
+  bool showLoading = false;
 
   User? user;
 
@@ -43,13 +45,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void click() {
-    signInWithGoogle().then((user) => {
-      if (user != null)
-        {
-          this.user = user,
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)))
-          // the bottombar will load the necessary pages when it exists
-        }
+    setState(() {
+      showLoading = true;
+    });
+    signInWithGoogle().then((user) {
+      if (user != null) {
+        setState(() {
+          showLoading = false;
+        });
+        this.user = user;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
+      }
     });
   }
 
@@ -88,13 +94,20 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (email != "" && pswd != "") {
+      setState(() {
+        showLoading = true;
+      });
       User? user = await logIn(email, pswd);
 
       if (user == null) {
         loginErr = "Incorrect Email or Password";
-        setState(() {});
+        setState(() {
+          showLoading = false;
+        });
       } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
+        if (mounted) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
+        }
       }
     }
   }
@@ -119,107 +132,121 @@ class _LoginPageState extends State<LoginPage> {
           // ],
         ),
         backgroundColor: Colors.grey[400],
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(height: size.height * 0.05),
-              Container(
-                alignment: Alignment.center,
-                width: size.width * 0.9,
-                child: const Text(
-                  "Welcome!",
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Container(
-                alignment: Alignment.center,
-                width: size.width * 0.9,
-                child: const Text(
-                  "Please Sign In",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: size.height * 0.1,
-              ),
-              Container(
-                width: size.width * 0.9,
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: controllerEmail,
-                  decoration: InputDecoration(
-                      hintText: 'Email',
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      fillColor: Colors.white,
-                      filled: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                ),
-              ),
-              SizedBox(
-                height: size.height * 0.01,
-              ),
-              Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-              SizedBox(
-                height: size.height * 0.01,
-              ),
-              Container(
-                width: size.width * 0.9,
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: controllerPswd,
-                  decoration: InputDecoration(
-                      hintText: 'Password',
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      fillColor: Colors.white,
-                      filled: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                ),
-              ),
-              SizedBox(
-                height: size.height * 0.01,
-              ),
-              Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-              SizedBox(
-                height: size.height * 0.015,
-              ),
-              Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                    onPressed: () => {loginBtnClicked()},
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(height: size.height * 0.05),
+                  Container(
+                    alignment: Alignment.center,
+                    width: size.width * 0.9,
                     child: const Text(
-                      "Log In",
-                      style: TextStyle(color: Colors.black, fontSize: 22),
-                    )),
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                    onPressed: () =>
-                    {Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()))},
+                      "Welcome!",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    alignment: Alignment.center,
+                    width: size.width * 0.9,
                     child: const Text(
-                      "Create Account",
-                      style: TextStyle(color: Colors.black, fontSize: 22),
-                    )),
-              ]),
-              SizedBox(
-                height: size.height * 0.025,
+                      "Please Sign In",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: size.height * 0.1,
+                  ),
+                  Container(
+                    width: size.width * 0.9,
+                    alignment: Alignment.center,
+                    child: TextField(
+                      controller: controllerEmail,
+                      decoration: InputDecoration(
+                          hintText: 'Email',
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          fillColor: Colors.white,
+                          filled: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                    ),
+                  ),
+                  SizedBox(
+                    height: size.height * 0.01,
+                  ),
+                  Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  SizedBox(
+                    height: size.height * 0.01,
+                  ),
+                  Container(
+                    width: size.width * 0.9,
+                    alignment: Alignment.center,
+                    child: TextField(
+                      controller: controllerPswd,
+                      decoration: InputDecoration(
+                          hintText: 'Password',
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          fillColor: Colors.white,
+                          filled: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                    ),
+                  ),
+                  SizedBox(
+                    height: size.height * 0.01,
+                  ),
+                  Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  SizedBox(
+                    height: size.height * 0.015,
+                  ),
+                  Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  SizedBox(
+                    height: size.height * 0.05,
+                  ),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                    ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                        onPressed: () {
+                          loginBtnClicked();
+                        },
+                        child: const Text(
+                          "Log In",
+                          style: TextStyle(color: Colors.black, fontSize: 22),
+                        )),
+                    ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()));
+                        },
+                        child: const Text(
+                          "Create Account",
+                          style: TextStyle(color: Colors.black, fontSize: 22),
+                        )),
+                  ]),
+                  SizedBox(
+                    height: size.height * 0.025,
+                  ),
+                  googleLoginButton(),
+                  SizedBox(
+                    height: size.height * 0.05,
+                  ),
+                ],
               ),
-              googleLoginButton(),
-              SizedBox(
-                height: size.height * 0.05,
+            ),
+            if (showLoading)
+              Container(
+                color: Colors.grey.withOpacity(0.5),
+                child: Center(
+                  child: SharedWidgets.displayCircularProgressIndicator(),
+                ),
               ),
-            ],
-          ),
+          ],
         ));
   }
 }

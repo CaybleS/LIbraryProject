@@ -33,7 +33,8 @@ Future<void> removeLentBookInfo(String lentDbKey, String borrowerId) async {
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
 // The same is done with the lent to me books. It feteches them initially and updates the in-memory list as needed
 // and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
-StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(List<Book> userLibrary, User user, Function ownedBooksUpdated) {
+StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
+    List<Book> userLibrary, User user, Function ownedBooksUpdated) {
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
     userLibrary.clear();
@@ -49,10 +50,12 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(List<Book> userLi
   return ownedSubscription; // returning this only to be able to properly dispose of it
 }
 
-StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
+StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
+    List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
   DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
   // so only the books lent data changes are tracked, so even if lent books themselves are updated, this doesnt get fired
-  StreamSubscription<DatabaseEvent> lentToMeSubscription = lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> lentToMeSubscription =
+      lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
     List<dynamic> listOfRecords = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -94,14 +97,26 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends,
   return friendsSubscription;
 }
 
-Future<bool> userExists(String id) async {
-  DatabaseEvent event = await dbReference.child('users/$id').once();
-  return (event.snapshot.value != null);
+Future<bool> userExists(String email) async {
+  DatabaseEvent event = await dbReference.child('users/').once();
+  if (event.snapshot.value != null){
+    for (Map child in (event.snapshot.value as Map).values) {
+      if (child.containsValue(email)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void addUser(User user) {
-  var id = dbReference.child('users/${user.uid}');
-  id.set({"test": true});
+  final id = dbReference.child('users/${user.uid}');
+  id.set({
+    'uid': user.uid,
+    'name': user.displayName,
+    'email': user.email,
+    'photoUrl': user.photoURL,
+  });
 }
 
 void sendFriendRequest(User user, String friendId) {
@@ -145,6 +160,7 @@ Future<List<Friend>> getFriends(User user) async {
 
   if (event.snapshot.value != null) {
     for (var child in event.snapshot.children) {
+      print(child.value);
       Friend friend = Friend('${child.key}');
       friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
       friends.add(friend);
@@ -155,9 +171,7 @@ Future<List<Friend>> getFriends(User user) async {
 }
 
 Future<List<ChatShort>> getChatList(User user) async {
-  DatabaseEvent event = await dbReference
-      .child('chatsByUser/${user.uid}/')
-      .once();
+  DatabaseEvent event = await dbReference.child('chatsByUser/${user.uid}/').once();
   List<ChatShort> chats = [];
 
   if (event.snapshot.value != null) {
