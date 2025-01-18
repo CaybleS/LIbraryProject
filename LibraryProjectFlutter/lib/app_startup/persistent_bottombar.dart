@@ -5,7 +5,7 @@ import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book.dart';
 import '../Social/friends_page.dart';
 import 'package:library_project/core/homepage.dart';
-import 'package:library_project/core/profile.dart';
+import 'package:library_project/Social/profile.dart';
 import 'package:library_project/core/settings.dart';
 
 class PersistentBottomBar extends StatefulWidget {
