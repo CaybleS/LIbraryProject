@@ -1,6 +1,6 @@
 // TODO ensure UI is good on this page - it seems to have wasted space especially on bigger screens. No idea how to fix it though.
 import 'package:flutter/material.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 
 class BookDetailsScreen extends StatelessWidget {

@@ -322,7 +322,7 @@ class FriendList extends StatelessWidget {
                   child: Align(
                       alignment: Alignment.topLeft,
                       child: Text(
-                        friends[index].friendId,
+                        friends[index].uid,
                         style:
                             const TextStyle(color: Colors.black, fontSize: 20),
                         softWrap: true,

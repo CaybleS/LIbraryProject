@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:library_project/add_book/search/book_details_screen.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
 import 'package:library_project/ui/colors.dart';

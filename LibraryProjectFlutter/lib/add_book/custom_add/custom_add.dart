@@ -3,7 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/shared_widgets.dart';

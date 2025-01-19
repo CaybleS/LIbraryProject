@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/database/database.dart';
-import 'package:library_project/Social/chat.dart';
+import 'package:library_project/models/chat.dart';
 import 'package:library_project/Social/chat_screen.dart';
 import 'package:library_project/Social/create_chat.dart';
 import '../app_startup/appwide_setup.dart';
@@ -17,7 +17,7 @@ class MessageHome extends StatefulWidget {
 }
 
 class _MessageHomeState extends State<MessageHome> {
-  List<ChatShort> rooms = [];
+  List<Chat> rooms = [];
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _MessageHomeState extends State<MessageHome> {
     // rooms = tempChatList;
     // rooms.sort((a, b) => b.lastTime.compareTo(a.lastTime));
     rooms = await getChatList(widget.user);
-    rooms.sort((a, b) => b.lastTime.compareTo(a.lastTime));
+    rooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
 
     setState(() {});
   }
@@ -90,7 +90,8 @@ class _MessageHomeState extends State<MessageHome> {
               child: ListView.builder(
                   itemCount: rooms.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return rooms[index].getCard(size, index, openChat);
+                    // return rooms[index].getCard(size, index, openChat);
+                    return SizedBox();
                   }))
         ],
       ),

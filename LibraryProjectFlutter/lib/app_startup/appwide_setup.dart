@@ -2,9 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_page.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
 import 'dart:async';
+
+import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
 const int addBookPageIndex = 1;
@@ -16,7 +18,7 @@ const int settingsIndex = 4;
 // and pages can use 
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
-List<Friend> friends = [];
+List<UserModel> friends = [];
 List<Request> requests = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
