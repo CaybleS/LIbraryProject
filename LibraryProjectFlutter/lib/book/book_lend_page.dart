@@ -1,6 +1,7 @@
 // TODO that this will need to be changed, it must store the friendId but should display username or something
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book.dart';
 import '../Social/friends_page.dart';
 import 'package:library_project/misc_util/misc_helper_functions.dart';
@@ -8,8 +9,7 @@ import 'package:library_project/misc_util/misc_helper_functions.dart';
 class BookLendPage extends StatefulWidget {
   final Book book;
   final User user;
-  final List<Friend> friends;
-  const BookLendPage(this.book, this.user, this.friends, {super.key});
+  const BookLendPage(this.book, this.user, {super.key});
 
   @override
   State<BookLendPage> createState() => _BookLendPageState();
@@ -50,17 +50,17 @@ class _BookLendPageState extends State<BookLendPage> {
         ),
         Flexible(
           child: ListView.builder(
-          itemCount: widget.friends.length, // TODO should this list be sorted by friend username, alphabetically. I think so imo.
+          itemCount: friends.length, // TODO should this list be sorted by friend username, alphabetically. I think so imo.
           itemBuilder: (BuildContext context, int index) {
             return InkWell(
             onTap: () {
               setState(() {
-                _selectedFriendId = widget.friends[index].friendId;
+                _selectedFriendId = friends[index].friendId;
               });
             },
             child: Card(
               margin: const EdgeInsets.all(5),
-              color: (_selectedFriendId == widget.friends[index].friendId) ? Colors.green : null,
+              color: (_selectedFriendId == friends[index].friendId) ? Colors.green : null,
               child: Row(
                 children: [
                   const Padding(
@@ -69,8 +69,8 @@ class _BookLendPageState extends State<BookLendPage> {
                   ),
                   Column(
                     children: [
-                      Text(widget.friends[index].friendId), // TODO update this with real username when thats added I'd say
-                      Text('ID: ${widget.friends[index].friendId}'),
+                      Text(friends[index].friendId), // TODO update this with real username when thats added I'd say
+                      Text('ID: ${friends[index].friendId}'),
                     ],
                   ),
                 ],
@@ -110,7 +110,7 @@ class _BookLendPageState extends State<BookLendPage> {
             }
             String borrowerId = _selectedFriendId!;
             bool foundFriend = false;
-            for (Friend friend in widget.friends) {
+            for (Friend friend in friends) {
               if (friend.friendId == borrowerId) {
                 foundFriend = true;
               }

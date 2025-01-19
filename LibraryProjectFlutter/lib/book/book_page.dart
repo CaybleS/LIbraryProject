@@ -14,16 +14,13 @@ import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
-import '../Social/friends_page.dart';
 
 enum _ReadStatus {hasNotRead, unknown, hasRead}
 
 class BookPage extends StatefulWidget {
   final Book book;
   final User user;
-  final List<Book> userLibrary;
-  final List<Friend> friends;
-  const BookPage(this.book, this.user, this.userLibrary, this.friends, {super.key});
+  const BookPage(this.book, this.user, {super.key});
 
   @override
   State<BookPage> createState() => _BookPageState();
@@ -97,7 +94,7 @@ class _BookPageState extends State<BookPage> {
   Widget _lendBookButton() {
     return ElevatedButton(
       onPressed: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user, widget.friends)));
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user)));
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -276,7 +273,7 @@ class _BookPageState extends State<BookPage> {
             (widget.book.isManualAdded && widget.book.lentDbKey == null) // book needs to be manually added AND not lent out, to be able to edit title/author stuff
             ? ElevatedButton(
                 onPressed: () async {
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddedBookEdit(widget.book, widget.user, widget.userLibrary)));
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddedBookEdit(widget.book, widget.user)));
                   setState(() {});
                 },
                 child: const Text("edit manually added book here"),

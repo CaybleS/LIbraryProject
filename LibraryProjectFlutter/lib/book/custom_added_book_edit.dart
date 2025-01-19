@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,8 +11,7 @@ import 'dart:io';
 class CustomAddedBookEdit extends StatefulWidget {
   final User user;
   final Book book; // obviously this book will have the isManualAdded bool set to true
-  final List<Book> userLibrary; // only used for duplicate checking (so if user changes title and author both to a book already in user library, we show error and disallow it)
-  const CustomAddedBookEdit(this.book, this.user, this.userLibrary, {super.key});
+  const CustomAddedBookEdit(this.book, this.user, {super.key});
 
   @override
   State<CustomAddedBookEdit> createState() => _CustomAddedBookEditState();
@@ -26,6 +26,7 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
   bool _bookAlreadyAddedError = false;
   bool _bookNoLongerExistsError = false; // can only occur in scenarios where user is running the app on multiple devices
   XFile? _newCoverImage;
+  String? _newCoverImageUrl;
 
   @override
   void initState() {
@@ -57,8 +58,8 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
 
   // Should be like this since the index can theoretically change while user is on this page if they have the app open on another device
   int? _getUserLibraryIndexOfThisBook() {
-    for (int i = 0; i < widget.userLibrary.length; i++) {
-      if (widget.book == widget.userLibrary[i]) {
+    for (int i = 0; i < userLibrary.length; i++) {
+      if (widget.book == userLibrary[i]) {
         return i;
       }
     }
@@ -71,14 +72,14 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
     if (userLibraryIndexOfThisBook == null) {
       _bookNoLongerExistsError = true;
     }
-    Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
+    Book customAddedBook = Book(title: titleInput, author: authorInput, coverUrl: _newCoverImageUrl, isManualAdded: true);
     if (_newCoverImage == null && customAddedBook == widget.book) {
       _noChangeError = true;
     }
-    for (int i = 0; i < widget.userLibrary.length; i++) {
+    for (int i = 0; i < userLibrary.length; i++) {
       // ensuring we don't change the custom added book to any books already added while also allowing it to change if
       // we dont change title and author and only change cover image
-      if (customAddedBook == widget.userLibrary[i] && i != userLibraryIndexOfThisBook) {
+      if (customAddedBook == userLibrary[i] && i != userLibraryIndexOfThisBook) {
         _bookAlreadyAddedError = true;
         break;
       }
@@ -199,7 +200,7 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
               )
             ),
             const SizedBox(height: 16),
-            Flexible(
+            IntrinsicHeight( // the column inside of this row needs to be not be constrained by this row, I believe this achieves this
               child: Row(
                 mainAxisSize: MainAxisSize.max,
                 children: [
@@ -261,45 +262,47 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                 ],
               )
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
-                      child: const Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+            Flexible(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
+                        child: const Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        String title = _editTitleController.text;
-                        String author = _editAuthorController.text;
-                        if (title.isEmpty) {
-                          _noTitleInput = true;
-                        }
-                        if (author.isEmpty) {
-                          _noAuthorInput = true;
-                        }
-                        if (_noTitleInput || _noAuthorInput) {
-                          setState(() {});
-                          return;
-                        }
-                        _checkInputs(title, author);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
-                      child: const Text("Edit Book", style: TextStyle(fontSize: 16, color: Colors.black)),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          String title = _editTitleController.text;
+                          String author = _editAuthorController.text;
+                          if (title.isEmpty) {
+                            _noTitleInput = true;
+                          }
+                          if (author.isEmpty) {
+                            _noAuthorInput = true;
+                          }
+                          if (_noTitleInput || _noAuthorInput) {
+                            setState(() {});
+                            return;
+                          }
+                          _checkInputs(title, author);
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
+                        child: const Text("Edit Book", style: TextStyle(fontSize: 16, color: Colors.black), overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

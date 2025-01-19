@@ -3,18 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/custom_add.dart';
 import 'package:library_project/add_book/scan/scanner_driver.dart';
 import 'package:library_project/add_book/search/search_driver.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:library_project/ui/colors.dart';
 
 class AddBookHomepage extends StatefulWidget {
   final User user;
-  final List<Book> userLibrary;
-  final ValueNotifier<int> refreshNotifier;
 
   @override
   State<AddBookHomepage> createState() => _AddBookHomepageState();
-  const AddBookHomepage(this.user, this.userLibrary, this.refreshNotifier, {super.key});
+  const AddBookHomepage(this.user, {super.key});
 }
 
 class _AddBookHomepageState extends State<AddBookHomepage> {
@@ -23,7 +21,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   late ScannerDriver _bookScanInstance;
   bool _displayProgressIndicator = false; // used to display CircularProgressIndicator whenever necessary
   bool _noInput = false;
-  late final VoidCallback _pageOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
+  late final VoidCallback _addBookOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
 
   @override
   void initState() {
@@ -35,10 +33,10 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
         });
     }});
     // done because I cant access widget.<anything> before initState, hence the late object initialization
-    _bookSearchInstance = SearchDriver(widget.user, widget.userLibrary);
-    _bookScanInstance = ScannerDriver(widget.user, widget.userLibrary);
-    _pageOpenedListener = () {
-      if (widget.refreshNotifier.value == 1) {
+    _bookSearchInstance = SearchDriver(widget.user, userLibrary);
+    _bookScanInstance = ScannerDriver(widget.user, userLibrary);
+    _addBookOpenedListener = () {
+      if (refreshNotifier.value == addBookPageIndex) {
         // whats happening here? Basically this refreshes the already added books if we are on this page, if
         // userLibrary has been updated. This will currently ONLY occur if userLibrary was updated in another instance
         // of the app on homepage, but if users are, in the future, able to remove added books 
@@ -47,13 +45,13 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
         setState(() {});
       }
     };
-    widget.refreshNotifier.addListener(_pageOpenedListener);
+    refreshNotifier.addListener(_addBookOpenedListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
-    widget.refreshNotifier.removeListener(_pageOpenedListener);
+    refreshNotifier.removeListener(_addBookOpenedListener);
     super.dispose();
   }
 
@@ -117,7 +115,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   Future<void> _customAddButtonClicked() async {
     _resetNoInput();
     // I clear the search results when user comes back to this page ONLY if a book was added (there is only a return value if it pops when adding a book)
-    String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAdd(widget.user, widget.userLibrary)));
+    String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAdd(widget.user, userLibrary)));
     if (retVal != null) {
       _bookSearchInstance.resetLastSearchValues();
       _searchQueryController.clear();

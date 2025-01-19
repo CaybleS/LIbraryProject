@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/book/book.dart';
 import '../Social/friends_page.dart';
 import 'package:library_project/core/homepage.dart';
 import 'package:library_project/Social/profile.dart';
@@ -17,18 +16,15 @@ class PersistentBottomBar extends StatefulWidget {
 }
 
 class _PersistentBottomBarState extends State<PersistentBottomBar> {
-  final List<Book> _userLibrary = [];
-  final List<LentBookInfo> _booksLentToMe = [];
-  final List<Friend> _friends = [];
   final List<Widget> _pagesList = List.filled(5, const SizedBox.shrink());
   late final VoidCallback _refreshBottombarListener;
 
   @override
   void initState() {
     super.initState();
-    setupDatabaseSubscriptions(_userLibrary, _booksLentToMe, _friends, widget.user);
-    _pagesList[homepageIndex] = HomePage(widget.user, _userLibrary, _booksLentToMe, _friends, refreshNotifier);
-    _pagesList[addBookPageIndex] = AddBookHomepage(widget.user, _userLibrary, refreshNotifier);
+    setupDatabaseSubscriptions(widget.user);
+    _pagesList[homepageIndex] = HomePage(widget.user);
+    _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);
     _pagesList[profileIndex] = Profile(widget.user);
     _pagesList[settingsIndex] = Settings(widget.user);
