@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
@@ -6,8 +7,8 @@ import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/shared_widgets.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:io';
-// TODO store images
 
 class CustomAdd extends StatefulWidget {
   final User user;
@@ -25,6 +26,7 @@ class _CustomAddState extends State<CustomAdd> {
   bool _noAuthorInput = false;
   bool _bookAlreadyAddedError = false;
   XFile? _coverImage;
+  String? _coverImageUrl;
 
   @override
   void initState() {
@@ -52,7 +54,7 @@ class _CustomAddState extends State<CustomAdd> {
 
   void _checkInputs(String titleInput, String authorInput) {
     _resetErrors();
-    Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
+    Book customAddedBook = Book(title: titleInput, author: authorInput, coverUrl: _coverImageUrl, isManualAdded: true);
     for (int i = 0; i < widget.userLibrary.length; i++) {
       if (customAddedBook == widget.userLibrary[i]) {
         _bookAlreadyAddedError = true;
@@ -83,7 +85,20 @@ class _CustomAddState extends State<CustomAdd> {
 
   Future<void> _addCoverFromFile(BuildContext context) async {
     try {
-      _coverImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+      XFile? inputCoverImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (inputCoverImage != null) {
+        File coverImageFile = File(inputCoverImage.path);
+        String coverImageFileName = const Uuid().v1();
+        bool coverImgUploadError = false;
+        final Reference imageRef = FirebaseStorage.instance.ref().child('customBookCovers/$coverImageFileName');
+        TaskSnapshot uploadTask = await imageRef.putFile(coverImageFile).catchError((error) {
+          coverImgUploadError = true;
+        });
+        if (!coverImgUploadError) {
+          _coverImageUrl = await uploadTask.ref.getDownloadURL();
+          _coverImage = inputCoverImage;
+        }
+      }
     } on PlatformException catch (e) {
       if (e.code != "already_active" && context.mounted) {
         SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
@@ -98,7 +113,20 @@ class _CustomAddState extends State<CustomAdd> {
 
   Future<void> _addCoverFromCamera(BuildContext context) async {
     try {
-      _coverImage = await ImagePicker().pickImage(source: ImageSource.camera);
+      XFile? inputCoverImage = await ImagePicker().pickImage(source: ImageSource.camera);
+      if (inputCoverImage != null) {
+        File coverImageFile = File(inputCoverImage.path);
+        String coverImageFileName = const Uuid().v1();
+        bool coverImgUploadError = false;
+        final Reference imageRef = FirebaseStorage.instance.ref().child('customBookCovers/$coverImageFileName');
+        TaskSnapshot uploadTask = await imageRef.putFile(coverImageFile).catchError((error) {
+          coverImgUploadError = true;
+        });
+        if (!coverImgUploadError) {
+          _coverImageUrl = await uploadTask.ref.getDownloadURL();
+          _coverImage = inputCoverImage;
+        }
+      }
     } on PlatformException catch (e) {
       if (!context.mounted) {
         return;
@@ -157,7 +185,7 @@ class _CustomAddState extends State<CustomAdd> {
               )
             ),
             const SizedBox(height: 16),
-            Flexible(
+            IntrinsicHeight( // the column inside of this row needs to be not be constrained by this row, I believe this achieves this
               child: Row(
                 children: [
                   const SizedBox(
@@ -221,45 +249,47 @@ class _CustomAddState extends State<CustomAdd> {
                 ],
               )
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
-                      child: const Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+            Flexible(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
+                        child: const Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        String title = _inputTitleController.text;
-                        String author = _inputAuthorController.text;
-                        if (title.isEmpty) {
-                          _noTitleInput = true;
-                        }
-                        if (author.isEmpty) {
-                          _noAuthorInput = true;
-                        }
-                        if (_noTitleInput || _noAuthorInput) {
-                          setState(() {});
-                          return;
-                        }
-                        _checkInputs(title, author);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
-                      child: const Text("Add Book", style: TextStyle(fontSize: 16, color: Colors.black)),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          String title = _inputTitleController.text;
+                          String author = _inputAuthorController.text;
+                          if (title.isEmpty) {
+                            _noTitleInput = true;
+                          }
+                          if (author.isEmpty) {
+                            _noAuthorInput = true;
+                          }
+                          if (_noTitleInput || _noAuthorInput) {
+                            setState(() {});
+                            return;
+                          }
+                          _checkInputs(title, author);
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
+                        child: const Text("Add Book", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

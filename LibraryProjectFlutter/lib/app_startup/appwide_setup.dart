@@ -12,18 +12,24 @@ const int friendsPageIndex = 2;
 const int profileIndex = 3;
 const int settingsIndex = 4;
 
+// pages can access these at any time, knowing that they will be up to date guaranteed
+// and pages can use 
+List<Book> userLibrary = [];
+List<LentBookInfo> booksLentToMe = [];
+List<Friend> friends = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
 // its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
+// this is needed due to the bottombar loading all 5 pages in memory at a time so it allows for logic to cause refreshes ONLY for pages the user is currently on.
 ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
 ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 int selectedIndex = 0;
 int _prevIndex = 0;
 bool showBottombar = true;
 
-void setupDatabaseSubscriptions(List<Book> userLibrary, List<LentBookInfo> booksLentToMe, List<Friend> friends, User user) {
+void setupDatabaseSubscriptions(User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
@@ -43,9 +49,9 @@ void resetBottombarValues() {
   _prevIndex = 0;
 }
 
+// So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
+// for them, which will call setState and refresh the page with the updated userLibrary.
 void _ownedBooksUpdated() {
-  // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
-  // for them, which will call setState and refresh the page with the updated userLibrary
   if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;

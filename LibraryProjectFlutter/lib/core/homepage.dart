@@ -1,20 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
-import '../Social/friends_page.dart';
 import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 
 class HomePage extends StatefulWidget {
   final User user;
-  final List<Book> userLibrary;
-  final List<LentBookInfo> booksLentToMe;
-  final List<Friend> friends;
-  final ValueNotifier<int> refreshNotifier;
 
-  const HomePage(this.user, this.userLibrary, this.booksLentToMe, this.friends, this.refreshNotifier, {super.key});
+  const HomePage(this.user, {super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -30,16 +26,16 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pageOpenedListener = () {
-      if (widget.refreshNotifier.value == 0) {
+      if (refreshNotifier.value == homepageIndex) {
         _updateList(_showing);
       }
     };
-    widget.refreshNotifier.addListener(_pageOpenedListener);
+    refreshNotifier.addListener(_pageOpenedListener);
   }
 
   @override
   void dispose() {
-    widget.refreshNotifier.removeListener(_pageOpenedListener);
+    refreshNotifier.removeListener(_pageOpenedListener);
     super.dispose();
   }
 
@@ -49,10 +45,10 @@ class _HomePageState extends State<HomePage> {
 
   void _bookClicked(int index) async {
     if (_usingBooksLentToMe) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(widget.booksLentToMe[index], widget.user)));
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(booksLentToMe[index], widget.user)));
     }
     else {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(widget.userLibrary[index], widget.user, widget.userLibrary, widget.friends)));
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(userLibrary[index], widget.user)));
     }
   }
 
@@ -70,25 +66,25 @@ class _HomePageState extends State<HomePage> {
 
     switch (state) {
       case "all":
-        _shownList = Iterable<int>.generate(widget.userLibrary.length).toList();
+        _shownList = Iterable<int>.generate(userLibrary.length).toList();
         break;
       case "fav":
-        for (int i = 0; i < widget.userLibrary.length; i++) {
-          if (widget.userLibrary[i].favorite) {
+        for (int i = 0; i < userLibrary.length; i++) {
+          if (userLibrary[i].favorite) {
             _shownList.add(i);
           }
         }
         break;
       case "lent":
-        for (int i = 0; i < widget.userLibrary.length; i++) {
-          if (widget.userLibrary[i].lentDbKey != null) {
+        for (int i = 0; i < userLibrary.length; i++) {
+          if (userLibrary[i].lentDbKey != null) {
             _shownList.add(i);
           }
         }
         break;
       case "lentToMe":
         _usingBooksLentToMe = true;
-        _shownList = Iterable<int>.generate(widget.booksLentToMe.length).toList();
+        _shownList = Iterable<int>.generate(booksLentToMe.length).toList();
         break;
       default:
         break;
@@ -97,7 +93,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _favoriteButtonClicked(int index) {
-    widget.userLibrary[index].favoriteButtonClicked();
+    userLibrary[index].favoriteButtonClicked();
     setState(() {});
   }
 
@@ -197,7 +193,7 @@ class _HomePageState extends State<HomePage> {
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
                   // BooksLentToMe stores each book as part of the object so we just create a list of books from it if needed
-                  List<Book> shownLibrary = _usingBooksLentToMe ? widget.booksLentToMe.map((item) => item.book).toList() : widget.userLibrary;
+                  List<Book> shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
                   Widget coverImage = shownLibrary[_shownList[index]].getCoverImage();
                   String availableTxt;
                   Color availableTxtColor;

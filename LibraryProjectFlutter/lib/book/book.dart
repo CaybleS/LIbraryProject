@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/database/database.dart';
@@ -9,8 +10,6 @@ class Book {
   String? lentDbKey; // stored so that 1.) books are flagged as lent and 2.) books can be mapped to lent books in that part of the database
   bool favorite = false;
   String? coverUrl;
-  // if custom book add will have custom images (as it should) needs to be stored somewhere, with link to it. This is what coverPath is intended to be, whenever thats implemented.
-  //String? coverPath;
   String? borrowerId;
   String? description;
   String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)
@@ -123,18 +122,12 @@ class Book {
   }
 
   Image getCoverImage() {
-    // if (coverPath != null) {
-    //   return Image.asset(
-    //     coverPath!,
-    //     fit: BoxFit.fill,
-    //   );
-    // }
     if (coverUrl != null) {
-      // it was else if before but I don't see how I can use coverPath, idk how i'll do it honestly
-      return Image.network(
-        coverUrl!,
-        fit: BoxFit.fill,
-      );
+      return Image(image: CachedNetworkImageProvider(coverUrl!));
+      // return Image.network(
+      //   coverUrl!,
+      //   fit: BoxFit.fill,
+      // );
     } else {
       return Image.asset(
         "assets/no_cover.jpg",
