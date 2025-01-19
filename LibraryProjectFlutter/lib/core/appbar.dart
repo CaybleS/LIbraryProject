@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import '../app_startup/auth.dart';
-import '../Social/message_home.dart';
+import '../social/message_home.dart';
 
 PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPage) {
   void goToHome() {

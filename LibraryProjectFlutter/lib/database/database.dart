@@ -97,16 +97,41 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends,
   return friendsSubscription;
 }
 
-Future<bool> userExists(String email) async {
+StreamSubscription<DatabaseEvent> setupRequestsSubscription(List<Request> requests, User user, Function requestsUpdated) {
+  DatabaseReference requestsReference = FirebaseDatabase.instance.ref('requests/${user.uid}/');
+  StreamSubscription<DatabaseEvent> requestsSubscription = requestsReference.onValue.listen((DatabaseEvent event) {
+    requests.clear();
+    if (event.snapshot.value != null) {
+      for (var child in event.snapshot.children) {
+        Request request = createRequest(child.value, user.uid);
+        request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
+        requests.add(request);
+      }
+    }
+    requestsUpdated();
+  });
+  return requestsSubscription;
+}
+
+Future<bool> userExists(String id) async {
+  DatabaseEvent event = await dbReference.child('users/$id').once();
+  return (event.snapshot.value != null);
+}
+
+Future<String> findUser(String txt) async {
+  if (await userExists(txt)) {
+    return txt;
+  }
+
   DatabaseEvent event = await dbReference.child('users/').once();
   if (event.snapshot.value != null){
     for (Map child in (event.snapshot.value as Map).values) {
-      if (child.containsValue(email)) {
-        return true;
+      if (child['email'] == txt || child['name'] == txt) {
+        return child['uid'];
       }
     }
   }
-  return false;
+  return '';
 }
 
 void addUser(User user) {

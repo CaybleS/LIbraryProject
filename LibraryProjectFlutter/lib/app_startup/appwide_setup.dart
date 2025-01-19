@@ -17,9 +17,11 @@ const int settingsIndex = 4;
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
 List<Friend> friends = [];
+List<Request> requests = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
+late StreamSubscription<DatabaseEvent> _requestsSubscription;
 // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
 // its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
 // this is needed due to the bottombar loading all 5 pages in memory at a time so it allows for logic to cause refreshes ONLY for pages the user is currently on.
@@ -33,12 +35,14 @@ void setupDatabaseSubscriptions(User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requests, user, _friendsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
+  _requestsSubscription.cancel();
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed

@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/Social/friends_page.dart';
-import 'chat_screen.dart';
+import 'package:library_project/Social/chat_screen.dart';
 
 class CreateChatScreen extends StatefulWidget {
   final User user;
@@ -34,7 +35,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   }
 
   void getList() async {
-    friendsVisible = await getFriends(widget.user);
+    friendsVisible = friends;//await getFriends(widget.user);
     setState(() {});
   }
 

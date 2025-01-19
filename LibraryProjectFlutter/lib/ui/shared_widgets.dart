@@ -34,6 +34,9 @@ class SharedWidgets {
           icon: const Icon(Icons.clear),
         ),
       ),
+      onTapOutside: (event) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
     );
   }
 
