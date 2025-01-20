@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'dart:convert';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/add_book/scan/scanner_screen.dart';
 import 'package:library_project/ui/colors.dart';

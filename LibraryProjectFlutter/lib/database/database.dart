@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:library_project/book/book.dart';
-import 'package:library_project/Social/chat.dart';
+import 'package:library_project/models/book.dart';
+import 'package:library_project/models/chat.dart';
+import 'package:library_project/models/user.dart';
 import '../Social/friends_page.dart';
 import 'dart:async';
 
@@ -78,14 +79,14 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> b
   return lentToMeSubscription;
 }
 
-StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends, User user, Function friendsUpdated) {
+StreamSubscription<DatabaseEvent> setupFriendsSubscription(
+    List<UserModel> friends, User user, Function friendsUpdated) {
   DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
   StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) {
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        Friend friend = Friend('${child.key}');
-        friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
+        UserModel friend = UserModel.fromJson(child.value as Map<dynamic, dynamic>);
         friends.add(friend);
       }
     }
@@ -94,26 +95,56 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(List<Friend> friends,
   return friendsSubscription;
 }
 
-Future<bool> userExists(String email) async {
+StreamSubscription<DatabaseEvent> setupRequestsSubscription(
+    List<Request> requests, User user, Function requestsUpdated) {
+  DatabaseReference requestsReference = FirebaseDatabase.instance.ref('requests/${user.uid}/');
+  StreamSubscription<DatabaseEvent> requestsSubscription = requestsReference.onValue.listen((DatabaseEvent event) {
+    requests.clear();
+    if (event.snapshot.value != null) {
+      for (var child in event.snapshot.children) {
+        Request request = createRequest(child.value, user.uid);
+        request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
+        requests.add(request);
+      }
+    }
+    requestsUpdated();
+  });
+  return requestsSubscription;
+}
+
+Future<bool> userExists(String id) async {
+  DatabaseEvent event = await dbReference.child('users/$id').once();
+  return (event.snapshot.value != null);
+}
+
+Future<String> findUser(String txt) async {
+  if (await userExists(txt)) {
+    return txt;
+  }
+
   DatabaseEvent event = await dbReference.child('users/').once();
-  if (event.snapshot.value != null){
+  if (event.snapshot.value != null) {
     for (Map child in (event.snapshot.value as Map).values) {
-      if (child.containsValue(email)) {
-        return true;
+      if (child['email'] == txt || child['name'] == txt) {
+        return child['uid'];
       }
     }
   }
-  return false;
+  return '';
 }
 
 void addUser(User user) {
   final id = dbReference.child('users/${user.uid}');
-  id.set({
-    'uid': user.uid,
-    'name': user.displayName,
-    'email': user.email,
-    'photoUrl': user.photoURL,
-  });
+  UserModel userModel = UserModel(
+    uid: user.uid,
+    name: user.displayName!,
+    email: user.email!,
+    photoUrl:  user.photoURL,
+    isActive:  true,
+    isTyping:  false,
+    lastSignedIn: DateTime.now(),
+  );
+  id.set(userModel.toJson());
 }
 
 void sendFriendRequest(User user, String friendId) {
@@ -151,15 +182,13 @@ Future<void> addFriend(Request request) async {
   await request.delete();
 }
 
-Future<List<Friend>> getFriends(User user) async {
+Future<List<UserModel>> getFriends(User user) async {
   DatabaseEvent event = await dbReference.child('friends/${user.uid}/').once();
-  List<Friend> friends = [];
+  List<UserModel> friends = [];
 
   if (event.snapshot.value != null) {
     for (var child in event.snapshot.children) {
-      print(child.value);
-      Friend friend = Friend('${child.key}');
-      friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
+      UserModel friend = UserModel.fromJson(child.value as Map<dynamic, dynamic>);
       friends.add(friend);
     }
   }
@@ -167,15 +196,16 @@ Future<List<Friend>> getFriends(User user) async {
   return friends;
 }
 
-Future<List<ChatShort>> getChatList(User user) async {
-  DatabaseEvent event = await dbReference.child('chatsByUser/${user.uid}/').once();
-  List<ChatShort> chats = [];
+Future<List<Chat>> getChatList(User user) async {
+  DatabaseEvent event = await dbReference.child('chats/').once();
+  List<Chat> chats = [];
 
   if (event.snapshot.value != null) {
     for (var child in event.snapshot.children) {
-      ChatShort chat = await createChatDisplay(child.value);
-      chat.roomID = child.key!;
-      chats.add(chat);
+      print(child);
+      // Chat chat = await createChatDisplay(child.value);
+      // chat.roomID = child.key!;
+      // chats.add(chat);
     }
   }
 

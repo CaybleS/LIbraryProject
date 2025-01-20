@@ -2,9 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_page.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
 import 'dart:async';
+
+import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
 const int addBookPageIndex = 1;
@@ -15,10 +17,12 @@ const int settingsIndex = 4;
 // pages can access these at any time, knowing that they will be up to date guaranteed
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
-List<Friend> friends = [];
+List<UserModel> friends = [];
+List<Request> requests = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
+late StreamSubscription<DatabaseEvent> _requestsSubscription;
 // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
 // its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
 // this is needed due to the bottombar loading all 5 pages in memory at a time so it allows for logic to cause refreshes ONLY for pages the user is currently on.
@@ -32,12 +36,14 @@ void setupDatabaseSubscriptions(User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requests, user, _friendsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
+  _requestsSubscription.cancel();
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed

@@ -1,10 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/app_startup/create_account_screen.dart';
 import 'package:library_project/app_startup/persistent_bottombar.dart';
-import 'package:library_project/database/firebase_options.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'auth.dart';
 
@@ -34,14 +33,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void initial() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     FirebaseAuth auth = FirebaseAuth.instance;
-    FirebaseDatabase.instance.setPersistenceEnabled(true);
 
-    if (auth.currentUser != null) {
-      user = auth.currentUser;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
-    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (auth.currentUser != null) {
+        user = auth.currentUser;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
+      }
+    });
   }
 
   void click() {
@@ -63,15 +62,18 @@ class _LoginPageState extends State<LoginPage> {
     return OutlinedButton(
         onPressed: click,
         child: const Padding(
-            padding: EdgeInsets.fromLTRB(0, 10, 0, 10),
+            padding: EdgeInsets.symmetric(vertical: 10),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Image(image: AssetImage('assets/google_logo.png'), height: 35),
+                ClipRRect(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  child: Image(image: AssetImage('assets/google_logo.png'), height: 30),
+                ),
                 Padding(
                     padding: EdgeInsets.only(left: 10),
-                    child: Text('Sign in with Google', style: TextStyle(color: Colors.grey, fontSize: 25)))
+                    child: Text('Sign in with Google',
+                        style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)))
               ],
             )));
   }
@@ -135,9 +137,10 @@ class _LoginPageState extends State<LoginPage> {
         body: Stack(
           children: [
             SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  SizedBox(height: size.height * 0.05),
+                  const SizedBox(height: 20),
                   Container(
                     alignment: Alignment.center,
                     width: size.width * 0.9,
@@ -210,24 +213,43 @@ class _LoginPageState extends State<LoginPage> {
                     height: size.height * 0.05,
                   ),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                    ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                        onPressed: () {
-                          loginBtnClicked();
-                        },
-                        child: const Text(
-                          "Log In",
-                          style: TextStyle(color: Colors.black, fontSize: 22),
-                        )),
-                    ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
-                        onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()));
-                        },
-                        child: const Text(
-                          "Create Account",
-                          style: TextStyle(color: Colors.black, fontSize: 22),
-                        )),
+                    Expanded(
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                          onPressed: () {
+                            loginBtnClicked();
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Log In",
+                                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(IconsaxPlusLinear.login, color: Colors.black),
+                            ],
+                          )),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()));
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Register",
+                                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(IconsaxPlusLinear.user_add, color: Colors.black),
+                            ],
+                          )),
+                    ),
                   ]),
                   SizedBox(
                     height: size.height * 0.025,

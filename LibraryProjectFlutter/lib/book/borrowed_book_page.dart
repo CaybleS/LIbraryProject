@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 
 class BorrowedBookPage extends StatefulWidget {
   final User user;

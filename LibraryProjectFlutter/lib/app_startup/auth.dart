@@ -47,11 +47,11 @@ Future<void> signOutGoogle() async {
 }
 
 void logout(context) async {
+  cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
     for (var data in _auth.currentUser!.providerData) {
       debugPrint(data.providerId);
       if (data.providerId == "google.com") {
-        cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
         await signOutGoogle();
       }
     }

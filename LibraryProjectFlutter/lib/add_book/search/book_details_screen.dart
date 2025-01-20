@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 
 class BookDetailsScreen extends StatelessWidget {

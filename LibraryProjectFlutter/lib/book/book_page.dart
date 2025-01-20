@@ -11,7 +11,7 @@
 // 8.) Note that borrowed_book_page and add_book/search/book_details_screen will have similar layout to this page IMO, but with much of these details missing I'd say
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/book/book.dart';
+import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
 

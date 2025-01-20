@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/database/database.dart';
-import 'package:library_project/Social/friends_page.dart';
-import 'chat_screen.dart';
+import 'package:library_project/models/user.dart';
 
 class CreateChatScreen extends StatefulWidget {
   final User user;
@@ -16,44 +16,23 @@ class CreateChatScreen extends StatefulWidget {
 class _CreateChatScreenState extends State<CreateChatScreen> {
   late TextEditingController controller;
   final TextEditingController groupNameController = TextEditingController();
-  List<Friend> friendsVisible = [];
-  List<Friend> inChat = [];
+  List<UserModel> inChat = [];
 
   @override
   void initState() {
     super.initState();
 
-    getList();
     getAppFriends();
-
   }
 
   getAppFriends() async {
-    final friends =await getFriends(widget.user);
+    final friends = await getFriends(widget.user);
     print(friends);
   }
 
-  void getList() async {
-    friendsVisible = await getFriends(widget.user);
-    setState(() {});
-  }
-
-  String displayString(Friend friend) {
-    String text = friend.friendId;
-    if (friend.name != null) {
-      text = friend.name!;
-      if (friend.email != null) {
-        text += " - ${friend.email}";
-      }
-    } else if (friend.email != null) {
-      text = friend.email!;
-    }
-    return text;
-  }
-
-  void addFriend(Friend friend) {
+  void addFriend(UserModel friend) {
+    if (inChat.contains(friend)) return;
     inChat.add(friend);
-    friendsVisible.remove(friend);
 
     controller.clear;
 
@@ -61,31 +40,30 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   }
 
   void removeFriend(int index) {
-    friendsVisible.add(inChat[index]);
     inChat.remove(inChat[index]);
 
     setState(() {});
   }
 
   void createChat() {
-    if (inChat.length == 1) {
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                    widget.user,
-                    inChat: inChat,
-                  )));
-    } else if (inChat.length > 1 && groupNameController.text.isNotEmpty) {
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                    widget.user,
-                    inChat: inChat,
-                    name: groupNameController.text,
-                  )));
-    }
+    // if (inChat.length == 1) {
+    //   Navigator.pushReplacement(
+    //       context,
+    //       MaterialPageRoute(
+    //           builder: (context) => ChatScreen(
+    //                 widget.user,
+    //                 inChat: inChat,
+    //               )));
+    // } else if (inChat.length > 1 && groupNameController.text.isNotEmpty) {
+    //   Navigator.pushReplacement(
+    //       context,
+    //       MaterialPageRoute(
+    //           builder: (context) => ChatScreen(
+    //                 widget.user,
+    //                 inChat: inChat,
+    //                 name: groupNameController.text,
+    //               )));
+    // }
   }
 
   @override
@@ -115,7 +93,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Autocomplete<Friend>(
+            Autocomplete<UserModel>(
               fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
                 controller = textEditingController;
                 return TextField(
@@ -130,18 +108,17 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                         filled: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))));
               },
-              displayStringForOption: (option) => displayString(option),
+              displayStringForOption: (option) => option.email,
               optionsBuilder: (TextEditingValue textEditingValue) {
                 if (textEditingValue.text == '') {
-                  return const Iterable<Friend>.empty();
+                  return const Iterable<UserModel>.empty();
                 } else {
-                  return friendsVisible.where((Friend friend) {
-                    return displayString(friend).toLowerCase().contains(controller.text.toLowerCase());
+                  return friends.where((UserModel friend) {
+                    return friend.email.toLowerCase().contains(controller.text.toLowerCase());
                   });
                 }
               },
               onSelected: (option) {
-                debugPrint("Selected: ${option.friendId}");
                 controller.text = '';
                 addFriend(option);
               },
@@ -151,83 +128,53 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
               child: ListView.builder(
                 itemCount: inChat.length,
                 itemBuilder: (BuildContext context, int index) {
-                  String nameTxt = "";
-                  String emailTxt = "";
-
-                  if (inChat[index].name != null) {
-                    nameTxt = inChat[index].name!;
-                    if (inChat[index].email != null) {
-                      emailTxt = inChat[index].email!;
-                    } else {
-                      emailTxt = inChat[index].friendId;
-                    }
-                  } else {
-                    if (inChat[index].email != null) {
-                      nameTxt = inChat[index].email!;
-                      emailTxt = inChat[index].friendId;
-                    } else {
-                      nameTxt = inChat[index].friendId;
-                    }
-                  }
+                  final user = inChat[index];
 
                   return Card(
                     margin: const EdgeInsets.all(5),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: size.width * 0.03,
-                        ),
-                        SizedBox(
-                            width: size.width * 0.6,
-                            height: size.height * 0.095,
-                            child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  children: [
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          nameTxt,
-                                          style: const TextStyle(color: Colors.black, fontSize: 20),
-                                          softWrap: true,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )),
-                                    Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          emailTxt,
-                                          style: const TextStyle(color: Colors.black, fontSize: 16),
-                                          softWrap: true,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )),
-                                  ],
-                                ))),
-                        SizedBox(
-                          height: size.height * 0.095,
-                          width: size.width * 0.3,
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                height: size.height * 0.035,
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: InkWell(
-                                  onTap: () {
-                                    removeFriend(index);
-                                  },
-                                  child: const Icon(Icons.close),
-                                ),
-                              ),
-                            ],
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16))
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 25,
+                            backgroundImage: user.photoUrl != null
+                                ? NetworkImage(user.photoUrl!)
+                                : const AssetImage('assets/profile_pic.jpg'),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user.name,
+                                  style: const TextStyle(color: Colors.black, fontSize: 20),
+                                  softWrap: true,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  user.email,
+                                  style: const TextStyle(color: Colors.black, fontSize: 16),
+                                  softWrap: true,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              removeFriend(index);
+                            },
+                            child: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
