@@ -161,6 +161,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Scan Barcode"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -169,7 +171,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         },
         backgroundColor: AppColor.skyBlue,
         label: const Text(
-          "Add from photos",
+          "Get Barcode From Photos",
           style: TextStyle(fontSize: 16),
         ),
         icon: const Icon(
