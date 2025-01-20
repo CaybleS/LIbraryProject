@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/friends/friend_scanner_driver.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../database/database.dart';
+import '../../database/database.dart';
 
 class AddFriendPage extends StatefulWidget {
   final User user;
@@ -18,6 +20,16 @@ class _AddFriendPageState extends State<AddFriendPage> {
   String _msg = "";
   bool showErrorTxt = false;
   String _selected = "enter";
+
+  late FriendScannerDriver _qrScanInstance;
+  bool _displayProgressIndicator =
+      false; // used to display CircularProgressIndicator whenever necessary
+
+  @override
+  void initState() {
+    super.initState();
+    _qrScanInstance = FriendScannerDriver();
+  }
 
   void onSubmit(BuildContext context) async {
     String txt = controller.text;
@@ -35,6 +47,42 @@ class _AddFriendPageState extends State<AddFriendPage> {
         showErrorTxt = true;
       });
     }
+  }
+
+  Future<void> _scanButtonClicked() async {
+    if (_displayProgressIndicator) {
+      return;
+    }
+    controller.clear();
+    setState(() {
+      _displayProgressIndicator = true;
+    });
+    String? scannedID = await _qrScanInstance.runScanner(context);
+    // after scanning, the scanner pops here and a search by isbn occurs. However I want to clear the last search values before this search
+    // occurs, so that for example the search info helper text gets cleared. It's convoluted logic but it works.
+    // if (scannedID != null) {
+    //   _bookSearchInstance.resetLastSearchValues();
+    //   setState(() {});
+    // }
+    if (mounted && scannedID != null) {
+      // await _qrScanInstance.scannerSearchByIsbn(context, scannedID);
+      if (await userExists(scannedID)) {
+        var contain = friends.where((element) => element.friendId == scannedID);
+        if (contain.isEmpty) {
+          sendFriendRequest(widget.user, scannedID);
+          SharedWidgets.displayPositiveFeedbackDialog(
+              context, 'Friend Request Sent!');
+        }
+      }
+    }
+    // this is commented out just because I decided not to include it, but its arguably good to have so I'm not deleting its implementation
+    // if (scannedISBN != null) {
+    //   // putting the scanned ISBN into the search query, for better user experience, done after the search rather than before
+    //   _searchQueryController.text = scannedISBN;
+    // }
+    setState(() {
+      _displayProgressIndicator = false;
+    });
   }
 
   Widget displayNavigationButtons() {
@@ -101,8 +149,12 @@ class _AddFriendPageState extends State<AddFriendPage> {
   Widget friendCodeDisplay() {
     return Column(
       children: [
-        Text("ID: ${widget.user.uid}", style: const TextStyle(fontSize: 20, color: Colors.black)),
-        QrImageView(data: widget.user.uid, size: 300,)
+        Text("ID: ${widget.user.uid}",
+            style: const TextStyle(fontSize: 20, color: Colors.black)),
+        QrImageView(
+          data: widget.user.uid,
+          size: 300,
+        )
       ],
     );
   }
@@ -110,14 +162,14 @@ class _AddFriendPageState extends State<AddFriendPage> {
   Widget addFriendDisplay() {
     return Column(children: [
       const Text(
-        "Friend's ID, Email, or Username:",
+        "Friend's ID or Email:",
         style: TextStyle(fontSize: 20),
       ),
       const SizedBox(
         height: 10,
       ),
       SharedWidgets.displayTextField(
-          'ID, email, or name', controller, showErrorTxt, _msg),
+          'ID or email', controller, showErrorTxt, _msg),
       const SizedBox(
         height: 10,
       ),
@@ -128,6 +180,17 @@ class _AddFriendPageState extends State<AddFriendPage> {
           style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
           child: const Text('Send Request',
+              style: TextStyle(fontSize: 16, color: Colors.black))),
+      const SizedBox(
+        height: 10,
+      ),
+      ElevatedButton(
+          onPressed: () {
+            _scanButtonClicked();
+          },
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
+          child: const Text('Scan Code',
               style: TextStyle(fontSize: 16, color: Colors.black)))
     ]);
   }
@@ -147,7 +210,10 @@ class _AddFriendPageState extends State<AddFriendPage> {
                 const SizedBox(
                   height: 10,
                 ),
-                _selected == "enter" ? addFriendDisplay() : friendCodeDisplay()
+                _selected == "enter" ? addFriendDisplay() : friendCodeDisplay(),
+                _displayProgressIndicator
+                    ? SharedWidgets.displayCircularProgressIndicator()
+                    : Container()
               ],
             )));
   }

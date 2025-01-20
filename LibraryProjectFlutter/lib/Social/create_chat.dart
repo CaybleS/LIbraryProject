@@ -113,9 +113,11 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                 if (textEditingValue.text == '') {
                   return const Iterable<UserModel>.empty();
                 } else {
-                  return friends.where((UserModel friend) {
-                    return friend.email.toLowerCase().contains(controller.text.toLowerCase());
-                  });
+                  return const Iterable<UserModel>.empty();
+                  
+                  // return friends.where((UserModel friend) {
+                  //   return friend.email.toLowerCase().contains(controller.text.toLowerCase());
+                  // });
                 }
               },
               onSelected: (option) {

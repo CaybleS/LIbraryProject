@@ -7,7 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/database/database.dart';
-import 'package:library_project/Social/friends_page.dart';
+import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatScreen extends StatefulWidget {
