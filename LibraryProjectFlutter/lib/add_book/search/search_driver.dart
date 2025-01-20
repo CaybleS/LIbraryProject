@@ -69,6 +69,7 @@ class SearchDriver {
 
   Future<void> _searchWithGoogle(String searchQuery) async {
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQuery&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
+        debugPrint(apiKey);
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint));

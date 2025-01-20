@@ -1,5 +1,5 @@
 # project-related
-.api_keys./
+.api_keys.json
 
 # Miscellaneous
 *.class
