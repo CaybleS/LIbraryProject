@@ -20,22 +20,22 @@ class _HomePageState extends State<HomePage> {
   String _showing = "all";
   List<int> _shownList = [];
   bool _usingBooksLentToMe = false;
-  late final VoidCallback _pageOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
+  late final VoidCallback _homepageOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
 
   @override
   void initState() {
     super.initState();
-    _pageOpenedListener = () {
+    _homepageOpenedListener = () {
       if (refreshNotifier.value == homepageIndex) {
         _updateList(_showing);
       }
     };
-    refreshNotifier.addListener(_pageOpenedListener);
+    refreshNotifier.addListener(_homepageOpenedListener);
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_pageOpenedListener);
+    refreshNotifier.removeListener(_homepageOpenedListener);
     super.dispose();
   }
 

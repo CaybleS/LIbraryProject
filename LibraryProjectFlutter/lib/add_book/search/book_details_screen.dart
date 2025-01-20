@@ -1,4 +1,3 @@
-// TODO ensure UI is good on this page - it seems to have wasted space especially on bigger screens. No idea how to fix it though.
 import 'package:flutter/material.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
@@ -22,15 +21,10 @@ class BookDetailsScreen extends StatelessWidget {
           children: [
             Flexible(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 220,
-                    width: 150,
-                    child: AspectRatio(
-                      aspectRatio: 0.7,
-                      child: _bookToView.getCoverImage(),
-                    ),
+                  AspectRatio(
+                    aspectRatio: 0.7,
+                    child: _bookToView.getCoverImage(),
                   ),
                   const SizedBox(width: 5),
                   Flexible( 

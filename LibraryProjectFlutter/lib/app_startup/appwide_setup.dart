@@ -13,7 +13,6 @@ const int profileIndex = 3;
 const int settingsIndex = 4;
 
 // pages can access these at any time, knowing that they will be up to date guaranteed
-// and pages can use 
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
 List<Friend> friends = [];

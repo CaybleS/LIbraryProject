@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "library_project",
+            "request": "launch",
+            "type": "dart",
+			"flutterMode": "debug",
+			"args": [
+                "--dart-define-from-file=.api_keys.json",
+            ]
+        },
+        {
+            "name": "library_project (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+			"args": [
+                "--dart-define-from-file=.api_keys.json",
+            ]
+        },
+        {
+            "name": "library_project (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+			"args": [
+                "--dart-define-from-file=.api_keys.json",
+            ]
+        }
+    ]
+}

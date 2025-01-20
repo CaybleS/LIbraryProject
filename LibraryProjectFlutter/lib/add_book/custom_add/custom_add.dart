@@ -1,13 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
 import 'package:library_project/book/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/shared_widgets.dart';
-import 'package:uuid/uuid.dart';
 import 'dart:io';
 
 class CustomAdd extends StatefulWidget {
@@ -52,9 +50,9 @@ class _CustomAddState extends State<CustomAdd> {
     super.dispose();
   }
 
-  void _checkInputs(String titleInput, String authorInput) {
+  Future<void> _checkInputs(String titleInput, String authorInput) async {
     _resetErrors();
-    Book customAddedBook = Book(title: titleInput, author: authorInput, coverUrl: _coverImageUrl, isManualAdded: true);
+    Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
     for (int i = 0; i < widget.userLibrary.length; i++) {
       if (customAddedBook == widget.userLibrary[i]) {
         _bookAlreadyAddedError = true;
@@ -66,9 +64,19 @@ class _CustomAddState extends State<CustomAdd> {
       SharedWidgets.displayErrorDialog(context, failMessage);
     }
     else {
-      // ordered this way so that we pop to add book homepage before showing book added dialog
-      Navigator.pop(context, "added");
-      addBookToLibrary(customAddedBook, widget.user, context);
+      if (_coverImage != null) {
+        _coverImageUrl = await uploadCoverToStorage(context, _coverImage!);
+        // note that if coverImageUrl is null, an error occured and an error dialog should be shown. In this case, the book still gets added
+        // just without a cover image set.
+        if (_coverImageUrl != null) {
+          customAddedBook.cloudCoverUrl = _coverImageUrl;
+        }
+      }
+      if (mounted) {
+        // ordered this way so that we pop to add book homepage before showing book added dialog
+        Navigator.pop(context, "added");
+        addBookToLibrary(customAddedBook, widget.user, context);
+      }
     }
   }
 
@@ -83,72 +91,12 @@ class _CustomAddState extends State<CustomAdd> {
     return "";
   }
 
-  Future<void> _addCoverFromFile(BuildContext context) async {
-    try {
-      XFile? inputCoverImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (inputCoverImage != null) {
-        File coverImageFile = File(inputCoverImage.path);
-        String coverImageFileName = const Uuid().v1();
-        bool coverImgUploadError = false;
-        final Reference imageRef = FirebaseStorage.instance.ref().child('customBookCovers/$coverImageFileName');
-        TaskSnapshot uploadTask = await imageRef.putFile(coverImageFile).catchError((error) {
-          coverImgUploadError = true;
-        });
-        if (!coverImgUploadError) {
-          _coverImageUrl = await uploadTask.ref.getDownloadURL();
-          _coverImage = inputCoverImage;
-        }
-      }
-    } on PlatformException catch (e) {
-      if (e.code != "already_active" && context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-    catch (e) {
-      if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-  }
-
-  Future<void> _addCoverFromCamera(BuildContext context) async {
-    try {
-      XFile? inputCoverImage = await ImagePicker().pickImage(source: ImageSource.camera);
-      if (inputCoverImage != null) {
-        File coverImageFile = File(inputCoverImage.path);
-        String coverImageFileName = const Uuid().v1();
-        bool coverImgUploadError = false;
-        final Reference imageRef = FirebaseStorage.instance.ref().child('customBookCovers/$coverImageFileName');
-        TaskSnapshot uploadTask = await imageRef.putFile(coverImageFile).catchError((error) {
-          coverImgUploadError = true;
-        });
-        if (!coverImgUploadError) {
-          _coverImageUrl = await uploadTask.ref.getDownloadURL();
-          _coverImage = inputCoverImage;
-        }
-      }
-    } on PlatformException catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-      if (e.code == "camera_access_denied") {
-        SharedWidgets.displayErrorDialog(context, "Camera access denied. Please enable it in your device settings.");
-      }
-      else if (e.code != "already_active") {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-    catch (e) {
-      if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Input Book To Add"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
@@ -156,10 +104,6 @@ class _CustomAddState extends State<CustomAdd> {
         padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
         child: Column(
           children: [
-            const Text(
-              "Add Custom Book Here",
-              style: TextStyle(fontSize: 20, color: Colors.black),
-            ),
             const SizedBox(height: 12),
             Flexible(
               child: Row(
@@ -214,23 +158,23 @@ class _CustomAddState extends State<CustomAdd> {
                       children: [
                         ElevatedButton(
                           onPressed: () async {
-                            await _addCoverFromFile(context);
+                            _coverImage = await selectCoverFromFile(context);
                             if (_coverImage != null) {
                               setState(() {});
                             }
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
-                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Add Cover From File", style: TextStyle(fontSize: 16, color: Colors.black))),
+                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Upload From File", style: TextStyle(fontSize: 16, color: Colors.black))),
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            await _addCoverFromCamera(context);
+                            _coverImage = await selectCoverFromCamera(context);
                             if (_coverImage != null) {
                               setState(() {});
                             }
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
-                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Add Cover From Camera", style: TextStyle(fontSize: 16, color: Colors.black))),
+                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Upload From Camera", style: TextStyle(fontSize: 16, color: Colors.black))),
                         ),
                         _coverImage != null
                         ? ElevatedButton(
@@ -268,7 +212,7 @@ class _CustomAddState extends State<CustomAdd> {
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           String title = _inputTitleController.text;
                           String author = _inputAuthorController.text;
                           if (title.isEmpty) {
@@ -281,7 +225,7 @@ class _CustomAddState extends State<CustomAdd> {
                             setState(() {});
                             return;
                           }
-                          _checkInputs(title, author);
+                          await _checkInputs(title, author);
                         },
                         style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
                         child: const Text("Add Book", style: TextStyle(fontSize: 16, color: Colors.black)),

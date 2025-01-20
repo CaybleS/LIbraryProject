@@ -143,6 +143,8 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Add Books"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
@@ -153,10 +155,6 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Text(
-                  "Add Books",
-                  style: TextStyle(fontSize: 20, color: Colors.black),
-                ),
                 const SizedBox(height: 6),
                 SharedWidgets.displayTextField("Search titles, authors, or keywords", _searchQueryController, _noInput, "Please enter some text"),
                 const SizedBox(height: 8),

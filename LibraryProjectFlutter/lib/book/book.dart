@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/database/database.dart';
 
 // more can be added here based on what users want
@@ -10,6 +11,7 @@ class Book {
   String? lentDbKey; // stored so that 1.) books are flagged as lent and 2.) books can be mapped to lent books in that part of the database
   bool favorite = false;
   String? coverUrl;
+  String? cloudCoverUrl;
   String? borrowerId;
   String? description;
   String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)
@@ -32,6 +34,8 @@ class Book {
   );
 
   // probably couldve written this better but it works so im not touching it
+  // note this isnt a "strictly equal" object checker, its moreso just to check
+  // if books are logically same (like same title and author means its the same book)
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) {
@@ -75,6 +79,9 @@ class Book {
     if (lentDbKey != null && borrowerId != null) {
       removeLentBookInfo(lentDbKey!, borrowerId!);
     }
+    if (cloudCoverUrl != null) {
+      deleteCoverFromStorage(cloudCoverUrl!);
+    }
     removeRef(_id);
   }
 
@@ -111,6 +118,7 @@ class Book {
       'description': description,
       'googleBooksId': googleBooksId,
       'isManualAdded': isManualAdded,
+      'cloudCoverUrl': cloudCoverUrl,
       'borrowerId' : borrowerId,
       'bookCondition' : bookCondition,
       'publicBookNotes' : publicBookNotes,
@@ -122,12 +130,11 @@ class Book {
   }
 
   Image getCoverImage() {
-    if (coverUrl != null) {
+    if (cloudCoverUrl != null) {
+      return Image(image: CachedNetworkImageProvider(cloudCoverUrl!));
+    }
+    else if (coverUrl != null) {
       return Image(image: CachedNetworkImageProvider(coverUrl!));
-      // return Image.network(
-      //   coverUrl!,
-      //   fit: BoxFit.fill,
-      // );
     } else {
       return Image.asset(
         "assets/no_cover.jpg",
@@ -148,6 +155,7 @@ Book createBook(record) {
   );
   book.lentDbKey = record['lentDbKey'];
   book.favorite = record['favorite'];
+  book.cloudCoverUrl = record['cloudCoverUrl'];
   book.borrowerId = record['borrowerId'];
   book.bookCondition = record['bookCondition'];
   book.publicBookNotes = record['publicBookNotes'];
