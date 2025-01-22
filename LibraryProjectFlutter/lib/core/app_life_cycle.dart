@@ -22,7 +22,7 @@ class AppLifeCycleState extends State<AppLifeCycle>
       if (id.exists) {
         await FirebaseDatabase.instance.ref('users/${auth.currentUser!.uid}/').update({
           'isActive': status,
-          'lastSignedIn': DateTime.now(),
+          'lastSignedIn': DateTime.now().toIso8601String(),
         });
       }
     }

@@ -7,22 +7,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
-class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
+class FriendScannerScreen extends StatefulWidget {
+  const FriendScannerScreen({super.key});
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  State<FriendScannerScreen> createState() => _FriendScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
+class _FriendScannerScreenState extends State<FriendScannerScreen> {
   late CameraController _cameraController;
   final BarcodeScanner _barcodeScanner = BarcodeScanner(
-    formats: [BarcodeFormat.ean8, BarcodeFormat.ean13],
+    formats: [BarcodeFormat.qrCode],
   );
   bool _cameraIsInitialized = false; // to display progress indicator when initializing camera
   bool _isScanning = false; // to prevent overlapping scans
   bool _hasPopped = false; // prevents multiple pops which WILL happen because of how fast the scanner processes
-  final Map<String, int> _isbnFrequencies = {};
+  final Map<String, int> _idFrequencies = {};
 
   @override
   void initState() {
@@ -74,12 +74,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _openCamera();
   }
 
-  void _processBarcodeValue(String? isbn) {
-    if (isbn != null) {
-      _isbnFrequencies[isbn] = (_isbnFrequencies[isbn] ?? 0) + 1; // new frequencies will be initialized to 0 and then incremented here
-      if (_isbnFrequencies[isbn]! > 3 && mounted && !_hasPopped) { // cant guarantee with certainty that 3 is optimal, but its close to optimal at least
+  void _processBarcodeValue(String? id) {
+    if (id != null) {
+      _idFrequencies[id] = (_idFrequencies[id] ?? 0) + 1; // new frequencies will be initialized to 0 and then incremented here
+      if (_idFrequencies[id]! > 3 && mounted && !_hasPopped) { // cant guarantee with certainty that 3 is optimal, but its close to optimal at least
         _hasPopped = true;
-        Navigator.pop(context, isbn);
+        Navigator.pop(context, id);
       }
     }
   }
@@ -147,12 +147,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
       }
       else { // generally this just triggers when barcodes.isNotEmpty is false meaning the barcode is empty (no barcode found)
         if (mounted) {
-          Navigator.pop(context, "No barcode found on image."); // signaling to scanner_driver that no barcode was found on the image
+          Navigator.pop(context, "No QR code found on image."); // signaling to scanner_driver that no barcode was found on the image
         }
       }
     } catch (e) { // dont know when this would trigger, might need another error for it idk
       if (mounted) {
-        Navigator.pop(context, "No barcode found on image.");
+        Navigator.pop(context, "No QR code found on image.");
       }
     }
   }
@@ -161,18 +161,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Scan Barcode"),
-        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
-      backgroundColor: Colors.black,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           _analyzeImageFromFile();
         },
         backgroundColor: AppColor.skyBlue,
         label: const Text(
-          "Get Barcode From Photos",
+          "Add from photos",
           style: TextStyle(fontSize: 16),
         ),
         icon: const Icon(
@@ -188,18 +185,22 @@ class _ScannerScreenState extends State<ScannerScreen> {
               CameraPreview(_cameraController),
               Container(
                 width: 250,
-                height: 150,
+                height: 250,
                 decoration: BoxDecoration(border: Border.all(color: Colors.red, width: 2)),
               ),
             ],
           )
-        : Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Align(
+        : Column(
+          children: [
+            const SizedBox(
+              height: 12,
+            ),
+            Align(
               alignment: Alignment.topCenter,
               child: SharedWidgets.displayCircularProgressIndicator(),
             ),
-          ),
+          ],
+        ),
     );
   }
 }

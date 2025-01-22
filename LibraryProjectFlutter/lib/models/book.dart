@@ -11,7 +11,7 @@ class Book {
   String? lentDbKey; // stored so that 1.) books are flagged as lent and 2.) books can be mapped to lent books in that part of the database
   bool favorite = false;
   String? coverUrl;
-  String? cloudCoverUrl;
+  String? cloudCoverUrl; // needed to detect when a book is using our cloud storage to store cover url so it can be deleted as needed
   String? borrowerId;
   String? description;
   String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)

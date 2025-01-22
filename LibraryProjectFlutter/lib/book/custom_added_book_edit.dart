@@ -78,9 +78,9 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
       _bookNoLongerExistsError = true;
     }
     Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
-    // the first 2 checks are intuitive but the last checks for the case where the book has no cover, a cover is set, and then the cover is cleared
-    // again. In this case, no change error still needs to be shown
-    if (!_coverChanged && customAddedBook == widget.book || (_newCoverImage == null && !_coverIsSet)) {
+    // the first check is intuitive, the last checks for the either no cover change (simple) or the case where the book
+    // initially has no cover, a cover is set, and then the cover is cleared again.
+    if (customAddedBook == widget.book && (!_coverChanged || (_newCoverImage == null && !_coverIsSet))) {
       _noChangeError = true;
     }
     for (int i = 0; i < userLibrary.length; i++) {
@@ -112,14 +112,14 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
         if (_newCoverImageUrl == null && widget.book == customAddedBook) {
           return;
         }
-        widget.book.title = titleInput;
-        widget.book.author = authorInput;
         widget.book.cloudCoverUrl = _newCoverImageUrl;
       }
       else if (_coverChanged && widget.book.cloudCoverUrl != null) { // this is the case where the user clears the custom added cover (resets to no cover placeholder)
         deleteCoverFromStorage(widget.book.cloudCoverUrl!);
         widget.book.cloudCoverUrl = null;
       }
+      widget.book.title = titleInput;
+      widget.book.author = authorInput;
       widget.book.update();
       if (mounted) {
         // ordered this way intentionally so that we see the previous page before the feedback

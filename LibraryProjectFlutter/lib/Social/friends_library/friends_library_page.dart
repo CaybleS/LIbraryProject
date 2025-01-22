@@ -1,43 +1,43 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/Social/friends_library/friend_book_page.dart';
+import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/book/book_page.dart';
-import 'package:library_project/book/borrowed_book_page.dart';
-import 'package:library_project/ui/colors.dart';
-import 'appbar.dart';
 
 enum _SortingOption {dateAdded, title, author}
-enum _BooksShowing {all, fav, lent, lentToMe}
 
-class HomePage extends StatefulWidget {
-  final User user;
+class FriendsLibraryPage extends StatefulWidget {
+  final Friend friend;
 
-  const HomePage(this.user, {super.key});
+  const FriendsLibraryPage(this.friend, {super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<FriendsLibraryPage> createState() => _FriendsLibraryPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  List<int> _shownList = []; // this is the "driver" list which dictates what books in shownLibrary are visible, and in what order, by storing indicies of books in shownLibrary
+class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
+  List<Book> _friendsLibrary = [];
+  List<int> _shownList = []; // this is the "driver" list which dictates what books in friendsLibrary are visible, and in what order, by storing indicies of books in friendsLibrary
   List<int> _unsortedShownList = []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
-  List<Book> _shownLibrary = [];
-  bool _usingBooksLentToMe = false;
-  late final VoidCallback _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
   final TextEditingController _searchBarTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
-  _BooksShowing _showing = _BooksShowing.all;
-  bool _sortingAscending = true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
+  bool _sortingAscending = true;
   bool _showEmptyLibraryMsg = false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
+  late final VoidCallback _friendsBooksUpdatedListener;
 
   @override
   void initState() {
     super.initState();
-    _homepageListener = () {
-      if (refreshNotifier.value == homepageIndex) {
-        if (userLibrary.isEmpty) {
+    if (friendIdToLibrarySubscription[widget.friend.friendId] == null) {
+      friendIdToLibrarySubscription[widget.friend.friendId] = setupFriendsBooksSubscription(friendIdToBooks, widget.friend.friendId, friendsBooksUpdated);
+      friendIdsSubscribedTo.add(widget.friend.friendId);
+    }
+    _friendsBooksUpdatedListener = () {
+      if (refreshNotifier.value == friendsPageIndex) {
+        _friendsLibrary = List.from(friendIdToBooks[widget.friend.friendId] ?? []);
+        if (friendIdToBooks[widget.friend.friendId]!.isEmpty) {
           _showEmptyLibraryMsg = true;
         }
         else {
@@ -46,17 +46,19 @@ class _HomePageState extends State<HomePage> {
         _updateList();
       }
     };
-    refreshNotifier.addListener(_homepageListener);
+    refreshNotifier.addListener(_friendsBooksUpdatedListener);
+    _friendsLibrary = List.from(friendIdToBooks[widget.friend.friendId] ?? []);
+    _updateList();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_homepageListener);
+    refreshNotifier.removeListener(_friendsBooksUpdatedListener);
     _searchBarTextController.dispose();
     super.dispose();
   }
 
-  // note that these sorting and filtering functions are only changing the composition of shownList.
+  // note that these sorting functions are only changing the composition of shownList.
   void _sortByDateAdded() {
   _shownList = List.from(_unsortedShownList);
     if (!_sortingAscending) {
@@ -67,7 +69,7 @@ class _HomePageState extends State<HomePage> {
 
   void _sortByTitle() {
     // since shownList stores indices of shownLibrary they are already mapped to each other making this sorting not too complex
-    _shownList.sort((a, b) => (_shownLibrary[a].title ?? "No title found").compareTo(_shownLibrary[b].title ?? "No title found"));
+    _shownList.sort((a, b) => (_friendsLibrary[a].title ?? "No title found").compareTo(_friendsLibrary[b].title ?? "No title found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -75,48 +77,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _sortByAuthor() {
-    _shownList.sort((a, b) => (_shownLibrary[a].author ?? "No author found").compareTo(_shownLibrary[b].author ?? "No author found"));
+    _shownList.sort((a, b) => (_friendsLibrary[a].author ?? "No author found").compareTo(_friendsLibrary[b].author ?? "No author found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
     setState(() {});
   }
-  
-  // basically this function allows the filter to not care about word order
-  bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
-    if (individualWordsToFilter.length < 2) { // in this case there is only 0 or 1 words detected, so no need to consider word order
-      return false;
-    }
-    for (int i = 0; i < individualWordsToFilter.length; i++) {
-      if (individualWordsToFilter[i] == filterText) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // so if you filter search for exactly title and author in that order, it will show up
-  bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
-    if ("${book.title?.toLowerCase()} ${book.author?.toLowerCase()}".contains(filterText)) {
-      return true;
-    }
-    return false;
-  }
 
   // this doesn't change the shownLibrary list at all, it simply changes the shownList list (which only contains indicies of books to show inside of shownLibrary)
   void _filter(String filterText) {
-    filterText = filterText.toLowerCase().trim();
+    filterText = filterText.toLowerCase();
     if (filterText.isEmpty) {
-      _setShownListWithNoFilters();
+      _updateList();
     }
     else {
       List<int> newShownList = [];
-      List<String> individualWordsToFilter = filterText.split(" ");
-      for (int i = 0; i < _shownLibrary.length; i++) {
-        if ((_shownLibrary[i].title?.toLowerCase() ?? "no title found").contains(filterText) 
-        || (_shownLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText)
-        || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)
-        || _isFilterTextTitleAndAuthor(filterText, _shownLibrary[i])) {
+      for (int i = 0; i < _friendsLibrary.length; i++) {
+        if ((_friendsLibrary[i].title?.toLowerCase() ?? "no title found").contains(filterText) 
+        || (_friendsLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText)) {
           newShownList.add(i);
         }
       }
@@ -144,76 +122,18 @@ class _HomePageState extends State<HomePage> {
   void _resetFilters() {
     _sortingAscending = true;
     _sortSelection = _SortingOption.dateAdded;
-    _showing = _BooksShowing.all;
     _searchBarTextController.clear();
     _filter("");
   }
 
   void _bookClicked(int index) async {
-    if (_usingBooksLentToMe) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BorrowedBookPage(booksLentToMe[index], widget.user)));
-    }
-    else {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(userLibrary[index], widget.user)));
-    }
-  }
-
-  // this is needed to change the display button colors
-  void _changeDisplay(_BooksShowing state) {
-    _showing = state;
-    _updateList();
-  }
-
-  void _setShownListWithNoFilters() {
-    switch (_showing) {
-      case _BooksShowing.all:
-        _shownList = Iterable<int>.generate(userLibrary.length).toList();
-        break;
-      case _BooksShowing.fav:
-        for (int i = 0; i < userLibrary.length; i++) {
-          if (userLibrary[i].favorite) {
-            _shownList.add(i);
-          }
-        }
-        break;
-      case _BooksShowing.lent:
-        for (int i = 0; i < userLibrary.length; i++) {
-          if (userLibrary[i].lentDbKey != null) {
-            _shownList.add(i);
-          }
-        }
-        break;
-      case _BooksShowing.lentToMe:
-        _usingBooksLentToMe = true;
-        _shownList = Iterable<int>.generate(booksLentToMe.length).toList();
-        break;
-    }
-    _unsortedShownList = List.from(_shownList);
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(_friendsLibrary[index])));
   }
 
   void _updateList() {
     _shownList.clear();
-    _usingBooksLentToMe = false;
-
-    _setShownListWithNoFilters();
-    _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
-
-    // these sorting functions will call the setState
-    switch (_sortSelection) {
-      case _SortingOption.dateAdded:
-        _sortByDateAdded();
-        break;
-      case _SortingOption.title:
-        _sortByTitle();
-        break;
-      case _SortingOption.author:
-        _sortByAuthor();
-        break;
-    }
-  }
-
-  void _favoriteButtonClicked(int index) {
-    userLibrary[index].favoriteButtonClicked();
+    _shownList = Iterable<int>.generate(_friendsLibrary.length).toList();
+    _unsortedShownList = List.from(_shownList);
     setState(() {});
   }
 
@@ -355,82 +275,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _displayShowButtons() {
-    List<Color> buttonColor = List.filled(4, AppColor.skyBlue);
-
-    switch (_showing) {
-      case _BooksShowing.all:
-        buttonColor[0] = const Color.fromARGB(255, 117, 117, 117);
-        break;
-      case _BooksShowing.fav:
-        buttonColor[1] = const Color.fromARGB(255, 117, 117, 117);
-        break;
-      case _BooksShowing.lent:
-        buttonColor[2] = const Color.fromARGB(255, 117, 117, 117);
-        break;
-      case _BooksShowing.lentToMe:
-        buttonColor[3] = const Color.fromARGB(255, 117, 117, 117);
-        break;
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0], padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_showing != _BooksShowing.all) {
-              _changeDisplay(_BooksShowing.all);
-            }
-          },
-          child: const Text("All", style: TextStyle(color: Colors.black, fontSize: 16)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1], padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_showing != _BooksShowing.fav) {
-              _changeDisplay(_BooksShowing.fav);
-            }
-          },
-          child: const Text("Favorites", style: TextStyle(color: Colors.black, fontSize: 16)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[2], padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_showing != _BooksShowing.lent) {
-              _changeDisplay(_BooksShowing.lent);
-            }
-          },
-          child: const Text("Lent", style: TextStyle(color: Colors.black, fontSize: 16)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-          backgroundColor: buttonColor[3], padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_showing != _BooksShowing.lentToMe) {
-              _changeDisplay(_BooksShowing.lentToMe);
-            }
-          },
-          child: const Text("Lent to me", style: TextStyle(color: Colors.black, fontSize: 16)),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: displayAppBar(context, widget.user, "home"),
+      appBar: AppBar( // TODO in my view a messenger link should be somewhere. Could be on appbar, idk, but decide if it should be somewhere here or not.
+        title: Text("${widget.friend.friendId.substring(0, 10)}'s books"), // TODO change this to be username or somethng idk
+        centerTitle: true,
+        backgroundColor: Colors.blue,
+      ),
       backgroundColor: Colors.grey[400],
       body: Column(
         children: [
-          Padding( 
-            padding: const EdgeInsets.fromLTRB(8, 10, 8, 5),
-            child:_displayShowButtons()
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(19, 8, 19, 5),
+            padding: const EdgeInsets.fromLTRB(19, 12, 19, 5),
             child: Row(
               children: [
                 Expanded(
@@ -441,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                     },
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.white70,
                       hintText: "Filter by title or author",
                       hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                       border: const OutlineInputBorder(
@@ -464,8 +321,8 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          (_showEmptyLibraryMsg)
-            ? const Padding(padding: EdgeInsets.only(top: 10), child: Text("Add books to view your library here", style: TextStyle(fontSize: 14, color: Colors.black)))
+          (_showEmptyLibraryMsg) 
+            ? const Padding(padding: EdgeInsets.only(top: 10), child: Text("They have no books added", style: TextStyle(fontSize: 14, color: Colors.black)))
             : const SizedBox.shrink(),
           Expanded(
             child: Padding(
@@ -473,11 +330,11 @@ class _HomePageState extends State<HomePage> {
               child: ListView.builder(
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
-                  Widget coverImage = _shownLibrary[_shownList[index]].getCoverImage();
+                  Widget coverImage = _friendsLibrary[_shownList[index]].getCoverImage();
                   String availableTxt;
                   Color availableTxtColor;
 
-                  if (_shownLibrary[_shownList[index]].lentDbKey != null) {
+                  if (_friendsLibrary[_shownList[index]].lentDbKey != null) {
                     availableTxt = "Lent";
                     availableTxtColor = Colors.red;
                   } else {
@@ -485,12 +342,6 @@ class _HomePageState extends State<HomePage> {
                     availableTxtColor = const Color(0xFF43A047);
                   }
 
-                  Icon favIcon;
-                  if (_shownLibrary[_shownList[index]].favorite) {
-                    favIcon = const Icon(Icons.favorite);
-                  } else {
-                    favIcon = const Icon(Icons.favorite_border);
-                  }
                   return InkWell(
                     onTap: () {
                       _bookClicked(_shownList[index]);
@@ -517,7 +368,7 @@ class _HomePageState extends State<HomePage> {
                                   Align(
                                     alignment: Alignment.topLeft,
                                     child: Text(
-                                      _shownLibrary[_shownList[index]].title ?? "No title found",
+                                      _friendsLibrary[_shownList[index]].title ?? "No title found",
                                       style: const TextStyle(color: Colors.black, fontSize: 18),
                                       softWrap: true,
                                       maxLines: 2,
@@ -527,7 +378,7 @@ class _HomePageState extends State<HomePage> {
                                   Align(
                                     alignment: Alignment.topLeft,
                                     child: Text(
-                                      _shownLibrary[_shownList[index]].author ?? "No author found",
+                                      _friendsLibrary[_shownList[index]].author ?? "No author found",
                                       style: const TextStyle(color: Colors.black, fontSize: 14),
                                       softWrap: true,
                                       maxLines: 1,
@@ -537,7 +388,7 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                             ),
-                            _usingBooksLentToMe ? const SizedBox.shrink() : SizedBox(
+                            SizedBox(
                             width: 80,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -556,14 +407,6 @@ class _HomePageState extends State<HomePage> {
                                       availableTxt,
                                       style: TextStyle(color: availableTxtColor, fontSize: 16),
                                       softWrap: true,
-                                    ),
-                                  ),
-                                  Flexible(
-                                    child: IconButton(
-                                      onPressed: () => {_favoriteButtonClicked(_shownList[index])},
-                                      icon: favIcon,
-                                      splashColor: Colors.white,
-                                      color: Colors.red,
                                     ),
                                   ),
                                 ],

@@ -1,12 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/friends_page.dart';
+import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
 import 'dart:async';
-
-import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
 const int addBookPageIndex = 1;
@@ -17,7 +15,7 @@ const int settingsIndex = 4;
 // pages can access these at any time, knowing that they will be up to date guaranteed
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
-List<UserModel> friends = [];
+List<Friend> friends = [];
 List<Request> requests = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
@@ -31,6 +29,9 @@ ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 int selectedIndex = 0;
 int _prevIndex = 0;
 bool showBottombar = true;
+Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
+Map<String, List<Book>> friendIdToBooks = {};
+List<String> friendIdsSubscribedTo = [];
 
 void setupDatabaseSubscriptions(User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
@@ -44,6 +45,21 @@ void cancelDatabaseSubscriptions() {
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
   _requestsSubscription.cancel();
+  for (int i = 0; i < friendIdsSubscribedTo.length; i++) {
+    friendIdToLibrarySubscription[friendIdsSubscribedTo[i]]?.cancel();
+  }
+  _resetGlobalData();
+}
+
+void _resetGlobalData() {
+  userLibrary.clear();
+  booksLentToMe.clear();
+  friends.clear();
+  requests.clear();
+  // these track or are built up from subscriptions so they should be cleared as well
+  friendIdToBooks.clear();
+  friendIdToLibrarySubscription.clear();
+  friendIdsSubscribedTo.clear();
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
@@ -73,6 +89,13 @@ void _lentToMeBooksUpdated() {
 
 void _friendsUpdated() {
   if (selectedIndex == homepageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void friendsBooksUpdated() {
+  if (selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }

@@ -3,7 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/user.dart';
-import '../Social/friends_page.dart';
+import '../Social/friends/friends_page.dart';
 import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
@@ -79,14 +79,33 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> b
   return lentToMeSubscription;
 }
 
+StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(Map<String, List<Book>> friendIdToBooks, String friendId, Function friendsBooksUpdated) {
+  DatabaseReference friendsBooksReference = FirebaseDatabase.instance.ref('books/$friendId/');
+  StreamSubscription<DatabaseEvent> friendsBooksSubscription = friendsBooksReference.onValue.listen((DatabaseEvent event) {
+    List<Book> listOfFriendsBooks = [];
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        Book book = createBook(child.value);
+        book.setId(dbReference.child('books/$friendId/${child.key}'));
+        listOfFriendsBooks.add(book);
+      }
+    }
+    friendIdToBooks[friendId] = List.from(listOfFriendsBooks);
+    friendsBooksUpdated();
+  });
+  return friendsBooksSubscription;
+}
+
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(
-    List<UserModel> friends, User user, Function friendsUpdated) {
+    List<Friend> friends, User user, Function friendsUpdated) {
   DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
   StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) {
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        UserModel friend = UserModel.fromJson(child.value as Map<dynamic, dynamic>);
+        Friend friend = Friend('${child.key}');
+        friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
+        // UserModel friend = UserModel.fromJson(child.value as Map<dynamic, dynamic>);
         friends.add(friend);
       }
     }
@@ -98,12 +117,16 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
 StreamSubscription<DatabaseEvent> setupRequestsSubscription(
     List<Request> requests, User user, Function requestsUpdated) {
   DatabaseReference requestsReference = FirebaseDatabase.instance.ref('requests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> requestsSubscription = requestsReference.onValue.listen((DatabaseEvent event) {
+  StreamSubscription<DatabaseEvent> requestsSubscription = requestsReference.onValue.listen((DatabaseEvent event) async {
     requests.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
         Request request = createRequest(child.value, user.uid);
         request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
+
+        DatabaseEvent userEvent = await dbReference.child('users/${request.senderId}').once();
+        
+
         requests.add(request);
       }
     }
@@ -125,7 +148,7 @@ Future<String> findUser(String txt) async {
   DatabaseEvent event = await dbReference.child('users/').once();
   if (event.snapshot.value != null) {
     for (Map child in (event.snapshot.value as Map).values) {
-      if (child['email'] == txt || child['name'] == txt) {
+      if (child['email'] == txt) {
         return child['uid'];
       }
     }
