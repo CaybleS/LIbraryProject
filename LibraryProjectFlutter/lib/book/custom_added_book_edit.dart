@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'dart:io';
 
@@ -25,12 +25,17 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
   bool _noChangeError = false;
   bool _bookAlreadyAddedError = false;
   bool _bookNoLongerExistsError = false; // can only occur in scenarios where user is running the app on multiple devices
+  bool _coverIsSet = false; // needed to allow for users to only clear the cover and nothing else
+  bool _coverChanged = false;
   XFile? _newCoverImage;
   String? _newCoverImageUrl;
 
   @override
   void initState() {
     super.initState();
+    if (widget.book.cloudCoverUrl != null || widget.book.coverUrl != null) {
+      _coverIsSet = true;
+    }
     _editTitleController.addListener(() {
       if (_noTitleInput && _editTitleController.text.isNotEmpty) {
         setState(() {
@@ -66,14 +71,16 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
     return null;
   }
 
-  void _checkInputs(String titleInput, String authorInput) {
+  Future<void> _checkInputs(String titleInput, String authorInput) async {
     _resetErrors();
     int? userLibraryIndexOfThisBook = _getUserLibraryIndexOfThisBook();
     if (userLibraryIndexOfThisBook == null) {
       _bookNoLongerExistsError = true;
     }
-    Book customAddedBook = Book(title: titleInput, author: authorInput, coverUrl: _newCoverImageUrl, isManualAdded: true);
-    if (_newCoverImage == null && customAddedBook == widget.book) {
+    Book customAddedBook = Book(title: titleInput, author: authorInput, isManualAdded: true);
+    // the first check is intuitive, the last checks for the either no cover change (simple) or the case where the book
+    // initially has no cover, a cover is set, and then the cover is cleared again.
+    if (customAddedBook == widget.book && (!_coverChanged || (_newCoverImage == null && !_coverIsSet))) {
       _noChangeError = true;
     }
     for (int i = 0; i < userLibrary.length; i++) {
@@ -97,11 +104,28 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
       if (titleInput.isEmpty || authorInput.isEmpty) {
         return;
       }
+      if (_newCoverImage != null) {
+        _newCoverImageUrl = await uploadCoverToStorage(context, _newCoverImage!);
+        // note that if newCoverImageUrl is null, an error occured and an error dialog should be shown. In this case, the book still gets updated
+        // just without a cover image set. HOWEVER the condition below this checks if both the changed cover failed to upload, and the cover is
+        // the only thing changed. In this case, we don't change anything and just show the error.
+        if (_newCoverImageUrl == null && widget.book == customAddedBook) {
+          return;
+        }
+        widget.book.cloudCoverUrl = _newCoverImageUrl;
+      }
+      else if (_coverChanged && widget.book.cloudCoverUrl != null) { // this is the case where the user clears the custom added cover (resets to no cover placeholder)
+        deleteCoverFromStorage(widget.book.cloudCoverUrl!);
+        widget.book.cloudCoverUrl = null;
+      }
       widget.book.title = titleInput;
       widget.book.author = authorInput;
       widget.book.update();
-      Navigator.pop(context);
-      SharedWidgets.displayPositiveFeedbackDialog(context, "Book edited");
+      if (mounted) {
+        // ordered this way intentionally so that we see the previous page before the feedback
+        Navigator.pop(context);
+        SharedWidgets.displayPositiveFeedbackDialog(context, "Book edited");
+      }
     }
   }
 
@@ -124,46 +148,12 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
     return "";
   }
 
-  Future<void> _addCoverFromFile(BuildContext context) async {
-    try {
-      _newCoverImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-    } on PlatformException catch (e) {
-      if (e.code != "already_active" && context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-    catch (e) {
-      if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-  }
-
-  Future<void> _addCoverFromCamera(BuildContext context) async {
-    try {
-      _newCoverImage = await ImagePicker().pickImage(source: ImageSource.camera);
-    } on PlatformException catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-      if (e.code == "camera_access_denied") {
-        SharedWidgets.displayErrorDialog(context, "Camera access denied. Please enable it in your device settings.");
-      }
-      else if (e.code != "already_active") {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-    catch (e) {
-      if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "An unexpected error occurred. Please try again later.");
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Edit Book"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
@@ -171,10 +161,6 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
         padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
         child: Column(
           children: [
-            const Text(
-              "Edit Custom Added Book Here",
-              style: TextStyle(fontSize: 20, color: Colors.black),
-            ),
             const SizedBox(height: 12),
             Flexible(
               child: Row(
@@ -211,11 +197,16 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                   Flexible(
                     child: AspectRatio(
                       aspectRatio: 0.7,
-                      child: (_newCoverImage != null)
-                        ? Image.file(
-                            File(_newCoverImage!.path),
-                            fit: BoxFit.cover,
-                          )
+                      child: (_coverChanged)
+                        ? (_newCoverImage != null) 
+                            ? Image.file(
+                                File(_newCoverImage!.path),
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                "assets/no_cover.jpg",
+                                fit: BoxFit.fill,
+                              )
                         : widget.book.getCoverImage(),
                     ),
                   ),
@@ -227,35 +218,38 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                       children: [
                         ElevatedButton(
                           onPressed: () async {
-                            await _addCoverFromFile(context);
+                            _newCoverImage = await selectCoverFromFile(context);
                             if (_newCoverImage != null) {
+                              _coverChanged = true;
                               setState(() {});
                             }
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
-                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Add Cover From File", style: TextStyle(fontSize: 16, color: Colors.black))),
+                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Upload From File", style: TextStyle(fontSize: 16, color: Colors.black))),
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            await _addCoverFromCamera(context);
+                            _newCoverImage = await selectCoverFromCamera(context);
                             if (_newCoverImage != null) {
+                              _coverChanged = true;
                               setState(() {});
                             }
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
-                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Add Cover From Camera", style: TextStyle(fontSize: 16, color: Colors.black))),
+                          child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Upload From Camera", style: TextStyle(fontSize: 16, color: Colors.black))),
                         ),
-                        _newCoverImage != null
-                        ? ElevatedButton(
-                            onPressed: () async {
-                              _newCoverImage = null;
-                              setState(() {
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
-                            child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Clear cover", style: TextStyle(fontSize: 16, color: Colors.black))),
-                          )
-                        : const SizedBox.shrink(),
+                        (_coverIsSet || _newCoverImage != null)
+                          ? ElevatedButton(
+                              onPressed: () async {
+                                _newCoverImage = null;
+                                _coverChanged = true;
+                                setState(() {
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8)),
+                              child: const FittedBox(fit: BoxFit.scaleDown, child: Text("Clear cover", style: TextStyle(fontSize: 16, color: Colors.black))),
+                            )
+                          : const SizedBox.shrink(),
                       ],
                     )
                   )
@@ -281,7 +275,7 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           String title = _editTitleController.text;
                           String author = _editAuthorController.text;
                           if (title.isEmpty) {
@@ -294,7 +288,7 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                             setState(() {});
                             return;
                           }
-                          _checkInputs(title, author);
+                          await _checkInputs(title, author);
                         },
                         style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
                         child: const Text("Edit Book", style: TextStyle(fontSize: 16, color: Colors.black), overflow: TextOverflow.ellipsis),

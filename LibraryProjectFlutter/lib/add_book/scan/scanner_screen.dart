@@ -161,15 +161,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Scan Barcode"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
+      backgroundColor: Colors.black,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           _analyzeImageFromFile();
         },
         backgroundColor: AppColor.skyBlue,
         label: const Text(
-          "Add from photos",
+          "Get Barcode From Photos",
           style: TextStyle(fontSize: 16),
         ),
         icon: const Icon(
@@ -190,17 +193,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
               ),
             ],
           )
-        : Column(
-          children: [
-            const SizedBox(
-              height: 12,
-            ),
-            Align(
+        : Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Align(
               alignment: Alignment.topCenter,
               child: SharedWidgets.displayCircularProgressIndicator(),
             ),
-          ],
-        ),
+          ),
     );
   }
 }

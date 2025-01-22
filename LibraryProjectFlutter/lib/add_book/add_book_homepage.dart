@@ -21,7 +21,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   late ScannerDriver _bookScanInstance;
   bool _displayProgressIndicator = false; // used to display CircularProgressIndicator whenever necessary
   bool _noInput = false;
-  late final VoidCallback _addBookOpenedListener; // used to run some stuff everytime we go to this page from the bottombar
+  late final VoidCallback _addBookListener; // used to run some stuff everytime we go to this page from the bottombar
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     // done because I cant access widget.<anything> before initState, hence the late object initialization
     _bookSearchInstance = SearchDriver(widget.user, userLibrary);
     _bookScanInstance = ScannerDriver(widget.user, userLibrary);
-    _addBookOpenedListener = () {
+    _addBookListener = () {
       if (refreshNotifier.value == addBookPageIndex) {
         // whats happening here? Basically this refreshes the already added books if we are on this page, if
         // userLibrary has been updated. This will currently ONLY occur if userLibrary was updated in another instance
@@ -45,13 +45,13 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
         setState(() {});
       }
     };
-    refreshNotifier.addListener(_addBookOpenedListener);
+    refreshNotifier.addListener(_addBookListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
-    refreshNotifier.removeListener(_addBookOpenedListener);
+    refreshNotifier.removeListener(_addBookListener);
     super.dispose();
   }
 
@@ -143,6 +143,8 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Add Books"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
@@ -153,10 +155,6 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Text(
-                  "Add Books",
-                  style: TextStyle(fontSize: 20, color: Colors.black),
-                ),
                 const SizedBox(height: 6),
                 SharedWidgets.displayTextField("Search titles, authors, or keywords", _searchQueryController, _noInput, "Please enter some text"),
                 const SizedBox(height: 8),

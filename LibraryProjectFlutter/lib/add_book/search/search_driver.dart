@@ -248,8 +248,8 @@ class SearchDriver {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 100,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 100),
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: isBookAlreadyAdded

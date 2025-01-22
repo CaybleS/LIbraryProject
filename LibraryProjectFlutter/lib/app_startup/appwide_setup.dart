@@ -14,7 +14,6 @@ const int profileIndex = 3;
 const int settingsIndex = 4;
 
 // pages can access these at any time, knowing that they will be up to date guaranteed
-// and pages can use 
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
 List<Friend> friends = [];
@@ -31,6 +30,9 @@ ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 int selectedIndex = 0;
 int _prevIndex = 0;
 bool showBottombar = true;
+Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
+Map<String, List<Book>> friendIdToBooks = {};
+List<String> friendIdsSubscribedTo = [];
 
 void setupDatabaseSubscriptions(User user) {
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
@@ -44,6 +46,21 @@ void cancelDatabaseSubscriptions() {
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
   _requestsSubscription.cancel();
+  for (int i = 0; i < friendIdsSubscribedTo.length; i++) {
+    friendIdToLibrarySubscription[friendIdsSubscribedTo[i]]?.cancel();
+  }
+  _resetGlobalData();
+}
+
+void _resetGlobalData() {
+  userLibrary.clear();
+  booksLentToMe.clear();
+  friends.clear();
+  requests.clear();
+  // these track or are built up from subscriptions so they should be cleared as well
+  friendIdToBooks.clear();
+  friendIdToLibrarySubscription.clear();
+  friendIdsSubscribedTo.clear();
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
@@ -73,6 +90,13 @@ void _lentToMeBooksUpdated() {
 
 void _friendsUpdated() {
   if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void friendsBooksUpdated() {
+  if (selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }

@@ -35,8 +35,7 @@ Future<void> removeLentBookInfo(String lentDbKey, String borrowerId) async {
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
 // The same is done with the lent to me books. It feteches them initially and updates the in-memory list as needed
 // and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
-StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
-    List<Book> userLibrary, User user, Function ownedBooksUpdated) {
+StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(List<Book> userLibrary, User user, Function ownedBooksUpdated) {
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
     userLibrary.clear();
@@ -52,12 +51,10 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
   return ownedSubscription; // returning this only to be able to properly dispose of it
 }
 
-StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
-    List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
+StreamSubscription<DatabaseEvent> setupLentToMeSubscription(List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
   DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
   // so only the books lent data changes are tracked, so even if lent books themselves are updated, this doesnt get fired
-  StreamSubscription<DatabaseEvent> lentToMeSubscription =
-      lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> lentToMeSubscription = lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
     List<dynamic> listOfRecords = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -81,6 +78,23 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
     lentToMeBooksUpdated();
   });
   return lentToMeSubscription;
+}
+
+StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(Map<String, List<Book>> friendIdToBooks, String friendId, Function friendsBooksUpdated) {
+  DatabaseReference friendsBooksReference = FirebaseDatabase.instance.ref('books/$friendId/');
+  StreamSubscription<DatabaseEvent> friendsBooksSubscription = friendsBooksReference.onValue.listen((DatabaseEvent event) {
+    List<Book> listOfFriendsBooks = [];
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        Book book = createBook(child.value);
+        book.setId(dbReference.child('books/$friendId/${child.key}'));
+        listOfFriendsBooks.add(book);
+      }
+    }
+    friendIdToBooks[friendId] = List.from(listOfFriendsBooks);
+    friendsBooksUpdated();
+  });
+  return friendsBooksSubscription;
 }
 
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(

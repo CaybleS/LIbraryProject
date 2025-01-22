@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:library_project/app_startup/connectivity_wrapper.dart';
 import 'package:library_project/app_startup/login.dart';
 import 'package:library_project/core/app_life_cycle.dart';
@@ -11,6 +12,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseDatabase.instance.setPersistenceEnabled(true);
 
+  await dotenv.load(fileName: ".env");
   runApp(const MainApp());
 }
 
