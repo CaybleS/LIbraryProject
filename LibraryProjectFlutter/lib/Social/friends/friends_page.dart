@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/ui/colors.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 import '../../database/database.dart';
 import 'add_friend_page.dart';
 import '../../core/appbar.dart';
@@ -196,13 +197,17 @@ class FriendRequestList extends StatelessWidget {
   // final List<Request> requests;
   final Function() callback;
 
-  void acceptClicked(int index) async {
+  void acceptClicked(int index, BuildContext context) async {
     await addFriend(requests[index]);
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Accepted");
     callback();
   }
 
-  void denyClicked(int index) async {
+  void denyClicked(int index, BuildContext context) async {
     await requests[index].delete();
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Deleted");
     callback();
   }
 
@@ -214,23 +219,36 @@ class FriendRequestList extends StatelessWidget {
           return Card(
               margin: const EdgeInsets.all(5),
               child: Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(20),
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // ClipOval(child: SizedBox(width: 50, child: ,),)
-                        SizedBox(
-                          width: 170,
-                          height: 100,
-                          child: Align(
-                              alignment: Alignment.topLeft,
-                              child: Text(
-                                requests[index].senderId,
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 20),
-                                softWrap: true,
-                              )),
-                        ),
+                        Row(children: [
+                          ClipOval(
+                            child: SizedBox(
+                                width: 75,
+                                child: Image.network(requests[index].photo)),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  requests[index].name,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 20),
+                                  softWrap: true,
+                                ),
+                                Text(
+                                  requests[index].email,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 16),
+                                  softWrap: true,
+                                ),
+                              ]),
+                        ]),
                         SizedBox(
                             height: 100,
                             width: 170,
@@ -239,7 +257,7 @@ class FriendRequestList extends StatelessWidget {
                               children: [
                                 ElevatedButton(
                                     onPressed: () {
-                                      acceptClicked(index);
+                                      acceptClicked(index, context);
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color.fromRGBO(
@@ -250,7 +268,7 @@ class FriendRequestList extends StatelessWidget {
                                             color: Colors.black))),
                                 ElevatedButton(
                                     onPressed: () {
-                                      denyClicked(index);
+                                      denyClicked(index, context);
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color.fromRGBO(
@@ -268,8 +286,9 @@ class FriendRequestList extends StatelessWidget {
 class Request {
   String senderId;
   String uid;
-  late String profileURL;
-  late String name;
+  late String photo = "";
+  late String name = "";
+  late String email = "";
   late DatabaseReference _id;
 
   void setId(DatabaseReference id) {
@@ -298,40 +317,71 @@ class FriendList extends StatelessWidget {
         itemCount: friends.length,
         itemBuilder: (BuildContext context, int index) {
           return Card(
-              margin: const EdgeInsets.all(5),
-              child: Row(children: [
-                const SizedBox(
-                  width: 10,
-                ),
-                // SizedBox(
-                //   height: 100,
-                //   width: 70,
-                //   child: image,
-                // ),
-                // const SizedBox(
-                //   width: 10,
-                // ),
-                SizedBox(
-                  width: 270,
-                  height: 100,
-                  child: Align(
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                        friends[index].friendId,
-                        style:
-                            const TextStyle(color: Colors.black, fontSize: 20),
-                        softWrap: true,
-                      )),
-                ),
-              ]));
+            margin: const EdgeInsets.all(5),
+            child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(children: [
+                        ClipOval(
+                          child: SizedBox(
+                              width: 75,
+                              child: Image.network(friends[index].photo)),
+                        ),
+                        const SizedBox(
+                          width: 20,
+                        ),
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                friends[index].name,
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 20),
+                                softWrap: true,
+                              ),
+                              Text(
+                                friends[index].email,
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 16),
+                                softWrap: true,
+                              ),
+                            ]),
+                      ]),
+                    ])),
+          );
         });
+    // SizedBox(
+    //   height: 100,
+    //   width: 70,
+    //   child: image,
+    // ),
+    // const SizedBox(
+    //   width: 10,
+    // ),
+    //   SizedBox(
+    //     width: 270,
+    //     height: 100,
+    //     child: Align(
+    //         alignment: Alignment.topLeft,
+    //         child: Text(
+    //           friends[index].friendId,
+    //           style:
+    //               const TextStyle(color: Colors.black, fontSize: 20),
+    //           softWrap: true,
+    //         )),
+    //   ),
+    // ]));
+    // });
   }
 }
 
 class Friend {
   String friendId;
-  String? name;
-  String? email;
+  late String name = "";
+  late String email = "";
+  late String photo = "";
   late DatabaseReference _id;
 
   @override

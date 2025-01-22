@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/user.dart';
@@ -85,13 +86,29 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(
     List<Friend> friends, User user, Function friendsUpdated) {
   DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
-  StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) {
+  StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) async {
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
         Friend friend = Friend('${child.key}');
         friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
         // UserModel friend = UserModel.fromJson(child.value as Map<dynamic, dynamic>);
+        // debugPrint("FRIEND ID -------- ${friend.friendId}");
+
+        DatabaseEvent userEvent = await dbReference.child('users/${friend.friendId}').once();
+        if (userEvent.snapshot.value != null) {
+          Map data = userEvent.snapshot.value as Map;
+          if (data.containsKey('name')) {
+            friend.name = data['name'];
+          }
+          if (data.containsKey('email')) {
+            friend.email = data['email'];
+          }
+          if (data.containsKey('photoUrl')) {
+            friend.photo = data['photoUrl'];
+          }
+        }
+
         friends.add(friend);
       }
     }
@@ -111,7 +128,18 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
         request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
 
         DatabaseEvent userEvent = await dbReference.child('users/${request.senderId}').once();
-        
+        if (userEvent.snapshot.value != null) {
+          Map data = userEvent.snapshot.value as Map;
+          if (data.containsKey('name')) {
+            request.name = data['name'];
+          }
+          if (data.containsKey('email')) {
+            request.email = data['email'];
+          }
+          if (data.containsKey('photoUrl')) {
+            request.photo = data['photoUrl'];
+          }
+        }
 
         requests.add(request);
       }
@@ -160,9 +188,11 @@ void sendFriendRequest(User user, String friendId) {
   var id = dbReference.child('requests/$friendId/').push();
   id.set({
     'sender': user.uid,
+    'sendDate': DateTime.now().toIso8601String()
   });
 }
 
+// TODO: I'm not going to get rid of this since idk if it's used somewhere, but with the subscription thing, we shouldn't need it
 Future<List<Request>> getFriendRequests(User user) async {
   DatabaseEvent event = await dbReference.child('requests/${user.uid}/').once();
   List<Request> requests = [];
@@ -184,13 +214,15 @@ Future<void> removeRef(DatabaseReference id) async {
 
 Future<void> addFriend(Request request) async {
   var id = dbReference.child('friends/${request.senderId}/${request.uid}');
-  id.set({"test": true});
+  String time = DateTime.now().toIso8601String();
+  id.set({"friendsSince": time});
   id = dbReference.child('friends/${request.uid}/${request.senderId}');
-  id.set({"test": true});
+  id.set({"friendsSince": time});
 
   await request.delete();
 }
 
+// TODO: I'm not going to get rid of this since idk if it's used somewhere, but with the subscription thing, we shouldn't need it
 Future<List<UserModel>> getFriends(User user) async {
   DatabaseEvent event = await dbReference.child('friends/${user.uid}/').once();
   List<UserModel> friends = [];

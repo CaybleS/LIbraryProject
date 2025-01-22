@@ -5,7 +5,6 @@ import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
 import 'dart:async';
-
 import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
@@ -73,7 +72,7 @@ void _lentToMeBooksUpdated() {
 }
 
 void _friendsUpdated() {
-  if (selectedIndex == homepageIndex) {
+  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }
