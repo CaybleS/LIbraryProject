@@ -184,6 +184,9 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
 }
 
 Future<bool> userExists(String id) async {
+  if (id.contains(RegExp('[.#\$\\[\\]]'))) {
+    return false;
+  }
   DatabaseEvent event = await dbReference.child('users/$id').once();
   return (event.snapshot.value != null);
 }
