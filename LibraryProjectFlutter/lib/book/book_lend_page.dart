@@ -1,5 +1,4 @@
 // TODO that this will need to be changed, it must store the friendId but should display username or something
-// TODO refreshnotifier for friends, its simlpe to implment now k?
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
@@ -22,6 +21,24 @@ class _BookLendPageState extends State<BookLendPage> {
   bool _invalidFriendIdError = false;
   bool _noTextInputError = false;
   String? _selectedFriendId;
+  late final VoidCallback _friendsUpdatedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _friendsUpdatedListener = () {
+      if (refreshNotifier.value == homepageIndex) {
+        setState(() {});
+      }
+    };
+    refreshNotifier.addListener(_friendsUpdatedListener);
+  }
+
+  @override
+  void dispose() {
+    refreshNotifier.removeListener(_friendsUpdatedListener);
+    super.dispose();
+  }
 
   void _resetErrors() {
     // its not used yet but should probably be called for the input validation stuff to verify each input independently

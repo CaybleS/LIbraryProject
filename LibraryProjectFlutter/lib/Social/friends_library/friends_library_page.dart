@@ -99,7 +99,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
 
   // so if you filter search for exactly title and author in that order, it will show up
   bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
-    if ("${book.title?.toLowerCase()} ${book.author?.toLowerCase()}".contains(filterText)) {
+  if ("${(book.title ?? "no title found").toLowerCase()} ${(book.author ?? "no author found").toLowerCase()}".contains(filterText)) {
       return true;
     }
     return false;
