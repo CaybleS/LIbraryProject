@@ -23,11 +23,8 @@ DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lent
   return id;
 }
 
-Future<void> removeLentBookInfo(String lentDbKey, String borrowerId) async {
-  DatabaseEvent event = await dbReference.child('booksLent/$borrowerId/$lentDbKey').once();
-  if (event.snapshot.value != null) {
-    removeRef(event.snapshot.ref);
-  }
+void removeLentBookInfo(String lentDbKey, String borrowerId) {
+  dbReference.child('booksLent/$borrowerId/$lentDbKey').remove();
 }
 
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
@@ -63,19 +60,41 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
         listOfRecords.add(record);
       }
     }
-    booksLentToMe.clear();
-    for (dynamic record in listOfRecords) {
+    List<LentBookInfo> tempBooksLentToMe = [];
+    bool bookFound = false;
+    for (int i = 0; i < listOfRecords.length; i++) {
+      dynamic record = listOfRecords[i];
       String lenderId = record['lenderId'];
       String bookDbKey = record['bookDbKey'];
-      // this is unnecessary database reads btw since odds are booksLentToMe already stores most of this information, the fix is complicated and
-      // so for now I'll just stick to what works
-      DatabaseEvent getBookEvent = await dbReference.child('books/$lenderId/$bookDbKey').once();
-      if (getBookEvent.snapshot.value != null) {
-        Book book = createBook(getBookEvent.snapshot.value);
-        LentBookInfo lentBookInfo = createLentBookInfo(book, record);
-        booksLentToMe.add(lentBookInfo);
+      bookFound = false;
+      // so if the book lent to the user is already in memory we don't read it from the database again. This technically causes "un-lending"
+      // to not use any database reads, as it should.
+      for (int j = 0; j < booksLentToMe.length; j++) {
+        if (booksLentToMe[j].lenderId == lenderId && booksLentToMe[j].bookDbKey == bookDbKey) {
+          tempBooksLentToMe.add(booksLentToMe[j]);
+          bookFound = true;
+          break;
+        }
+      }
+      if (!bookFound) {
+        // currently I've noticed this fails to work sometimes, nondeterministically. I'd love to know why. I believe its due to database
+        // stress or something since I've had phases where it works perfectly and others where multiple ppl are using the app and it fails.
+        // This occured even with the previous un-optimized version of this function, although that one could gracefully handle this failing
+        // better since it just tries to read all books from the database everytime. This is my untested solution (currently nobody is
+        // using the database so its working everytime) but this should in theory mitigate the problem. Still needs testing tho.
+        for (int i = 0; i < 5; i++) {
+          DatabaseEvent getBookEvent = await dbReference.child('books/$lenderId/$bookDbKey').once();
+          if (getBookEvent.snapshot.value != null) {
+            Book book = createBook(getBookEvent.snapshot.value);
+            LentBookInfo lentBookInfo = createLentBookInfo(book, record);
+            tempBooksLentToMe.add(lentBookInfo);
+            break;
+          }
+        }
       }
     }
+    booksLentToMe.clear();
+    booksLentToMe.addAll(tempBooksLentToMe);
     lentToMeBooksUpdated();
   });
   return lentToMeSubscription;
