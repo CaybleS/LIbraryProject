@@ -1,5 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/private_chat_screen.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/user.dart';
@@ -45,25 +48,33 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     setState(() {});
   }
 
-  void createChat() {
-    // if (inChat.length == 1) {
-    //   Navigator.pushReplacement(
-    //       context,
-    //       MaterialPageRoute(
-    //           builder: (context) => ChatScreen(
-    //                 widget.user,
-    //                 inChat: inChat,
-    //               )));
-    // } else if (inChat.length > 1 && groupNameController.text.isNotEmpty) {
-    //   Navigator.pushReplacement(
-    //       context,
-    //       MaterialPageRoute(
-    //           builder: (context) => ChatScreen(
-    //                 widget.user,
-    //                 inChat: inChat,
-    //                 name: groupNameController.text,
-    //               )));
-    // }
+  void createChat() async {
+    if (inChat.length == 1) {
+      String id = FirebaseDatabase.instance.ref('chats/').push().key!;
+      showBottombar = false;
+      refreshBottombar.value = true;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PrivateChatScreen(
+            chatRoomId: id,
+            contact: inChat.first,
+            currentUserId: widget.user.uid,
+          ),
+        ),
+      );
+      showBottombar = true;
+      refreshBottombar.value = true;
+    } else if (inChat.length > 1 && groupNameController.text.isNotEmpty) {
+      // Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(
+      //         builder: (context) => ChatScreen(
+      //               widget.user,
+      //               inChat: inChat,
+      //               name: groupNameController.text,
+      //             )));
+    }
   }
 
   @override
@@ -80,11 +91,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         backgroundColor: inChat.isNotEmpty ? Colors.green : Colors.grey,
         label: const Text(
           "Create Chat",
-          style: TextStyle(fontSize: 20),
-        ),
-        icon: const Icon(
-          Icons.add,
-          size: 30,
+          style: TextStyle(fontSize: 18, fontFamily: 'Poppins'),
         ),
         splashColor: Colors.blue,
       ),
@@ -97,27 +104,28 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
               fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
                 controller = textEditingController;
                 return TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    onSubmitted: (String value) => onFieldSubmitted,
-                    decoration: InputDecoration(
-                        hintText: 'Add Friend',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        suffixIcon: InkWell(onTap: controller.clear, child: const Icon(Icons.close)),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))));
+                  controller: controller,
+                  focusNode: focusNode,
+                  onSubmitted: (String value) => onFieldSubmitted,
+                  style: const TextStyle(fontFamily: 'Poppins'),
+                  decoration: InputDecoration(
+                    hintText: 'Add Friend',
+                    hintStyle: const TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+                    suffixIcon: InkWell(onTap: controller.clear, child: const Icon(Icons.close)),
+                    fillColor: Colors.white,
+                    filled: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                );
               },
               displayStringForOption: (option) => option.email,
               optionsBuilder: (TextEditingValue textEditingValue) {
                 if (textEditingValue.text == '') {
                   return const Iterable<UserModel>.empty();
                 } else {
-                  return const Iterable<UserModel>.empty();
-                  
-                  // return friends.where((UserModel friend) {
-                  //   return friend.email.toLowerCase().contains(controller.text.toLowerCase());
-                  // });
+                  return friends.where((UserModel friend) {
+                    return friend.email.toLowerCase().contains(controller.text.toLowerCase());
+                  });
                 }
               },
               onSelected: (option) {
@@ -131,12 +139,9 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                 itemCount: inChat.length,
                 itemBuilder: (BuildContext context, int index) {
                   final user = inChat[index];
-
                   return Card(
                     margin: const EdgeInsets.all(5),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(16))
-                    ),
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: Row(
@@ -144,7 +149,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                           CircleAvatar(
                             radius: 25,
                             backgroundImage: user.photoUrl != null
-                                ? NetworkImage(user.photoUrl!)
+                                ? CachedNetworkImageProvider(user.photoUrl!)
                                 : const AssetImage('assets/profile_pic.jpg'),
                           ),
                           const SizedBox(width: 10),

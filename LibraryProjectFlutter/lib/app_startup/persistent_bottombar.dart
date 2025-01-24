@@ -1,9 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import '../Social/friends/friends_page.dart';
 import 'package:library_project/core/homepage.dart';
 import 'package:library_project/Social/profile.dart';
 import 'package:library_project/core/settings.dart';
@@ -81,23 +80,23 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
         ? BottomNavigationBar(
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(IconsaxPlusLinear.home_1),
+              icon: Icon(Icons.home),
               label: "Homepage",
             ),
             BottomNavigationBarItem(
-              icon: Icon(IconsaxPlusLinear.book_1),
+              icon: Icon(Icons.search),
               label: "Add book",
             ),
             BottomNavigationBarItem(
-              icon: Icon(IconsaxPlusLinear.profile_2user),
+              icon: Icon(Icons.people_alt_rounded),
               label: "Friends",
             ),
             BottomNavigationBarItem(
-              icon: Icon(IconsaxPlusLinear.user),
+              icon: Icon(Icons.account_circle_rounded),
               label: "Profile",
             ),
             BottomNavigationBarItem(
-              icon: Icon(IconsaxPlusLinear.setting_2),
+              icon: Icon(Icons.settings),
               label: "Settings",
             ),
           ],

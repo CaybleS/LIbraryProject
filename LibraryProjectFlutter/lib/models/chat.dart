@@ -1,37 +1,86 @@
+import 'package:library_project/models/message.dart';
+
+enum ChatType { private, group }
+
 class Chat {
-  String id;
-  String title;
-  String lastMessage;
-  DateTime lastMessageTime;
-  String lastMessageSender;
+  final String id;
+  final ChatType type;
+  final String name;
+  final String? chatImage;
+  final String? lastMessage;
+  final DateTime? lastMessageTime;
+  final String? createdBy;
+  final List<String> participants;
+  final Map<String, MessageModel>? messages;
+  final Map<String, String?> lastReadMessages;
+  final int unreadCount;
 
   Chat({
     required this.id,
-    required this.title,
-    required this.lastMessage,
-    required this.lastMessageTime,
-    required this.lastMessageSender,
+    this.type = ChatType.private,
+    required this.name,
+    this.chatImage,
+    this.lastMessage,
+    this.lastMessageTime,
+    this.createdBy,
+    this.participants = const [],
+    this.messages,
+    this.lastReadMessages = const {},
+    this.unreadCount = 0,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'lastMessage': lastMessage,
-      'lastMessageTime': lastMessageTime.toIso8601String(),
-      'lastMessageSender': lastMessageSender,
-    };
-  }
+  factory Chat.fromJson(String id, Map<dynamic, dynamic> json) => Chat(
+        id: id,
+        type: ChatType.values.byName(json['info']['type'] ?? 'private'),
+        name: json['info']['name'],
+        chatImage: json['info']['chatImage'],
+        createdBy: json['info']['createdBy'],
+        participants: (json['participants'] as Map?)?.keys.cast<String>().toList() ?? [],
+        messages: (json['messages'] as Map?)?.map(
+              (key, value) => MapEntry(key, MessageModel.fromJson(key, value)),
+            ) ??
+            {},
+        lastReadMessages: (json['cursor'] as Map?)?.cast<String, String?>() ?? {},
+      );
 
-  factory Chat.fromJson(Map<String, dynamic> json) {
-    return Chat(
-      id: json['id'],
-      title: json['title'],
-      lastMessage: json['lastMessage'],
-      lastMessageTime: DateTime.parse(json['lastMessageTime']),
-      lastMessageSender: json['lastMessageSender'],
-    );
-  }
+  Map<String, dynamic> toJson() => {
+        'info': {
+          'type': type.name,
+          'name': name,
+          'createdBy': createdBy,
+          'chatImage': chatImage,
+        },
+        'participants': {for (var uid in participants) uid: true},
+        if (messages != null) 'messages': {for (var entry in messages!.entries) entry.key: entry.value.toJson()},
+        'cursor': lastReadMessages,
+      };
+
+  Chat copyWith({
+    String? id,
+    ChatType? type,
+    String? name,
+    String? chatImage,
+    String? lastMessage,
+    DateTime? lastMessageTime,
+    String? createdBy,
+    List<String>? participants,
+    Map<String, MessageModel>? messages,
+    Map<String, String?>? lastReadMessages,
+    int? unreadCount,
+  }) =>
+      Chat(
+        id: id ?? this.id,
+        type: type ?? this.type,
+        name: name ?? this.name,
+        chatImage: chatImage ?? this.chatImage,
+        lastMessage: lastMessage ?? this.lastMessage,
+        lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+        createdBy: createdBy ?? this.createdBy,
+        participants: participants ?? this.participants,
+        messages: messages ?? this.messages,
+        lastReadMessages: lastReadMessages ?? this.lastReadMessages,
+        unreadCount: unreadCount ?? this.unreadCount,
+      );
 }
 
 // class ChatShort {
