@@ -115,9 +115,11 @@ class _BookPageState extends State<BookPage> {
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
-        shape:
-            ContinuousRectangleBorder(borderRadius: BorderRadius.circular(0.0)),
-        backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
+        shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(0.0),
+            side: BorderSide(
+                color: const Color.fromARGB(255, 82, 185, 87), width: 5)),
+        backgroundColor: Colors.grey[400],
       ),
       child: Container(
         height: 160,
@@ -127,15 +129,15 @@ class _BookPageState extends State<BookPage> {
           children: [
             Icon(
               Icons.arrow_upward,
-              size: 40,
-              color: Colors.black,
+              size: 48,
+              color: const Color.fromARGB(255, 82, 185, 87),
             ),
             const SizedBox(height: 5),
             const Text(
               'Lend',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.black,
+                fontSize: 19,
+                color: const Color.fromARGB(255, 82, 185, 87),
               ),
             ),
           ],
@@ -321,7 +323,7 @@ class _BookPageState extends State<BookPage> {
                               fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         //display rating TODO: change to edit rating
-                        Row(
+                        const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -363,29 +365,32 @@ class _BookPageState extends State<BookPage> {
                     },
                     style: ElevatedButton.styleFrom(
                       shape: ContinuousRectangleBorder(
-                          borderRadius: BorderRadius.circular(0.0)),
-                      backgroundColor: const Color.fromARGB(255, 202, 35, 23),
+                          borderRadius: BorderRadius.circular(0.0),
+                          side: BorderSide(
+                              color: const Color.fromARGB(255, 202, 35, 23),
+                              width: 5)),
+                      backgroundColor: Colors.grey[400],
                     ),
                     child: Container(
                       height: 160,
                       width: 50,
-                      child: Column(
+                      child: const Column(
                         mainAxisAlignment: MainAxisAlignment
                             .center, // Center contents vertically
                         children: [
                           Icon(
                             Icons
                                 .delete_outline_outlined, // Icon for the button
-                            size: 40,
-                            color: Colors.black,
+                            size: 45,
+                            color: const Color.fromARGB(255, 202, 35, 23),
                           ),
                           const SizedBox(
                               height: 5), // Space between icon and text
                           const Text(
                             'Delete', // Text below the icon
                             style: TextStyle(
-                              fontSize: 15, // Smaller font size for text
-                              color: Colors.black,
+                              fontSize: 17, // Smaller font size for text
+                              color: const Color.fromARGB(255, 202, 35, 23),
                             ),
                           ),
                         ],
