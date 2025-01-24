@@ -84,9 +84,17 @@ class _MessageHomeState extends State<MessageHome> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}",style: const TextStyle(fontFamily: 'Poppins'),));
+                  return Center(
+                      child: Text(
+                    "Error: ${snapshot.error}",
+                    style: const TextStyle(fontFamily: 'Poppins'),
+                  ));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No chats found.",style: TextStyle(fontFamily: 'Poppins'),));
+                  return const Center(
+                      child: Text(
+                    "No chats found.",
+                    style: TextStyle(fontFamily: 'Poppins'),
+                  ));
                 }
                 List<Chat> chats = snapshot.data!;
                 if (searchQuery.isNotEmpty) {
@@ -100,8 +108,8 @@ class _MessageHomeState extends State<MessageHome> {
                     final chat = chats[index];
                     final contactId =
                         chat.participants[0] == widget.user.uid ? chat.participants[1] : chat.participants[0];
-                    return FutureBuilder(
-                      future: _database.child('users/$contactId').once(),
+                    return StreamBuilder(
+                      stream: _database.child('users/$contactId').onValue,
                       builder: (context, snapshot) {
                         if (snapshot.data?.snapshot.value == null) {
                           return Container();
@@ -130,12 +138,7 @@ class _MessageHomeState extends State<MessageHome> {
                                 children: [
                                   Stack(
                                     children: [
-                                      CircleAvatar(
-                                        radius: 25,
-                                        backgroundImage: chat.chatImage != null
-                                            ? CachedNetworkImageProvider(chat.chatImage!)
-                                            : const AssetImage('assets/profile_pic.jpg'),
-                                      ),
+                                      _createAvatarWidget(chat, contact),
                                       if (contact.isActive)
                                         Positioned(
                                           bottom: 0,
@@ -157,7 +160,7 @@ class _MessageHomeState extends State<MessageHome> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          contact.name,
+                                          chat.type == ChatType.private ? contact.name : chat.name,
                                           style:
                                               const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 18),
                                           softWrap: true,
@@ -165,10 +168,13 @@ class _MessageHomeState extends State<MessageHome> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          chat.lastMessage ?? '',
+                                          (chat.type == ChatType.private && contact.isTyping)
+                                              ? 'is typing...'
+                                              : chat.lastMessage ?? '',
                                           style: TextStyle(
                                             fontFamily: 'Poppins',
-                                            color: chat.messages!.values.first.senderId == widget.user.uid
+                                            color: (chat.lastMessageSender != widget.user.uid ||
+                                                    chat.type == ChatType.private && contact.isTyping)
                                                 ? Colors.blue
                                                 : Colors.black,
                                           ),
@@ -239,16 +245,45 @@ class _MessageHomeState extends State<MessageHome> {
           chats.add(chatModel.copyWith(
             unreadCount: unreadCount,
             lastMessage: lastMessage['text'],
+            lastMessageSender: lastMessage['sender'],
             lastMessageTime: DateTime.fromMillisecondsSinceEpoch(lastMessage['timestamp']),
           ));
         }
       }
-      return chats;
+      return chats..sort((a, b) => b.lastMessageTime!.compareTo(a.lastMessageTime!));
     });
   }
 
   String _formatTimestamp(DateTime? date) {
     if (date == null) return '';
     return "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+  }
+
+  Widget _createAvatarWidget(Chat chat, UserModel contact) {
+    final avatarColor = chat.avatarColor;
+    final chatImage = chat.chatImage;
+    final photoUrl = contact.photoUrl;
+
+    return CircleAvatar(
+      radius: 25,
+      backgroundImage: chat.type == ChatType.group
+          ? (chatImage != null ? CachedNetworkImageProvider(chatImage) : null)
+          : (photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null),
+      child: chatImage == null && photoUrl == null
+          ? Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: avatarColor,
+              ),
+              width: 50,
+              height: 50,
+              alignment: Alignment.center,
+              child: Text(
+                chat.type == ChatType.group ? chat.name[0].toUpperCase() : contact.name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.black, fontSize: 20),
+              ),
+            )
+          : null,
+    );
   }
 }

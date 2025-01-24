@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -96,6 +97,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               imageUrl: user.photoUrl!,
                               fit: BoxFit.cover,
                               height: 50,
+                              width: 50,
                               placeholder: (context, url) => const CircularProgressIndicator(),
                               errorWidget: (context, url, error) => const Icon(Icons.error),
                             )
@@ -123,12 +125,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 }
                 List<MessageModel> messages = snapshot.data!;
                 return ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
                   itemCount: messages.length,
                   controller: _scrollController,
                   reverse: true,
                   itemBuilder: (context, index) {
                     final message = messages[index];
                     bool isMe = message.senderId == widget.currentUserId;
+                    bool isTopMessage = messages.length == index + 1;
                     return Align(
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
@@ -138,8 +142,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                         decoration: BoxDecoration(
                           color: message.senderId == widget.contact.uid ? Colors.blue : Colors.grey,
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(!isMe ? 4 : 20),
-                            topRight: Radius.circular(isMe ? 4 : 20),
+                            topLeft: Radius.circular(
+                                isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
+                                    ? 20
+                                    : 4),
+                            topRight: Radius.circular(
+                                !isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
+                                    ? 20
+                                    : 4),
                             bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
                             bottomRight: isMe ? Radius.zero : const Radius.circular(20),
                           ),
@@ -150,7 +160,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                           children: [
                             Text(
                               message.text,
-                              style: TextStyle(fontFamily: 'Poppins',fontSize: 16, color: isMe ? Colors.black : Colors.white),
+                              style: TextStyle(
+                                  fontFamily: 'Poppins', fontSize: 16, color: isMe ? Colors.black : Colors.white),
                             ),
                             const SizedBox(height: 4),
                             Row(
@@ -159,7 +170,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                 Text(
                                   '${message.sentTime.day}/${message.sentTime.month} '
                                   '${_createTimeTextWidget(message.sentTime)}',
-                                  style: TextStyle(fontFamily: 'Poppins',fontSize: 14, color: isMe ? Colors.black : Colors.white),
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins', fontSize: 14, color: isMe ? Colors.black : Colors.white),
                                 ),
                               ],
                             ),
@@ -274,13 +286,19 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         }
 
         await _database.child('chats/${widget.chatRoomId}/messages/$id').set(message.toJson());
-        await _database.child('chats/${widget.chatRoomId}').update(Chat(
-              id: widget.chatRoomId,
-              lastMessage: messageText,
-              lastMessageTime: DateTime.now(),
-              name: widget.contact.name,
-              participants: [widget.currentUserId, widget.contact.uid],
-            ).toJson());
+        await _database.child('chats/${widget.chatRoomId}/info/avatarColor').once().then((avatarRef) async {
+          await _database.child('chats/${widget.chatRoomId}').update(Chat(
+                id: widget.chatRoomId,
+                lastMessage: messageText,
+                lastMessageTime: DateTime.now(),
+                avatarColor: avatarRef.snapshot.value != null
+                    ? Color(avatarRef.snapshot.value as int)
+                    : Colors.primaries[Random().nextInt(Colors.primaries.length)],
+                chatImage: widget.contact.photoUrl,
+                name: widget.contact.name,
+                participants: [widget.currentUserId, widget.contact.uid],
+              ).toJson());
+        });
 
         _database.child('chats/${widget.chatRoomId}/participants').once().then((participantsSnapshot) {
           final participants = participantsSnapshot.snapshot.value as Map<dynamic, dynamic>?;
@@ -291,6 +309,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               'lastMessage': {
                 'text': messageText,
                 'timestamp': DateTime.now().millisecondsSinceEpoch,
+                'sender': widget.currentUserId
               },
               'unreadCount': participantId == currentUser.uid ? 0 : ServerValue.increment(1)
             });

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:library_project/models/message.dart';
 
 enum ChatType { private, group }
@@ -8,7 +9,9 @@ class Chat {
   final String name;
   final String? chatImage;
   final String? lastMessage;
+  final String? lastMessageSender;
   final DateTime? lastMessageTime;
+  final Color avatarColor;
   final String? createdBy;
   final List<String> participants;
   final Map<String, MessageModel>? messages;
@@ -21,7 +24,9 @@ class Chat {
     required this.name,
     this.chatImage,
     this.lastMessage,
+    this.lastMessageSender,
     this.lastMessageTime,
+    required this.avatarColor,
     this.createdBy,
     this.participants = const [],
     this.messages,
@@ -35,6 +40,7 @@ class Chat {
         name: json['info']['name'],
         chatImage: json['info']['chatImage'],
         createdBy: json['info']['createdBy'],
+        avatarColor: Color(json['info']['avatarColor']?? Colors.grey.value),
         participants: (json['participants'] as Map?)?.keys.cast<String>().toList() ?? [],
         messages: (json['messages'] as Map?)?.map(
               (key, value) => MapEntry(key, MessageModel.fromJson(key, value)),
@@ -49,6 +55,7 @@ class Chat {
           'name': name,
           'createdBy': createdBy,
           'chatImage': chatImage,
+          'avatarColor': avatarColor.value,
         },
         'participants': {for (var uid in participants) uid: true},
         if (messages != null) 'messages': {for (var entry in messages!.entries) entry.key: entry.value.toJson()},
@@ -61,12 +68,14 @@ class Chat {
     String? name,
     String? chatImage,
     String? lastMessage,
+    String? lastMessageSender,
     DateTime? lastMessageTime,
     String? createdBy,
     List<String>? participants,
     Map<String, MessageModel>? messages,
     Map<String, String?>? lastReadMessages,
     int? unreadCount,
+    Color? avatarColor,
   }) =>
       Chat(
         id: id ?? this.id,
@@ -74,12 +83,14 @@ class Chat {
         name: name ?? this.name,
         chatImage: chatImage ?? this.chatImage,
         lastMessage: lastMessage ?? this.lastMessage,
+        lastMessageSender: lastMessageSender ?? this.lastMessageSender,
         lastMessageTime: lastMessageTime ?? this.lastMessageTime,
         createdBy: createdBy ?? this.createdBy,
         participants: participants ?? this.participants,
         messages: messages ?? this.messages,
         lastReadMessages: lastReadMessages ?? this.lastReadMessages,
         unreadCount: unreadCount ?? this.unreadCount,
+        avatarColor: avatarColor ?? this.avatarColor,
       );
 }
 

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 // import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -47,6 +48,7 @@ Future<void> signOutGoogle() async {
 }
 
 void logout(context) async {
+  await changeStatus(false);
   cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
     for (var data in _auth.currentUser!.providerData) {
@@ -68,12 +70,7 @@ Future<User?> logIn(String email, String password) async {
     UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email, password: password);
 
-    // print("Login Sucessfull");
-    // _firestore
-    //     .collection('users')
-    //     .doc(_auth.currentUser!.uid)
-    //     .get()
-    //     .then((value) => userCredential.user!.updateDisplayName(value['name']));
+    await changeStatus(true);
 
     return userCredential.user;
   } catch (e) {
@@ -106,11 +103,24 @@ Future<User?> createAccount(String name, String email, String password) async {
 
     if (user != null) {
       addUser(user);
+      await changeStatus(true);
     }
 
     return user;
   } catch (e) {
     debugPrint(e.toString());
     return null;
+  }
+}
+
+changeStatus(bool status) async {
+  if (_auth.currentUser != null) {
+    final id = await dbReference.child('users/${_auth.currentUser!.uid}/').once();
+    if (id.snapshot.value != null) {
+      await FirebaseDatabase.instance.ref().child('users/${_auth.currentUser!.uid}/').update({
+        'isActive': status,
+        'lastSignedIn': DateTime.now().toIso8601String(),
+      });
+    }
   }
 }

@@ -170,7 +170,8 @@ Future<bool> userExists(String id) async {
 }
 
 Future<String> findUser(String txt) async {
-  if (await userExists(txt)) {
+  bool isEmail = txt.contains('@');
+  if (!isEmail && await userExists(txt)) {
     return txt;
   }
 
