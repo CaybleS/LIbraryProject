@@ -9,13 +9,15 @@
 // and a button to remove books, and a button to lend books
 // 7.) also book cover, title, author, description, and status (whether its lent or available)
 // 8.) Note that borrowed_book_page and add_book/search/book_details_screen will have similar layout to this page IMO, but with much of these details missing I'd say
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
 
-enum _ReadStatus {hasNotRead, unknown, hasRead}
+enum _ReadStatus { notRead, currentlyReading, unknown, read }
 
 class BookPage extends StatefulWidget {
   final Book book;
@@ -33,32 +35,44 @@ class _BookPageState extends State<BookPage> {
   void initState() {
     super.initState();
     switch (widget.book.hasRead) {
-      case true:
-        selection = {_ReadStatus.hasRead};
+      case ReadingState.read:
+        selection = {_ReadStatus.read};
         setState(() {});
         break;
-      case false:
-        selection = {_ReadStatus.hasNotRead};
+      case ReadingState.notRead:
+        selection = {_ReadStatus.notRead};
+        setState(() {});
+        break;
+      case ReadingState.currentlyReading:
+        selection = {_ReadStatus.currentlyReading};
         setState(() {});
         break;
       case null:
-        break; // since the default selection is unknown, we dont need to do anything
+        selection = {_ReadStatus.unknown};
+        break;
     }
-
+    setState(() {});
   }
 
   void processSelectionOption(_ReadStatus selection) {
     switch (selection) {
-      case _ReadStatus.hasNotRead:
-        if (widget.book.hasRead != false) {
-          widget.book.hasRead = false;
+      case _ReadStatus.notRead:
+        if (widget.book.hasRead != ReadingState.notRead) {
+          widget.book.hasRead = ReadingState.notRead;
           widget.book.update();
           setState(() {});
           break;
         }
-      case _ReadStatus.hasRead:
-        if (widget.book.hasRead != true) {
-          widget.book.hasRead = true;
+      case _ReadStatus.read:
+        if (widget.book.hasRead != ReadingState.read) {
+          widget.book.hasRead = ReadingState.read;
+          widget.book.update();
+          setState(() {});
+          break;
+        }
+      case _ReadStatus.currentlyReading:
+        if (widget.book.hasRead != ReadingState.currentlyReading) {
+          widget.book.hasRead = ReadingState.currentlyReading;
           widget.book.update();
           setState(() {});
           break;
@@ -94,14 +108,40 @@ class _BookPageState extends State<BookPage> {
   Widget _lendBookButton() {
     return ElevatedButton(
       onPressed: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(widget.book, widget.user)));
+        await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => BookLendPage(widget.book, widget.user)));
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
+        shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(0.0),
+            side: BorderSide(
+                color: const Color.fromARGB(255, 82, 185, 87), width: 5)),
+        backgroundColor: Colors.grey[400],
       ),
-      child: const Text('Lend book',
-        style: TextStyle(fontSize: 16, color: Colors.black),
+      child: Container(
+        height: 160,
+        width: 50,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.arrow_upward,
+              size: 48,
+              color: const Color.fromARGB(255, 82, 185, 87),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'Lend',
+              style: TextStyle(
+                fontSize: 19,
+                color: const Color.fromARGB(255, 82, 185, 87),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -110,8 +150,10 @@ class _BookPageState extends State<BookPage> {
   Widget _returnBookButton() {
     return Column(
       children: [
-         // TODO this ui sucks change this also change id to username or somethign whenver thats done, should be easy func call similar to userExists() function right?
-        (widget.book.borrowerId != null) ? Text("lent to ${widget.book.borrowerId}") : const SizedBox.shrink(),
+        // TODO this ui sucks change this also change id to username or somethign whenver thats done, should be easy func call similar to userExists() function right?
+        (widget.book.borrowerId != null)
+            ? Text("lent to ${widget.book.borrowerId}")
+            : const SizedBox.shrink(),
         ElevatedButton(
           onPressed: () async {
             widget.book.returnBook();
@@ -120,7 +162,8 @@ class _BookPageState extends State<BookPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
           ),
-          child: const Text('Return book',
+          child: const Text(
+            'Return book',
             style: TextStyle(fontSize: 16, color: Colors.black),
           ),
         ),
@@ -128,11 +171,10 @@ class _BookPageState extends State<BookPage> {
     );
   }
 
- Future<void> _displayConfirmRemoveDialog(Book bookToRemove) async {
+  Future<void> _displayConfirmRemoveDialog(Book bookToRemove) async {
     String? retVal = await showDialog(
-    context: context,
-    builder: (context) =>
-      Dialog(
+      context: context,
+      builder: (context) => Dialog(
         child: Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
@@ -165,7 +207,8 @@ class _BookPageState extends State<BookPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                       ),
-                      child: const Text("No!", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      child: const Text("No!",
+                          style: TextStyle(fontSize: 16, color: Colors.black)),
                     ),
                   ),
                   const SizedBox(width: 5),
@@ -175,12 +218,14 @@ class _BookPageState extends State<BookPage> {
                         bookToRemove.remove();
                         // if the book is removed I need to pop the dialog and then pop again so this is how I make this happen
                         // for some reason just having 2 pops here wouldnt work when I added persistent bottombar but this does
-                        Navigator.pop(context, "removed"); // signaling to the outside of the dialog to pop from the page it was called from
+                        Navigator.pop(context,
+                            "removed"); // signaling to the outside of the dialog to pop from the page it was called from
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                       ),
-                      child: const Text("Yes!", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      child: const Text("Yes!",
+                          style: TextStyle(fontSize: 16, color: Colors.black)),
                     ),
                   ),
                 ],
@@ -194,7 +239,7 @@ class _BookPageState extends State<BookPage> {
       Navigator.pop(context);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,7 +266,7 @@ class _BookPageState extends State<BookPage> {
                   const SizedBox(
                     width: 10,
                   ),
-                  Flexible( 
+                  Flexible(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -257,28 +302,122 @@ class _BookPageState extends State<BookPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            const Text("Status:", style: TextStyle(fontSize: 22)),
-            _displayStatus(),
-            const SizedBox(height: 10),
-            (widget.book.lentDbKey != null) ? _returnBookButton() : _lendBookButton(),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                await _displayConfirmRemoveDialog(widget.book);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 202, 35, 23)),
-              child: const Text("Remove book from library", style: TextStyle(fontSize: 16, color: Colors.black)),
+            Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 160,
+                    width: 150,
+                    //left column with status, rating, and condition
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        //display if book is available
+                        _displayStatus(),
+                        SizedBox(height: 10),
+                        const Text(
+                          "Rating:",
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        //display rating TODO: change to edit rating
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "5",
+                              style: TextStyle(
+                                  fontSize: 30, fontWeight: FontWeight.bold),
+                            ),
+                            Icon(
+                              Icons.star_border, // Icon for the button
+                              size: 40,
+                              color: Colors.black,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        const Text(
+                          "Condition:",
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        //display condition TODO: change to edit condition
+                        const Text(
+                          "Perfect",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  (widget.book.lentDbKey != null)
+                      ? _returnBookButton()
+                      : _lendBookButton(),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _displayConfirmRemoveDialog(widget.book);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(0.0),
+                          side: BorderSide(
+                              color: const Color.fromARGB(255, 202, 35, 23),
+                              width: 5)),
+                      backgroundColor: Colors.grey[400],
+                    ),
+                    child: Container(
+                      height: 160,
+                      width: 50,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment
+                            .center, // Center contents vertically
+                        children: [
+                          Icon(
+                            Icons
+                                .delete_outline_outlined, // Icon for the button
+                            size: 45,
+                            color: const Color.fromARGB(255, 202, 35, 23),
+                          ),
+                          const SizedBox(
+                              height: 5), // Space between icon and text
+                          const Text(
+                            'Delete', // Text below the icon
+                            style: TextStyle(
+                              fontSize: 17, // Smaller font size for text
+                              color: const Color.fromARGB(255, 202, 35, 23),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  (widget.book.isManualAdded && widget.book.lentDbKey == null)
+                      ? ElevatedButton(
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CustomAddedBookEdit(
+                                  widget.book,
+                                  widget.user,
+                                ),
+                              ),
+                            );
+                            setState(() {});
+                          },
+                          child: const Text("Edit manually added book here"),
+                        )
+                      : const SizedBox.shrink(),
+                ],
+              ),
             ),
-            (widget.book.isManualAdded && widget.book.lentDbKey == null) // book needs to be manually added AND not lent out, to be able to edit title/author stuff
-            ? ElevatedButton(
-                onPressed: () async {
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddedBookEdit(widget.book, widget.user)));
-                  setState(() {});
-                },
-                child: const Text("edit manually added book here"),
-              )
-            : const SizedBox.shrink(),
             const SizedBox(height: 10),
             SegmentedButton<_ReadStatus>(
               selected: selection,
@@ -286,21 +425,21 @@ class _BookPageState extends State<BookPage> {
                 selection = newSelection;
                 processSelectionOption(newSelection.single);
               },
-              segments: const <ButtonSegment<_ReadStatus>> [
+              segments: const <ButtonSegment<_ReadStatus>>[
                 ButtonSegment(
                   icon: Icon(Icons.bookmark_remove),
-                  value: _ReadStatus.hasNotRead,
-                  label: Text("Has no read"),
+                  value: _ReadStatus.notRead,
+                  label: Text("Not read"),
                 ),
                 ButtonSegment(
-                  icon: Icon(Icons.question_mark),
-                  value: _ReadStatus.unknown,
-                  label: Text("default"),
+                  icon: Icon(Icons.auto_stories),
+                  value: _ReadStatus.currentlyReading,
+                  label: Text("Currently Reading"),
                 ),
                 ButtonSegment(
                   icon: Icon(Icons.book),
-                  value: _ReadStatus.hasRead,
-                  label: Text("Has read"),
+                  value: _ReadStatus.read,
+                  label: Text("Read"),
                 ),
               ],
             ),
