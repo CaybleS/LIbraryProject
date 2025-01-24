@@ -56,12 +56,14 @@ class _BookLendPageState extends State<BookLendPage> {
             return InkWell(
             onTap: () {
               setState(() {
-                _selectedFriendId = friends[index].friendId;
+                // _selectedFriendId = friends[index].friendId;
+                _selectedFriendId = friends[index].uid;
               });
             },
             child: Card(
               margin: const EdgeInsets.all(5),
-              color: (_selectedFriendId == friends[index].friendId) ? Colors.green : null,
+              // color: (_selectedFriendId == friends[index].friendId) ? Colors.green : null,
+              color: (_selectedFriendId == friends[index].uid) ? Colors.green : null,
               child: Row(
                 children: [
                   const Padding(
@@ -70,8 +72,10 @@ class _BookLendPageState extends State<BookLendPage> {
                   ),
                   Column(
                     children: [
-                      Text(friends[index].friendId), // TODO update this with real username when thats added I'd say
-                      Text('ID: ${friends[index].friendId}'),
+                      // Text(friends[index].friendId), // TODO update this with real username when thats added I'd say
+                      Text(friends[index].uid), // TODO update this with real username when thats added I'd say
+                      // Text('ID: ${friends[index].friendId}'),
+                      Text('ID: ${friends[index].uid}'),
                     ],
                   ),
                 ],
@@ -111,8 +115,9 @@ class _BookLendPageState extends State<BookLendPage> {
             }
             String borrowerId = _selectedFriendId!;
             bool foundFriend = false;
-            for (Friend friend in friends) {
-              if (friend.friendId == borrowerId) {
+            // for (Friend friend in friends) {
+            for (UserModel friend in friends) {
+              if (friend.uid == borrowerId) {
                 foundFriend = true;
               }
             }

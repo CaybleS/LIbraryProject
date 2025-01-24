@@ -22,9 +22,8 @@ PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPag
   }
 
   void goToMessages() {
-    if (curPage != "message") {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (context) => MessageHome(user)));
+    if (curPage != "chats") {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => MessageHome(user)));
     }
   }
 
@@ -32,15 +31,10 @@ PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPag
     backgroundColor: Colors.blue,
     leading: MenuAnchor(
       menuChildren: [
-        MenuItemButton(
-            onPressed: () => {goToHome()}, child: const Icon(Icons.home)),
-        MenuItemButton(
-            onPressed: () => {goToProfile()}, child: const Icon(Icons.person)),
-        MenuItemButton(
-            onPressed: () => {goToSettings()},
-            child: const Icon(Icons.settings)),
-        MenuItemButton(
-            onPressed: () => {logout(context)}, child: const Icon(Icons.logout))
+        MenuItemButton(onPressed: () => {goToHome()}, child: const Icon(Icons.home)),
+        MenuItemButton(onPressed: () => {goToProfile()}, child: const Icon(Icons.person)),
+        MenuItemButton(onPressed: () => {goToSettings()}, child: const Icon(Icons.settings)),
+        MenuItemButton(onPressed: () => {logout(context)}, child: const Icon(Icons.logout))
       ],
       builder: (context, controller, child) {
         return IconButton(
@@ -58,12 +52,22 @@ PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPag
         );
       },
     ),
+    title: curPage.toLowerCase() != "chats"
+        ? null
+        : Text(curPage,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 25,
+              fontFamily: 'Poppins',
+            )),
     actions: [
-      IconButton(
-          onPressed: () {
-            goToMessages();
-          },
-          icon: const Icon(Icons.message_rounded, size: 30)),
+      if (curPage.toLowerCase() != "chats")
+        IconButton(
+            onPressed: () {
+              goToMessages();
+            },
+            icon: const Icon(Icons.message_rounded, size: 30)),
       const SizedBox(
         width: 10,
       ),

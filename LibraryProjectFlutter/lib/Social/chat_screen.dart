@@ -206,6 +206,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
       var uploadTask = await imageRef.putFile(image).catchError((error) {
         status = 0;
+        debugPrint(error);
+        return null;
       });
 
       if (status == 1) {

@@ -30,6 +30,7 @@ class MainApp extends StatelessWidget {
         builder: (context, child) {
           return ConnectivityWrapper(child: child ?? const SizedBox.shrink());
         },
+        theme: ThemeData(scaffoldBackgroundColor: Colors.grey[400]),
         home: const LoginPage(),
       ),
     );

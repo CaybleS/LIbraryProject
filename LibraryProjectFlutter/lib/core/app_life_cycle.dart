@@ -18,9 +18,9 @@ class AppLifeCycleState extends State<AppLifeCycle>
 
   changeStatus(bool status) async {
     if (auth.currentUser != null) {
-      final id = await dbReference.child('users/${auth.currentUser!.uid}/').get();
-      if (id.exists) {
-        await FirebaseDatabase.instance.ref('users/${auth.currentUser!.uid}/').update({
+      final id = await dbReference.child('users/${auth.currentUser!.uid}/').once();
+      if (id.snapshot.value != null) {
+        await FirebaseDatabase.instance.ref().child('users/${auth.currentUser!.uid}/').update({
           'isActive': status,
           'lastSignedIn': DateTime.now().toIso8601String(),
         });

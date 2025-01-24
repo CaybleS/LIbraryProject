@@ -5,6 +5,7 @@ import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
 import 'dart:async';
+
 import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
@@ -16,7 +17,7 @@ const int settingsIndex = 4;
 // pages can access these at any time, knowing that they will be up to date guaranteed
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
-List<Friend> friends = [];
+List<UserModel> friends = [];
 List<Request> requests = [];
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;

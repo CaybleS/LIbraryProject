@@ -1,33 +1,44 @@
-import 'package:library_project/models/user.dart';
+enum MessageType { text, image, file }
+// enum MessageStatus { sent, delivered, read }
 
-class Message {
+class MessageModel {
   String id;
   String text;
-  UserModel sender;
+  String senderId;
   String? replyTo;
-  UserModel? userReply;
+  String? userReply;
   bool isEdited;
-  DateTime date;
+  String? editedText;
+  DateTime sentTime;
+  MessageType type;
 
-  Message({
+  // MessageStatus status;
+
+  MessageModel({
     required this.id,
     required this.text,
-    required this.sender,
-    required this.date,
+    required this.senderId,
+    required this.sentTime,
     this.replyTo,
     this.userReply,
     this.isEdited = false,
+    this.editedText,
+    this.type = MessageType.text,
+    // this.status = MessageStatus.sent,
   });
 
-  factory Message.fromJson(Map<String, dynamic> json) {
-    return Message(
+  factory MessageModel.fromJson(String messageId, Map<dynamic, dynamic> json) {
+    return MessageModel(
       id: json['id'],
       text: json['text'],
-      sender: UserModel.fromJson(json['sender']),
-      date: DateTime.parse(json['date']),
+      senderId: json['sender'],
+      sentTime: DateTime.fromMillisecondsSinceEpoch(json['sentTime']),
       replyTo: json['replyTo'],
-      userReply: json['userReply'] != null ? UserModel.fromJson(json['userReply']) : null,
+      userReply: json['userReply'],
       isEdited: json['isEdited'] ?? false,
+      editedText: json['editedText'],
+      type: MessageType.values.byName(json['type'] ?? 'text'),
+      // status: MessageStatus.values.byName(json['status'] ?? 'sent'),
     );
   }
 
@@ -35,11 +46,14 @@ class Message {
     return {
       'id': id,
       'text': text,
-      'sender': sender.toJson(),
+      'sender': senderId,
       'replyTo': replyTo,
-      'userReply': userReply?.toJson(),
-      'date': date.toIso8601String(),
+      'userReply': userReply,
+      'sentTime': sentTime.millisecondsSinceEpoch,
       'isEdited': isEdited,
+      'editedText': editedText,
+      'type': type.name,
+      // 'status': status.name,
     };
   }
 }

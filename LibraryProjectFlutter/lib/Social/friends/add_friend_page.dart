@@ -67,7 +67,8 @@ class _AddFriendPageState extends State<AddFriendPage> {
     if (mounted && scannedID != null) {
       // await _qrScanInstance.scannerSearchByIsbn(context, scannedID);
       if (await userExists(scannedID)) {
-        var contain = friends.where((element) => element.friendId == scannedID);
+        // var contain = friends.where((element) => element.friendId == scannedID);
+        var contain = friends.where((element) => element.uid == scannedID);
         if (contain.isEmpty) {
           sendFriendRequest(widget.user, scannedID);
           SharedWidgets.displayPositiveFeedbackDialog(
