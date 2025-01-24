@@ -53,7 +53,12 @@ class SearchDriver {
     final String endpoint = "https://openlibrary.org/search.json?q=$searchQuery&limit=$maxApiResponseSize";
     http.Response? response;
     try {
-      response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint)).timeout(
+        const Duration(seconds: 25), // longer timeout than google books api due to this api being slower
+        onTimeout: () {
+          throw "Timeout";
+        },
+      );
       if (response.statusCode == 200) {
         _searchQueryBooks = json.decode(response.body)['docs'] ?? [];
       } else {
@@ -71,7 +76,12 @@ class SearchDriver {
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQuery&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
     http.Response? response;
     try {
-      response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw "Timeout";
+        },
+      );
       if (response.statusCode == 200) {
         _searchQueryBooks = json.decode(response.body)['items'] ?? [];
       } // with a bad response we just fallback to openlibrary api
@@ -100,7 +110,7 @@ class SearchDriver {
 
   String _getSearchFailMessage() {
     if (_noResponseError) {
-      return "No response. Either the service is down or you have no internet!";
+      return "Search timed out. This may be due to internet connection issues or the service being temporarily unavailable.";
     }
     if (_noBooksFoundError) {
       return "No books found";

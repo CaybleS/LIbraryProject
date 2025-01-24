@@ -1,4 +1,5 @@
 // TODO that this will need to be changed, it must store the friendId but should display username or something
+// TODO refreshnotifier for friends, its simlpe to implment now k?
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';

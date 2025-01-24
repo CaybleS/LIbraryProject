@@ -236,7 +236,12 @@ class ScannerDriver {
     final String endpoint = "https://openlibrary.org/search.json?isbn=$isbn&limit=1";
     http.Response? response;
     try {
-      response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint)).timeout(
+        const Duration(seconds: 25), // longer timeout than google books api due to this api being slower
+        onTimeout: () {
+          throw "Timeout";
+        },
+      );
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['docs'][0] ?? [];
         String? title, author, coverUrl; // note description isnt stored by openlibrary
@@ -264,7 +269,12 @@ class ScannerDriver {
     http.Response? response;
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn&key=$apiKey&maxResults=1";
     try {
-      response = await http.get(Uri.parse(endpoint));
+      response = await http.get(Uri.parse(endpoint)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw "Timeout";
+        },
+      );
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['items'][0] ?? [];
         String? title, author, coverUrl, description, googleBooksId;
@@ -300,7 +310,7 @@ class ScannerDriver {
       return "The ISBN is invalid. You may be scanning an incorrect type of barcode.";
     }
     if (_noResponseError) {
-      return "No response received. This may be due to internet connection issues or the service being temporarily unavailable.";
+      return "Search timed out. This may be due to internet connection issues or the service being temporarily unavailable.";
     }
     if (_invalidBarcodePhotoError) {
       return "There was no barcode found on this image. It may be too small for the scanner to detect.";

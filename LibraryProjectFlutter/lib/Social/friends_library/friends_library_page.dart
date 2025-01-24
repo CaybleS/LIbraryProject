@@ -84,17 +84,40 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
     setState(() {});
   }
 
+  bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
+    if (individualWordsToFilter.length < 2) { // in this case there is only 0 or 1 words detected, which defeats the whole purpose of this function
+      return false;
+    }
+    for (int i = 0; i < individualWordsToFilter.length; i++) {
+      if (individualWordsToFilter[i] == filterText) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // so if you filter search for exactly title and author in that order, it will show up
+  bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
+    if ("${book.title?.toLowerCase()} ${book.author?.toLowerCase()}".contains(filterText)) {
+      return true;
+    }
+    return false;
+  }
+
   // this doesn't change the shownLibrary list at all, it simply changes the shownList list (which only contains indicies of books to show inside of shownLibrary)
   void _filter(String filterText) {
-    filterText = filterText.toLowerCase();
+    filterText = filterText.toLowerCase().trim();
     if (filterText.isEmpty) {
-      _updateList();
+      _setShownListWithNoFilters();
     }
     else {
       List<int> newShownList = [];
+      List<String> individualWordsToFilter = filterText.split(" ");
       for (int i = 0; i < _friendsLibrary.length; i++) {
         if ((_friendsLibrary[i].title?.toLowerCase() ?? "no title found").contains(filterText) 
-        || (_friendsLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText)) {
+        || (_friendsLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText)
+        || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)
+        || _isFilterTextTitleAndAuthor(filterText, _friendsLibrary[i])) {
           newShownList.add(i);
         }
       }
@@ -119,6 +142,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
     }
   }
 
+
   void _resetFilters() {
     _sortingAscending = true;
     _sortSelection = _SortingOption.dateAdded;
@@ -130,11 +154,31 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(_friendsLibrary[index])));
   }
 
-  void _updateList() {
+  void _setShownListWithNoFilters() {
     _shownList.clear();
     _shownList = Iterable<int>.generate(_friendsLibrary.length).toList();
     _unsortedShownList = List.from(_shownList);
-    setState(() {});
+  }
+
+  void _updateList() {
+    _setShownListWithNoFilters();
+    if (_searchBarTextController.text.isNotEmpty) {
+      _filter(_searchBarTextController.text);
+    }
+    else {
+      // these sorting functions will call the setState
+      switch (_sortSelection) {
+        case _SortingOption.dateAdded:
+          _sortByDateAdded();
+          break;
+        case _SortingOption.title:
+          _sortByTitle();
+          break;
+        case _SortingOption.author:
+          _sortByAuthor();
+          break;
+      }
+    }
   }
 
   Widget _displayFilterDropdown() {

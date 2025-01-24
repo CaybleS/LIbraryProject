@@ -22,7 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<int> _shownList = []; // this is the "driver" list which dictates what books in shownLibrary are visible, and in what order, by storing indicies of books in shownLibrary
-  List<int> _unsortedShownList = []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
+  List<int> _unsortedShownList = []; // needed to always be able to sort by "date added" even when shownList changes to sort by title
   List<Book> _shownLibrary = [];
   bool _usingBooksLentToMe = false;
   late final VoidCallback _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
@@ -82,9 +82,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
   
-  // basically this function allows the filter to not care about word order
   bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
-    if (individualWordsToFilter.length < 2) { // in this case there is only 0 or 1 words detected, so no need to consider word order
+    if (individualWordsToFilter.length < 2) { // in this case there is only 0 or 1 words detected, which defeats the whole purpose of this function
       return false;
     }
     for (int i = 0; i < individualWordsToFilter.length; i++) {
@@ -165,6 +164,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _setShownListWithNoFilters() {
+    _shownList.clear();
     switch (_showing) {
       case _BooksShowing.all:
         _shownList = Iterable<int>.generate(userLibrary.length).toList();
@@ -192,23 +192,33 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _updateList() {
-    _shownList.clear();
-    _usingBooksLentToMe = false;
+    _usingBooksLentToMe = _showing == _BooksShowing.lentToMe;
 
     _setShownListWithNoFilters();
     _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
-
-    // these sorting functions will call the setState
-    switch (_sortSelection) {
-      case _SortingOption.dateAdded:
-        _sortByDateAdded();
-        break;
-      case _SortingOption.title:
-        _sortByTitle();
-        break;
-      case _SortingOption.author:
-        _sortByAuthor();
-        break;
+    if (_searchBarTextController.text.isNotEmpty) {
+      // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
+      // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
+      // unnecessary to me but I guess with 2 filter systems (the _BooksShowing and filter bar) we need to consider both of them, which
+      // is why prevShownList exists (we only show books with both filters applied to them).
+      List<int> prevShownList = _shownList;
+      _filter(_searchBarTextController.text);
+      _shownList.removeWhere((item) => !prevShownList.contains(item));
+      setState(() {});
+    }
+    else {
+      // these sorting functions will call the setState
+      switch (_sortSelection) {
+        case _SortingOption.dateAdded:
+          _sortByDateAdded();
+          break;
+        case _SortingOption.title:
+          _sortByTitle();
+          break;
+        case _SortingOption.author:
+          _sortByAuthor();
+          break;
+      }
     }
   }
 
@@ -464,7 +474,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          (_showEmptyLibraryMsg)
+          (_showEmptyLibraryMsg && _showing == _BooksShowing.all)
             ? const Padding(padding: EdgeInsets.only(top: 10), child: Text("Add books to view your library here", style: TextStyle(fontSize: 14, color: Colors.black)))
             : const SizedBox.shrink(),
           Expanded(
