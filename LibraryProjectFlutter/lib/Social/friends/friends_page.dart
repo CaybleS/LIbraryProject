@@ -326,36 +326,56 @@ class FriendList extends StatelessWidget {
                 child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(children: [
-                        ClipOval(
-                          child: SizedBox(
-                            width: 75,
-                            // child: Image.network(friends[index].photo)),
-                            child: friends[index].photoUrl != null
-                                ? Image.network(friends[index].photoUrl!)
-                                : Image.asset('assets/profile_pic.jpg'),
+                      Expanded(
+                        flex: 4,
+                        child: Row(children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 75,
+                              // child: Image.network(friends[index].photo)),
+                              child: friends[index].photoUrl != null
+                                  ? Image.network(friends[index].photoUrl!)
+                                  : Image.asset('assets/profile_pic.jpg'),
+                            ),
                           ),
-                        ),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                friends[index].name,
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 20),
-                                softWrap: true,
-                              ),
-                              Text(
-                                friends[index].email,
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 16),
-                                softWrap: true,
-                              ),
-                            ]),
-                      ]),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  friends[index].name,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 20),
+                                  softWrap: true,
+                                ),
+                                Text(
+                                  friends[index].email,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 16),
+                                  softWrap: true,
+                                ),
+                              ]),
+                        ]),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: ElevatedButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          FriendsLibraryPage(friends[index])));
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromRGBO(76, 175, 80, 1)),
+                            child: const Text('View Library',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.black))),
+                      ),
                     ])),
           );
         });
