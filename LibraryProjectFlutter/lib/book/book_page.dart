@@ -115,23 +115,26 @@ class _BookPageState extends State<BookPage> {
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
-        shape:ContinuousRectangleBorder(borderRadius: BorderRadius.circular(0.0)),
+        shape:
+            ContinuousRectangleBorder(borderRadius: BorderRadius.circular(0.0)),
         backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
       ),
-      child: Flexible(
+      child: Container(
+        height: 160,
+        width: 50,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center contents vertically
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.arrow_upward, // Icon for the button
-              size: 20,
+              Icons.arrow_upward,
+              size: 40,
               color: Colors.black,
             ),
-            const SizedBox(height: 5), // Space between icon and text
+            const SizedBox(height: 5),
             const Text(
-              'Lend', // Text below the icon
+              'Lend',
               style: TextStyle(
-                fontSize: 12, // Smaller font size for text
+                fontSize: 14,
                 color: Colors.black,
               ),
             ),
@@ -299,28 +302,52 @@ class _BookPageState extends State<BookPage> {
             ),
             Flexible(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    height: 220,
+                    height: 160,
                     width: 150,
                     //left column with status, rating, and condition
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         //display if book is available
                         _displayStatus(),
-                        //display rating TODO
+                        SizedBox(height: 10),
                         const Text(
-                          "5 stars",
+                          "Rating:",
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                              fontSize: 12, fontWeight: FontWeight.bold),
                         ),
-                        //display condition TODO
+                        //display rating TODO: change to edit rating
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "5",
+                              style: TextStyle(
+                                  fontSize: 30, fontWeight: FontWeight.bold),
+                            ),
+                            Icon(
+                              Icons.star_border, // Icon for the button
+                              size: 40,
+                              color: Colors.black,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
                         const Text(
-                          "Perfect Condition",
+                          "Condition:",
                           style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                              fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        //display condition TODO: change to edit condition
+                        const Text(
+                          "Perfect",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -335,31 +362,36 @@ class _BookPageState extends State<BookPage> {
                       await _displayConfirmRemoveDialog(widget.book);
                     },
                     style: ElevatedButton.styleFrom(
-                      shape:ContinuousRectangleBorder(borderRadius: BorderRadius.circular(0.0)),
+                      shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(0.0)),
                       backgroundColor: const Color.fromARGB(255, 202, 35, 23),
                     ),
-                    child: Flexible(
+                    child: Container(
+                      height: 160,
+                      width: 50,
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center, // Center contents vertically
+                        mainAxisAlignment: MainAxisAlignment
+                            .center, // Center contents vertically
                         children: [
                           Icon(
-                            Icons.delete_outline_outlined, // Icon for the button
-                            size: 20,
+                            Icons
+                                .delete_outline_outlined, // Icon for the button
+                            size: 40,
                             color: Colors.black,
                           ),
-                        const SizedBox(height: 5), // Space between icon and text
-                        const Text(
-                          'Delete', // Text below the icon
-                          style: TextStyle(
-                          fontSize: 12, // Smaller font size for text
-                          color: Colors.black,
-                        ),
+                          const SizedBox(
+                              height: 5), // Space between icon and text
+                          const Text(
+                            'Delete', // Text below the icon
+                            style: TextStyle(
+                              fontSize: 15, // Smaller font size for text
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
                     ),
-
+                  ),
                   const SizedBox(height: 10),
                   (widget.book.isManualAdded && widget.book.lentDbKey == null)
                       ? ElevatedButton(
