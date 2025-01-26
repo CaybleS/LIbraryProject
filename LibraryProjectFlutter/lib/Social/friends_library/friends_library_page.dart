@@ -5,11 +5,12 @@ import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
+import 'package:library_project/models/user.dart';
 
 enum _SortingOption {dateAdded, title, author}
 
 class FriendsLibraryPage extends StatefulWidget {
-  final Friend friend;
+  final UserModel friend;
 
   const FriendsLibraryPage(this.friend, {super.key});
 
@@ -30,14 +31,14 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   @override
   void initState() {
     super.initState();
-    if (friendIdToLibrarySubscription[widget.friend.friendId] == null) {
-      friendIdToLibrarySubscription[widget.friend.friendId] = setupFriendsBooksSubscription(friendIdToBooks, widget.friend.friendId, friendsBooksUpdated);
-      friendIdsSubscribedTo.add(widget.friend.friendId);
+    if (friendIdToLibrarySubscription[widget.friend.uid] == null) {
+      friendIdToLibrarySubscription[widget.friend.uid] = setupFriendsBooksSubscription(friendIdToBooks, widget.friend.uid, friendsBooksUpdated);
+      friendIdsSubscribedTo.add(widget.friend.uid);
     }
     _friendsBooksUpdatedListener = () {
       if (refreshNotifier.value == friendsPageIndex) {
-        _friendsLibrary = List.from(friendIdToBooks[widget.friend.friendId] ?? []);
-        if (friendIdToBooks[widget.friend.friendId]!.isEmpty) {
+        _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
+        if (friendIdToBooks[widget.friend.uid]!.isEmpty) {
           _showEmptyLibraryMsg = true;
         }
         else {
@@ -47,7 +48,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
       }
     };
     refreshNotifier.addListener(_friendsBooksUpdatedListener);
-    _friendsLibrary = List.from(friendIdToBooks[widget.friend.friendId] ?? []);
+    _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
     _updateList();
   }
 
@@ -98,7 +99,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
 
   // so if you filter search for exactly title and author in that order, it will show up
   bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
-    if ("${book.title?.toLowerCase()} ${book.author?.toLowerCase()}".contains(filterText)) {
+  if ("${(book.title ?? "no title found").toLowerCase()} ${(book.author ?? "no author found").toLowerCase()}".contains(filterText)) {
       return true;
     }
     return false;
@@ -323,7 +324,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar( // TODO in my view a messenger link should be somewhere. Could be on appbar, idk, but decide if it should be somewhere here or not.
-        title: Text("${widget.friend.friendId.substring(0, 10)}'s books"), // TODO change this to be username or somethng idk
+        title: Text("${widget.friend.uid.substring(0, 10)}'s books"), // TODO change this to be username or somethng idk
         centerTitle: true,
         backgroundColor: Colors.blue,
       ),

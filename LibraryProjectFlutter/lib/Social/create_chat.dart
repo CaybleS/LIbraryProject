@@ -1,16 +1,17 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/chat_screen.dart';
 import 'package:library_project/Social/private_chat_screen.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/models/chat.dart';
+import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
 
 class CreateChatScreen extends StatefulWidget {
-  final User user;
-
-  const CreateChatScreen(this.user, {super.key});
+  const CreateChatScreen({super.key});
 
   @override
   State<CreateChatScreen> createState() => _CreateChatScreenState();
@@ -20,23 +21,16 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   final _database = FirebaseDatabase.instance.ref();
   late TextEditingController controller;
   final TextEditingController groupNameController = TextEditingController();
-  List<UserModel> inChat = [];
+  List<UserModel> members = [];
 
   @override
   void initState() {
     super.initState();
-
-    getAppFriends();
-  }
-
-  getAppFriends() async {
-    final friends = await getFriends(widget.user);
-    print(friends);
   }
 
   void addFriend(UserModel friend) {
-    if (inChat.contains(friend)) return;
-    inChat.add(friend);
+    if (members.contains(friend)) return;
+    members.add(friend);
 
     controller.clear;
 
@@ -44,37 +38,71 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   }
 
   void removeFriend(int index) {
-    inChat.remove(inChat[index]);
+    members.remove(members[index]);
 
     setState(() {});
   }
 
   void createChat() async {
-    if (inChat.length == 1) {
-      String id = await getChatRoomId(widget.user.uid, inChat.first.uid);
+    if (members.length == 1) {
+      String id = await getChatRoomId(userModel.value!.uid, members.first.uid);
       showBottombar = false;
       refreshBottombar.value = true;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PrivateChatScreen(
-            chatRoomId: id,
-            contact: inChat.first,
-            currentUserId: widget.user.uid,
+      if (mounted) {
+        await Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PrivateChatScreen(chatRoomId: id, contact: members.first),
           ),
-        ),
-      );
+        );
+      }
       showBottombar = true;
       refreshBottombar.value = true;
-    } else if (inChat.length > 1 && groupNameController.text.isNotEmpty) {
-      // Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(
-      //         builder: (context) => ChatScreen(
-      //               widget.user,
-      //               inChat: inChat,
-      //               name: groupNameController.text,
-      //             )));
+    } //
+    else if (members.length > 1 && groupNameController.text.trim().isNotEmpty) {
+      members.add(userModel.value!);
+      String id = _database.child('chats/').push().key!;
+      Chat chat = Chat(
+        id: id,
+        name: groupNameController.text.trim(),
+        avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
+        participants: members.map((e) => e.uid).toList(),
+        type: ChatType.group,
+        createdBy: userModel.value!.uid,
+      );
+
+      await _database.child('chats/$id').set(chat.toJson());
+      final messageId = _database.child('chats/$id/messages').push().key;
+      MessageModel message = MessageModel(
+        id: messageId!,
+        text: '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
+        senderId: userModel.value!.uid,
+        sentTime: DateTime.now(),
+      );
+      await _database.child('chats/$id/messages/$messageId').set(message.toJson());
+
+      for (var member in members) {
+        await _database.child('userChats/${member.uid}/$id').set({
+          'lastMessage': {
+            'text': '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'sender': userModel.value!.uid,
+          },
+          'unreadCount': 0,
+        });
+      }
+      showBottombar = false;
+      refreshBottombar.value = true;
+      if (mounted) {
+        await Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(chat: chat),
+          ),
+        );
+      }
+      showBottombar = true;
+      refreshBottombar.value = true;
     }
   }
 
@@ -105,7 +133,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         onPressed: () {
           createChat();
         },
-        backgroundColor: inChat.isNotEmpty ? Colors.green : Colors.grey,
+        backgroundColor: members.isNotEmpty ? Colors.green : Colors.grey,
         label: const Text(
           "Create Chat",
           style: TextStyle(fontSize: 18, fontFamily: 'Poppins'),
@@ -153,9 +181,9 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: inChat.length,
+                itemCount: members.length,
                 itemBuilder: (BuildContext context, int index) {
-                  final user = inChat[index];
+                  final user = members[index];
                   return Card(
                     margin: const EdgeInsets.all(5),
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
@@ -207,7 +235,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
             SizedBox(
               width: size.width * 0.9,
               child: Visibility(
-                visible: inChat.length > 1,
+                visible: members.length > 1,
                 child: TextField(
                   controller: groupNameController,
                   decoration: InputDecoration(

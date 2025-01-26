@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/database/database.dart';
 
+//putting this definition here allows us to not use bools for read state.
+enum ReadingState { notRead, currentlyReading, read }
 // more can be added here based on what users want
 class Book {
   String? title;
@@ -18,7 +20,7 @@ class Book {
   int? bookCondition;
   String? publicBookNotes;
   int? rating;
-  bool? hasRead;
+  ReadingState? hasRead;
   bool isManualAdded; // needed because manually added books should be changable by users
   DateTime? dateLent;
   DateTime? dateToReturn;
@@ -141,6 +143,11 @@ class Book {
         fit: BoxFit.fill,
       );
     }
+  }
+
+    void updateReadingState(ReadingState? newState) {
+    hasRead = newState;
+    update(); // Save changes to the database
   }
 }
 

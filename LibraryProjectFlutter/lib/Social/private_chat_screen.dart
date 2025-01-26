@@ -1,20 +1,25 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:uuid/uuid.dart';
 
 class PrivateChatScreen extends StatefulWidget {
-  const PrivateChatScreen({super.key, required this.chatRoomId, required this.contact, required this.currentUserId});
+  const PrivateChatScreen({super.key, required this.chatRoomId, required this.contact});
 
   final String chatRoomId;
-  final String currentUserId;
   final UserModel contact;
 
   @override
@@ -37,7 +42,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   void initState() {
     super.initState();
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-      final snapshot = FirebaseDatabase.instance.ref('/users/${widget.currentUserId}').once();
+      final snapshot = FirebaseDatabase.instance.ref('/users/${userModel.value!.uid}').once();
       snapshot.then((value) {
         setState(() {
           currentUser = UserModel.fromJson(value.snapshot.value as Map<dynamic, dynamic>);
@@ -131,53 +136,117 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   reverse: true,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    bool isMe = message.senderId == widget.currentUserId;
+                    bool isMe = message.senderId == userModel.value!.uid;
                     bool isTopMessage = messages.length == index + 1;
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        constraints: BoxConstraints(maxWidth: (size.width - 40) * 0.875),
-                        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: message.senderId == widget.contact.uid ? Colors.blue : Colors.grey,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(
-                                isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
-                                    ? 20
-                                    : 4),
-                            topRight: Radius.circular(
-                                !isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
-                                    ? 20
-                                    : 4),
-                            bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
-                            bottomRight: isMe ? Radius.zero : const Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              message.text,
-                              style: TextStyle(
-                                  fontFamily: 'Poppins', fontSize: 16, color: isMe ? Colors.black : Colors.white),
+                    return Column(
+                      children: [
+                        if (isTopMessage || !_isSameDay(messages[index + 1].sentTime, message.sentTime))
+                          Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.6),
+                                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                              ),
+                              child: Text(
+                                _formatDate(messages[index].sentTime),
+                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
+                          ),
+                        Align(
+                          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            constraints: BoxConstraints(maxWidth: (size.width - 40) * 0.875),
+                            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            padding: EdgeInsets.all(message.type == MessageType.image ? 2 : 10),
+                            decoration: BoxDecoration(
+                              color: message.senderId == widget.contact.uid ? Colors.blue : Colors.grey,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(
+                                    isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
+                                        ? 20
+                                        : 4),
+                                topRight: Radius.circular(
+                                    !isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
+                                        ? 20
+                                        : 4),
+                                bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
+                                bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                              ),
+                            ),
+                            child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  '${message.sentTime.day}/${message.sentTime.month} '
-                                  '${_createTimeTextWidget(message.sentTime)}',
-                                  style: TextStyle(
-                                      fontFamily: 'Poppins', fontSize: 14, color: isMe ? Colors.black : Colors.white),
-                                ),
+                                if (message.type == MessageType.text) ...[
+                                  Text(
+                                    message.text,
+                                    style: TextStyle(
+                                        fontFamily: 'Poppins', fontSize: 16, color: isMe ? Colors.black : Colors.white),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${_createTimeTextWidget(message.sentTime)}',
+                                        style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 14,
+                                            color: isMe ? Colors.black : Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                if (message.type == MessageType.image)
+                                  Stack(
+                                    alignment: Alignment.bottomLeft,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(isMe ||
+                                              isTopMessage ||
+                                              messages[index + 1].senderId != messages[index].senderId
+                                              ? 20
+                                              : 4),
+                                          topRight: Radius.circular(!isMe ||
+                                              isTopMessage ||
+                                              messages[index + 1].senderId != messages[index].senderId
+                                              ? 20
+                                              : 4),
+                                          bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
+                                          bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                                        ),
+                                        child: CachedNetworkImage(
+                                          imageUrl: message.text,
+                                        ),
+                                      ),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.withOpacity(0.8),
+                                          borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                        ),
+                                        margin: const EdgeInsets.only(left: 5, bottom: 5),
+                                        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 7),
+                                        child: Text(
+                                          _createTimeTextWidget(message.sentTime),
+                                          style: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     );
                   },
                 );
@@ -185,46 +254,51 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
             ),
           ),
           Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-              child: TextField(
-                controller: messageController,
-                onChanged: (value) async {
-                  if (_timer?.isActive ?? false) {
-                    _timer?.cancel();
-                  }
-                  await FirebaseDatabase.instance
-                      .ref()
-                      .child('users/${widget.currentUserId}/')
-                      .update({'isTyping': true});
-                  _timer = Timer(
-                    const Duration(milliseconds: 2000),
-                    () async {
-                      await FirebaseDatabase.instance
-                          .ref()
-                          .child('users/${widget.currentUserId}/')
-                          .update({'isTyping': false});
-                    },
-                  );
-                },
-                decoration: InputDecoration(
-                    hintText: 'Message',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    fillColor: Colors.white,
-                    filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    prefixIcon: IconButton(
-                        onPressed: () {
-                          // uploadImage();
-                        },
-                        icon: const Icon(Icons.camera_alt)),
-                    prefixIconColor: Colors.blue,
-                    suffixIcon: IconButton(
-                        onPressed: () {
-                          sendMessage();
-                        },
-                        icon: const Icon(Icons.send_rounded)),
-                    suffixIconColor: Colors.blue),
-              ))
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: TextField(
+              controller: messageController,
+              onChanged: (value) async {
+                if (_timer?.isActive ?? false) {
+                  _timer?.cancel();
+                }
+                await FirebaseDatabase.instance
+                    .ref()
+                    .child('users/${userModel.value!.uid}/')
+                    .update({'isTyping': true});
+                _timer = Timer(
+                  const Duration(milliseconds: 2000),
+                  () async {
+                    await FirebaseDatabase.instance
+                        .ref()
+                        .child('users/${userModel.value!.uid}/')
+                        .update({'isTyping': false});
+                  },
+                );
+              },
+              style: const TextStyle(fontFamily: 'Poppins'),
+              decoration: InputDecoration(
+                hintText: 'Message',
+                hintStyle: const TextStyle(color: Colors.grey),
+                fillColor: Colors.white,
+                filled: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: IconButton(
+                  onPressed: () {
+                    uploadImage();
+                  },
+                  icon: const Icon(IconsaxPlusLinear.camera),
+                ),
+                prefixIconColor: Colors.blue,
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    sendMessage();
+                  },
+                  icon: const Icon(IconsaxPlusLinear.send_1),
+                ),
+                suffixIconColor: Colors.blue,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -234,7 +308,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     return _database.child('chats/$chatId/messages').onValue.map((event) {
       final messagesMap = event.snapshot.value;
       if (messagesMap == null) return [];
-      updateUnreadCount(chatId, widget.currentUserId);
+      updateUnreadCount(chatId, userModel.value!.uid);
       return (messagesMap as Map).entries.map((entry) {
         return MessageModel.fromJson(entry.key, entry.value);
       }).toList()
@@ -296,105 +370,85 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     : Colors.primaries[Random().nextInt(Colors.primaries.length)],
                 chatImage: widget.contact.photoUrl,
                 name: widget.contact.name,
-                participants: [widget.currentUserId, widget.contact.uid],
+                participants: [userModel.value!.uid, widget.contact.uid],
               ).toJson());
         });
-
-        _database.child('chats/${widget.chatRoomId}/participants').once().then((participantsSnapshot) {
-          final participants = participantsSnapshot.snapshot.value as Map<dynamic, dynamic>?;
-
-          if (participants == null) return;
-          participants.forEach((participantId, _) {
-            _database.child('userChats/$participantId/${widget.chatRoomId}').update({
-              'lastMessage': {
-                'text': messageText,
-                'timestamp': DateTime.now().millisecondsSinceEpoch,
-                'sender': widget.currentUserId
-              },
-              'unreadCount': participantId == currentUser.uid ? 0 : ServerValue.increment(1)
-            });
-          });
+        await _database.child('userChats/${currentUser.uid}/${widget.chatRoomId}').update({
+          'lastMessage': {
+            'text': messageText,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'sender': userModel.value!.uid
+          },
+          'unreadCount': 0
+        });
+        await _database.child('userChats/${widget.contact.uid}/${widget.chatRoomId}').update({
+          'lastMessage': {
+            'text': messageText,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'sender': userModel.value!.uid
+          },
+          'unreadCount': ServerValue.increment(1)
         });
       }
     }
-
-    // if (roomExists) {
-    //   debugPrint("room already exists");
-    //   Map<String, dynamic> msgMap = {
-    //     'sender': widget.user.uid,
-    //     'message': messageController.text,
-    //     'type': 'text',
-    //     'sentTime': DateTime.now().toUtc().toIso8601String()
-    //   };
-    //   Map<String, dynamic> shortMap = {
-    //     'lastMsg': messageController.text,
-    //     'lastSender': widget.user.uid,
-    //     'lastTime': msgMap['sentTime']
-    //   };
-    //
-    //   DatabaseReference newMsgRef = dbRef.child('messages/${widget.roomID}/').push();
-    //   newMsgRef.set(msgMap);
-    //
-    //   for (var n in names.keys) {
-    //     DatabaseReference tempRef = dbRef.child('chatsByUser/$n/${widget.roomID}');
-    //     tempRef.update(shortMap);
-    //   }
-    //
-    //   messageController.clear();
-    // } else {
-    //   debugPrint("room needs creation");
-    //   Map<String, dynamic> msgMap = {
-    //     'sender': widget.user.uid,
-    //     'message': messageController.text,
-    //     'type': 'text',
-    //     'sentTime': DateTime.now().toUtc().toIso8601String()
-    //   };
-    //   Map<String, dynamic> shortMap = {
-    //     'type': type,
-    //     'lastMsg': messageController.text,
-    //     'lastSender': widget.user.uid,
-    //     'lastTime': msgMap['sentTime']
-    //   };
-    //   Map<String, dynamic> chatInfoMap = {'type': type};
-    //   if (type == "individual") {
-    //     shortMap['name'] = widget.inChat[0].friendId;
-    //   } else {
-    //     shortMap['name'] = name;
-    //     chatInfoMap['name'] = name;
-    //   }
-    //   Map<String, String> members = {};
-    //   for (Friend f in widget.inChat) {
-    //     members[f.friendId] = f.friendId;
-    //   }
-    //   members[widget.user.uid] = widget.user.uid;
-    //   chatInfoMap['members'] = members;
-    //
-    //   DatabaseReference chatListRef = dbRef.child('messages/').push();
-    //   widget.roomID = chatListRef.key!;
-    //   dbRef.child('messages/${widget.roomID}/').push().set(msgMap);
-    //
-    //   DatabaseReference tempRef = dbRef.child('chatsByUser/${widget.user.uid}/${widget.roomID}');
-    //   tempRef.set(shortMap);
-    //   for (Friend f in widget.inChat) {
-    //     if (type == "individual") {
-    //       shortMap['name'] = widget.user.uid;
-    //     }
-    //     DatabaseReference tempRef = dbRef.child('chatsByUser/${f.friendId}/${widget.roomID}');
-    //     tempRef.set(shortMap);
-    //   }
-    //
-    //   DatabaseReference chatInfoRef = dbRef.child('chatInfo/${widget.roomID}');
-    //   chatInfoRef.set(chatInfoMap);
-    //
-    //   messageController.clear();
-    //   roomExists = true;
-    //   setState(() {});
-    //
-    //   init();
-    // }
   }
 
   Future<void> updateUnreadCount(String chatId, String userId) async {
     await FirebaseDatabase.instance.ref("userChats/$userId/$chatId/unreadCount").set(0);
+  }
+
+  bool _isSameDay(DateTime sentTime, DateTime sentTime2) {
+    return sentTime.day == sentTime2.day && sentTime.month == sentTime2.month && sentTime.year == sentTime2.year;
+  }
+
+  String _formatDate(DateTime sentTime) {
+    final now = DateTime.now();
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    if (_isSameDay(sentTime, now)) return 'Today';
+    if (_isSameDay(sentTime, yesterday)) return 'Yesterday';
+    return DateFormat('MM/dd/yyyy').format(sentTime);
+  }
+
+  void uploadImage() async {
+    debugPrint("image upload");
+    ImagePicker imagePicker = ImagePicker();
+    XFile? xFile = await imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (xFile != null) {
+      debugPrint("uploaded to app");
+      File image = File(xFile.path);
+      String filename = const Uuid().v1();
+
+      final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+      debugPrint("reference created");
+
+      var uploadTask = await imageRef.putFile(image).catchError((error) {
+        return null;
+      });
+
+      String url = await uploadTask.ref.getDownloadURL();
+      debugPrint("adding msg");
+      final messageId = _database.child('chats/${widget.chatRoomId}/messages').push().key!;
+      MessageModel message = MessageModel(
+        id: messageId,
+        senderId: userModel.value!.uid,
+        text: url,
+        type: MessageType.image,
+        sentTime: DateTime.now(),
+      );
+      Map<String, dynamic> userLastMessage = {
+        'text': '${userModel.value!.name}: Photo',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'sender': userModel.value!.uid
+      };
+      await _database.child('chats/${widget.chatRoomId}/messages/$messageId').set(message.toJson());
+
+      await _database
+          .child('userChats/${currentUser.uid}/${widget.chatRoomId}')
+          .update({'lastMessage': userLastMessage, 'unreadCount': 0});
+      await _database
+          .child('userChats/${widget.contact.uid}/${widget.chatRoomId}')
+          .update({'lastMessage': userLastMessage, 'unreadCount': ServerValue.increment(1)});
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
 import '../Social/friends/friends_page.dart';
@@ -45,6 +46,16 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
     ownedBooksUpdated();
   });
   return ownedSubscription; // returning this only to be able to properly dispose of it
+}
+
+StreamSubscription<DatabaseEvent> setupUserSubscription(ValueNotifier<UserModel?> user, String userId) {
+  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('users/$userId/');
+  StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+    if (event.snapshot.value != null) {
+      user.value = UserModel.fromJson(event.snapshot.value as Map<dynamic, dynamic>);
+    }
+  });
+  return ownedSubscription;
 }
 
 StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
@@ -184,6 +195,9 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
 }
 
 Future<bool> userExists(String id) async {
+  if (id.contains(RegExp('[.#\$\\[\\]]'))) {
+    return false;
+  }
   DatabaseEvent event = await dbReference.child('users/$id').once();
   return (event.snapshot.value != null);
 }

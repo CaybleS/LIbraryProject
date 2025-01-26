@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/message_home.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import '../app_startup/auth.dart';
-import '../social/message_home.dart';
+import 'package:library_project/app_startup/auth.dart';
 
 PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPage) {
   void goToHome() {
@@ -23,7 +23,7 @@ PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPag
 
   void goToMessages() {
     if (curPage != "chats") {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MessageHome(user)));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const MessageHome()));
     }
   }
 

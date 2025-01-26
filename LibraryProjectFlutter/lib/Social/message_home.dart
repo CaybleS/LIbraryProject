@@ -11,9 +11,7 @@ import '../app_startup/appwide_setup.dart';
 import '../core/appbar.dart';
 
 class MessageHome extends StatefulWidget {
-  final User user;
-
-  const MessageHome(this.user, {super.key});
+  const MessageHome({super.key});
 
   @override
   State<MessageHome> createState() => _MessageHomeState();
@@ -30,22 +28,14 @@ class _MessageHomeState extends State<MessageHome> {
   }
 
   void goToNewChatScreen() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => CreateChatScreen(widget.user)));
-  }
-
-  void openChat(String roomID) async {
-    showBottombar = false;
-    refreshBottombar.value = true;
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(widget.user, roomID: roomID)));
-    showBottombar = true;
-    refreshBottombar.value = true;
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateChatScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      appBar: displayAppBar(context, widget.user, "Chats"),
+      appBar: displayAppBar(context, FirebaseAuth.instance.currentUser!, "Chats"),
       backgroundColor: Colors.grey[400],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -107,7 +97,7 @@ class _MessageHomeState extends State<MessageHome> {
                   itemBuilder: (context, index) {
                     final chat = chats[index];
                     final contactId =
-                        chat.participants[0] == widget.user.uid ? chat.participants[1] : chat.participants[0];
+                        chat.participants[0] == userModel.value!.uid ? chat.participants[1] : chat.participants[0];
                     return StreamBuilder(
                       stream: _database.child('users/$contactId').onValue,
                       builder: (context, snapshot) {
@@ -119,13 +109,22 @@ class _MessageHomeState extends State<MessageHome> {
                           onTap: () async {
                             showBottombar = false;
                             refreshBottombar.value = true;
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PrivateChatScreen(
-                                    chatRoomId: chat.id, contact: contact, currentUserId: widget.user.uid),
-                              ),
-                            );
+                            if (chat.type == ChatType.private) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PrivateChatScreen(chatRoomId: chat.id, contact: contact),
+                                ),
+                              );
+                            } //
+                            else {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatScreen(chat: chat),
+                                ),
+                              );
+                            }
                             showBottombar = true;
                             refreshBottombar.value = true;
                           },
@@ -139,7 +138,7 @@ class _MessageHomeState extends State<MessageHome> {
                                   Stack(
                                     children: [
                                       _createAvatarWidget(chat, contact),
-                                      if (contact.isActive)
+                                      if (contact.isActive && chat.type == ChatType.private)
                                         Positioned(
                                           bottom: 0,
                                           right: 0,
@@ -173,7 +172,7 @@ class _MessageHomeState extends State<MessageHome> {
                                               : chat.lastMessage ?? '',
                                           style: TextStyle(
                                             fontFamily: 'Poppins',
-                                            color: (chat.lastMessageSender != widget.user.uid ||
+                                            color: (chat.lastMessageSender != userModel.value!.uid ||
                                                     chat.type == ChatType.private && contact.isTyping)
                                                 ? Colors.blue
                                                 : Colors.black,
@@ -227,7 +226,7 @@ class _MessageHomeState extends State<MessageHome> {
   }
 
   Stream<List<Chat>> getChatList() {
-    return _database.child('userChats/${widget.user.uid}').onValue.asyncMap((event) async {
+    return _database.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) async {
       final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
       if (chatsMap == null) return [];
 
@@ -242,12 +241,17 @@ class _MessageHomeState extends State<MessageHome> {
         if (chatSnapshot.exists) {
           final chatData = chatSnapshot.value as Map<dynamic, dynamic>;
           final chatModel = Chat.fromJson(chatId, chatData);
-          chats.add(chatModel.copyWith(
-            unreadCount: unreadCount,
-            lastMessage: lastMessage['text'],
-            lastMessageSender: lastMessage['sender'],
-            lastMessageTime: DateTime.fromMillisecondsSinceEpoch(lastMessage['timestamp']),
-          ));
+          if (lastMessage != null) {
+            chats.add(chatModel.copyWith(
+              unreadCount: unreadCount,
+              lastMessage: lastMessage['text'],
+              lastMessageSender: lastMessage['sender'],
+              lastMessageTime: DateTime.fromMillisecondsSinceEpoch(lastMessage['timestamp']),
+            ));
+          } //
+          else {
+            chats.add(chatModel);
+          }
         }
       }
       return chats..sort((a, b) => b.lastMessageTime!.compareTo(a.lastMessageTime!));
@@ -280,7 +284,7 @@ class _MessageHomeState extends State<MessageHome> {
               alignment: Alignment.center,
               child: Text(
                 chat.type == ChatType.group ? chat.name[0].toUpperCase() : contact.name[0].toUpperCase(),
-                style: const TextStyle(color: Colors.black, fontSize: 20),
+                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
               ),
             )
           : null,

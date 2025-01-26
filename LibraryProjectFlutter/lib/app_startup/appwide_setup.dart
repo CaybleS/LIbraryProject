@@ -19,7 +19,9 @@ List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
 List<UserModel> friends = [];
 List<Request> requests = [];
+ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
+late StreamSubscription<DatabaseEvent> _userSubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
@@ -36,6 +38,7 @@ Map<String, List<Book>> friendIdToBooks = {};
 List<String> friendIdsSubscribedTo = [];
 
 void setupDatabaseSubscriptions(User user) {
+  _userSubscription = setupUserSubscription(userModel, user.uid);
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
@@ -44,6 +47,7 @@ void setupDatabaseSubscriptions(User user) {
 
 void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
+  _userSubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
   _requestsSubscription.cancel();

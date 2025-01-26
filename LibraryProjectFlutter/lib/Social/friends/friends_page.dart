@@ -37,7 +37,8 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   void addFriendClicked() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => AddFriendPage(widget.user)));
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => AddFriendPage(widget.user)));
     updateLists();
   }
 
@@ -68,7 +69,9 @@ class _FriendsPageState extends State<FriendsPage> {
       mainAxisSize: MainAxisSize.max,
       children: [
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[0], padding: const EdgeInsets.all(8)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[0],
+              padding: const EdgeInsets.all(8)),
           onPressed: () {
             if (_selected == "list") {
               return;
@@ -83,7 +86,9 @@ class _FriendsPageState extends State<FriendsPage> {
         ),
         const SizedBox(width: 10),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: buttonColor[1], padding: const EdgeInsets.all(8)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[1],
+              padding: const EdgeInsets.all(8)),
           onPressed: () {
             if (_selected == "requests") {
               return;
@@ -195,13 +200,15 @@ class FriendRequestList extends StatelessWidget {
 
   void acceptClicked(int index, BuildContext context) async {
     await addFriend(requests[index]);
-    SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Request Accepted");
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Accepted");
     callback();
   }
 
   void denyClicked(int index, BuildContext context) async {
     await requests[index].delete();
-    SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Request Deleted");
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Deleted");
     callback();
   }
 
@@ -214,48 +221,67 @@ class FriendRequestList extends StatelessWidget {
               margin: const EdgeInsets.all(5),
               child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Row(children: [
-                      ClipOval(
-                        child: SizedBox(width: 75, child: Image.network(requests[index].photo)),
-                      ),
-                      const SizedBox(
-                        width: 20,
-                      ),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(
-                          requests[index].name,
-                          style: const TextStyle(color: Colors.black, fontSize: 20),
-                          softWrap: true,
-                        ),
-                        Text(
-                          requests[index].email,
-                          style: const TextStyle(color: Colors.black, fontSize: 16),
-                          softWrap: true,
-                        ),
-                      ]),
-                    ]),
-                    SizedBox(
-                        height: 100,
-                        width: 170,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                                onPressed: () {
-                                  acceptClicked(index, context);
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(76, 175, 80, 1)),
-                                child: const Text('Accept', style: TextStyle(fontSize: 16, color: Colors.black))),
-                            ElevatedButton(
-                                onPressed: () {
-                                  denyClicked(index, context);
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(244, 67, 54, 1)),
-                                child: const Text('Deny', style: TextStyle(fontSize: 16, color: Colors.black)))
-                          ],
-                        )),
-                  ])));
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                            flex: 4,
+                            child: Row(children: [
+                              ClipOval(
+                                child: SizedBox(
+                                    width: 75,
+                                    child:
+                                        Image.network(requests[index].photo)),
+                              ),
+                              const SizedBox(
+                                width: 20,
+                              ),
+                              Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      requests[index].name,
+                                      style: const TextStyle(
+                                          color: Colors.black, fontSize: 20),
+                                      softWrap: true,
+                                    ),
+                                    Text(
+                                      requests[index].email,
+                                      style: const TextStyle(
+                                          color: Colors.black, fontSize: 16),
+                                      softWrap: true,
+                                    ),
+                                  ]),
+                            ])),
+                        Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                    onPressed: () {
+                                      acceptClicked(index, context);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color.fromRGBO(
+                                            76, 175, 80, 1)),
+                                    child: const Text('Accept',
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.black))),
+                                ElevatedButton(
+                                    onPressed: () {
+                                      denyClicked(index, context);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color.fromRGBO(
+                                            244, 67, 54, 1)),
+                                    child: const Text('Deny',
+                                        style: TextStyle(
+                                            fontSize: 16, color: Colors.black)))
+                              ],
+                            )),
+                      ])));
         });
   }
 }
@@ -297,34 +323,60 @@ class FriendList extends StatelessWidget {
             margin: const EdgeInsets.all(5),
             child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Row(children: [
-                    ClipOval(
-                      child: SizedBox(
-                        width: 75,
-                        // child: Image.network(friends[index].photo)),
-                        child: friends[index].photoUrl != null
-                            ? Image.network(friends[index].photoUrl!)
-                            : Image.asset('assets/profile_pic.jpg'),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Row(children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 75,
+                              // child: Image.network(friends[index].photo)),
+                              child: friends[index].photoUrl != null
+                                  ? Image.network(friends[index].photoUrl!)
+                                  : Image.asset('assets/profile_pic.jpg'),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  friends[index].name,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 20),
+                                  softWrap: true,
+                                ),
+                                Text(
+                                  friends[index].email,
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 16),
+                                  softWrap: true,
+                                ),
+                              ]),
+                        ]),
                       ),
-                    ),
-                    const SizedBox(
-                      width: 20,
-                    ),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        friends[index].name,
-                        style: const TextStyle(color: Colors.black, fontSize: 20),
-                        softWrap: true,
+                      Expanded(
+                        flex: 1,
+                        child: ElevatedButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          FriendsLibraryPage(friends[index])));
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromRGBO(76, 175, 80, 1)),
+                            child: const Text('View Library',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.black))),
                       ),
-                      Text(
-                        friends[index].email,
-                        style: const TextStyle(color: Colors.black, fontSize: 16),
-                        softWrap: true,
-                      ),
-                    ]),
-                  ]),
-                ])),
+                    ])),
           );
         });
     // SizedBox(
