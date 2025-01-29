@@ -1,6 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
 import 'package:library_project/database/database.dart';
@@ -11,8 +11,9 @@ enum _SortingOption {dateAdded, title, author}
 
 class FriendsLibraryPage extends StatefulWidget {
   final UserModel friend;
+  final User user;
 
-  const FriendsLibraryPage(this.friend, {super.key});
+  const FriendsLibraryPage(this.user, this.friend, {super.key});
 
   @override
   State<FriendsLibraryPage> createState() => _FriendsLibraryPageState();
@@ -33,7 +34,6 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
     super.initState();
     if (friendIdToLibrarySubscription[widget.friend.uid] == null) {
       friendIdToLibrarySubscription[widget.friend.uid] = setupFriendsBooksSubscription(friendIdToBooks, widget.friend.uid, friendsBooksUpdated);
-      friendIdsSubscribedTo.add(widget.friend.uid);
     }
     _friendsBooksUpdatedListener = () {
       if (refreshNotifier.value == friendsPageIndex) {
@@ -152,7 +152,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   }
 
   void _bookClicked(int index) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(_friendsLibrary[index])));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, _friendsLibrary[index], widget.friend)));
   }
 
   void _setShownListWithNoFilters() {

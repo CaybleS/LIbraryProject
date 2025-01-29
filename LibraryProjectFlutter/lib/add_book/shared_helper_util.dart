@@ -9,6 +9,6 @@ const int maxApiResponseSize = 40; // currently 40 is the max for google books a
 String apiKey = dotenv.env['GOOGLE_BOOKS_API_KEY'] ?? "";
 
 void addBookToLibrary(Book bookToAdd, User user, BuildContext context) {
-  bookToAdd.setId(addBook(bookToAdd, user));
+  bookToAdd.setId(addBook(bookToAdd, user)); // setid shouldnt be needed here fyi, this book gets added to userLibrary when its added and it will have a set id there
   SharedWidgets.displayPositiveFeedbackDialog(context, "Book added");
 }

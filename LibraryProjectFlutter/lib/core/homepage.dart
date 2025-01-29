@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/core/book_requests_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
@@ -9,7 +10,6 @@ import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 
 enum _SortingOption { dateAdded, title, author }
-
 enum _BooksShowing { all, fav, lent, lentToMe }
 
 class HomePage extends StatefulWidget {
@@ -90,11 +90,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  // basically this function allows the filter to not care about word order
   bool _isFilterTextOneOfTheIndividualWords(
       List<String> individualWordsToFilter, String filterText) {
     if (individualWordsToFilter.length < 2) {
-      // in this case there is only 0 or 1 words detected, so no need to consider word order
+      // in this case there is only 0 or 1 words detected, which defeats the whole purpose of this function
       return false;
     }
     for (int i = 0; i < individualWordsToFilter.length; i++) {
@@ -107,8 +106,7 @@ class _HomePageState extends State<HomePage> {
 
   // so if you filter search for exactly title and author in that order, it will show up
   bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
-    if ("${book.title?.toLowerCase()} ${book.author?.toLowerCase()}"
-        .contains(filterText)) {
+    if ("${(book.title ?? "no title found").toLowerCase()} ${(book.author ?? "no author found").toLowerCase()}".contains(filterText)) {
       return true;
     }
     return false;
@@ -216,21 +214,30 @@ class _HomePageState extends State<HomePage> {
     _usingBooksLentToMe = _showing == _BooksShowing.lentToMe;
 
     _setShownListWithNoFilters();
-    _shownLibrary = _usingBooksLentToMe
-        ? booksLentToMe.map((item) => item.book).toList()
-        : userLibrary;
-
-    // these sorting functions will call the setState
-    switch (_sortSelection) {
-      case _SortingOption.dateAdded:
-        _sortByDateAdded();
-        break;
-      case _SortingOption.title:
-        _sortByTitle();
-        break;
-      case _SortingOption.author:
-        _sortByAuthor();
-        break;
+    _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
+    if (_searchBarTextController.text.isNotEmpty) {
+      // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
+      // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
+      // unnecessary to me but I guess with 2 filter systems (the _BooksShowing and filter bar) we need to consider both of them, which
+      // is why prevShownList exists (we only show books with both filters applied to them).
+      List<int> prevShownList = _shownList;
+      _filter(_searchBarTextController.text);
+      _shownList.removeWhere((item) => !prevShownList.contains(item));
+      setState(() {});
+    }
+    else {
+      // these sorting functions will call the setState
+      switch (_sortSelection) {
+        case _SortingOption.dateAdded:
+          _sortByDateAdded();
+          break;
+        case _SortingOption.title:
+          _sortByTitle();
+          break;
+        case _SortingOption.author:
+          _sortByAuthor();
+          break;
+      }
     }
   }
 
@@ -423,51 +430,75 @@ class _HomePageState extends State<HomePage> {
       children: [
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[0],
-              padding: const EdgeInsets.all(8)),
+            backgroundColor: buttonColor[0], padding: const EdgeInsets.all(8),
+          ),
           onPressed: () {
             if (_showing != _BooksShowing.all) {
               _changeDisplay(_BooksShowing.all);
             }
           },
           child: const Text("All",
-              style: TextStyle(color: Colors.black, fontSize: 16)),
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[1],
-              padding: const EdgeInsets.all(8)),
+            backgroundColor: buttonColor[1], padding: const EdgeInsets.all(8),
+          ),
           onPressed: () {
             if (_showing != _BooksShowing.fav) {
               _changeDisplay(_BooksShowing.fav);
             }
           },
           child: const Text("Favorites",
-              style: TextStyle(color: Colors.black, fontSize: 16)),
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[2],
-              padding: const EdgeInsets.all(8)),
+            backgroundColor: buttonColor[2], padding: const EdgeInsets.all(8),
+          ),
           onPressed: () {
             if (_showing != _BooksShowing.lent) {
               _changeDisplay(_BooksShowing.lent);
             }
           },
           child: const Text("Lent",
-              style: TextStyle(color: Colors.black, fontSize: 16)),
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[3],
-              padding: const EdgeInsets.all(8)),
+            backgroundColor: buttonColor[3],padding: const EdgeInsets.all(8),
+          ),
           onPressed: () {
             if (_showing != _BooksShowing.lentToMe) {
               _changeDisplay(_BooksShowing.lentToMe);
             }
           },
           child: const Text("Lent to me",
-              style: TextStyle(color: Colors.black, fontSize: 16)),
+            style: TextStyle(color: Colors.black, fontSize: 16)),
+        ),
+      ],
+    );
+  }
+
+  Widget _displayInfoOnRequests() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("You have ${receivedBookRequests.length} outstanding book requests."),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+            ),
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
+            },
+            child: const Text(
+              "View",
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            ),
+          ),
         ),
       ],
     );
@@ -520,7 +551,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          (_showEmptyLibraryMsg)
+          (_showEmptyLibraryMsg && _showing == _BooksShowing.all)
               ? const Padding(
                   padding: EdgeInsets.only(top: 10),
                   child: Text("Add books to view your library here",
@@ -528,7 +559,7 @@ class _HomePageState extends State<HomePage> {
               : const SizedBox.shrink(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(7, 9, 7, 10),
+              padding: const EdgeInsets.fromLTRB(7, 9, 7, 6),
               child: ListView.builder(
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
@@ -567,7 +598,6 @@ class _HomePageState extends State<HomePage> {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8.0),
                               child: Icon(
-                                  // Choose an icon based on the read state of the book
                                     _getReadIcon(_shownLibrary[_shownList[index]])
                                   ),
                             ),
@@ -661,6 +691,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          _displayInfoOnRequests(),
         ],
       ),
     );

@@ -139,6 +139,130 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     );
   }
 
+  Widget _displayFilterDropdown() {
+    return MenuAnchor(
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+        return IconButton(
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          icon: const Icon(
+            Icons.tune,
+            size: 30,
+            color: Colors.black45,
+          ),
+        );
+      },
+      menuChildren: [
+        Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Text(
+                  "Search by",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const Divider(),
+            SizedBox(
+              height: 40,
+              width: 100,
+              child: MenuItemButton(
+                onPressed: () {
+                  _bookSearchInstance.setSearchQueryOption(SearchQueryOption.normal);
+                  setState(() {});
+                },
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 45,
+                      child: Text("normal", style: TextStyle(fontSize: 12)),
+                    ),
+                     (_bookSearchInstance.getSearchQueryOption() == SearchQueryOption.normal)
+                        ? const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: Colors.green, size: 25))
+                        : const SizedBox.shrink(),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(),
+            SizedBox(
+              height: 40,
+              width: 100,
+              child: MenuItemButton(
+                onPressed: () {
+                  _bookSearchInstance.setSearchQueryOption(SearchQueryOption.title);
+                  setState(() {});
+                },
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 45,
+                      child: Text("title", style: TextStyle(fontSize: 12)),
+                    ),
+                     (_bookSearchInstance.getSearchQueryOption() == SearchQueryOption.title)
+                        ? const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: Colors.green, size: 25))
+                        : const SizedBox.shrink(),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(),
+            SizedBox(
+              height: 40,
+              width: 100,
+              child: MenuItemButton(
+                onPressed: () {
+                  _bookSearchInstance.setSearchQueryOption(SearchQueryOption.author);
+                  setState(() {});
+                },
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 45,
+                      child: Text("author", style: TextStyle(fontSize: 12)),
+                    ),
+                    (_bookSearchInstance.getSearchQueryOption() == SearchQueryOption.author)
+                        ? const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: Colors.green, size: 25))
+                        : const SizedBox.shrink(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _getTextFieldHelperText() {
+    switch (_bookSearchInstance.getSearchQueryOption()) {
+      case SearchQueryOption.normal:
+        return "Search titles, authors, or keywords";
+      case SearchQueryOption.title:
+        return "Search titles";
+      case SearchQueryOption.author:
+        return "Search authors";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,7 +280,12 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 const SizedBox(height: 6),
-                SharedWidgets.displayTextField("Search titles, authors, or keywords", _searchQueryController, _noInput, "Please enter some text"),
+                Row (
+                  children: [
+                    _displayFilterDropdown(),
+                    Expanded( child: SharedWidgets.displayTextField(_getTextFieldHelperText(), _searchQueryController, _noInput, "Please enter some text")),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

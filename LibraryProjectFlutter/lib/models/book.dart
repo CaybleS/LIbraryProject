@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/database/database.dart';
+import 'package:library_project/models/book_requests.dart';
 
 //putting this definition here allows us to not use bools for read state.
 enum ReadingState { notRead, currentlyReading, read }
@@ -24,6 +25,9 @@ class Book {
   bool isManualAdded; // needed because manually added books should be changable by users
   DateTime? dateLent;
   DateTime? dateToReturn;
+  // basically this 1.) stores how many requests this book has and 2.) stores who exactly is requesting it. We need to know who, to delete the
+  // request themselves from the database as needed.
+  List<String>? usersWhoRequested;
   late DatabaseReference _id;
 
   Book(
@@ -77,13 +81,19 @@ class Book {
     updateBook(this, _id);
   }
 
-  void remove() {
+  void remove(String userId) {
     if (lentDbKey != null && borrowerId != null) {
       removeLentBookInfo(lentDbKey!, borrowerId!);
     }
     if (cloudCoverUrl != null) {
       deleteCoverFromStorage(cloudCoverUrl!);
     }
+    if (usersWhoRequested != null) {
+      for (int i = 0; i < usersWhoRequested!.length; i++) {
+        removeBookRequestData(usersWhoRequested![i], userId, _id.key!);
+      }
+    }
+
     removeRef(_id);
   }
 
@@ -95,6 +105,7 @@ class Book {
     DatabaseReference lentToMeId = addLentBookInfo(_id, lentBookInfo, borrowerId);
     this.borrowerId = borrowerId;
     lentDbKey = lentToMeId.key;
+    unsendBookRequest(borrowerId, lenderId);
     update();
   }
 
@@ -106,6 +117,32 @@ class Book {
       borrowerId = null;
       dateLent = null;
       dateToReturn = null;
+      update();
+    }
+  }
+
+  void sendBookRequest(String senderId, String receiverId) {
+    if (_id.key != null) {
+      DateTime currTime = DateTime.now().toUtc();
+      SentBookRequest sentBookRequest = SentBookRequest(receiverId, currTime);
+      addSentBookRequest(sentBookRequest, senderId, _id.key!);
+      ReceivedBookRequest receivedBookRequest = ReceivedBookRequest(senderId, currTime);
+      addReceivedBookRequest(receivedBookRequest, receiverId, _id.key!);
+      usersWhoRequested ??= [];
+      if (!usersWhoRequested!.contains(senderId)) {
+        usersWhoRequested!.add(senderId);
+      }
+      update();
+    }
+  }
+
+  void unsendBookRequest(String senderId, String receiverId) {
+    if (_id.key != null && usersWhoRequested != null && usersWhoRequested!.contains(senderId)) {
+      removeBookRequestData(senderId, receiverId, _id.key!);
+      usersWhoRequested!.remove(senderId);
+      if (usersWhoRequested!.isEmpty) {
+        usersWhoRequested = null;
+      }
       update();
     }
   }
@@ -128,6 +165,7 @@ class Book {
       'hasRead' : hasRead,
       'dateLent': dateLent?.toIso8601String(),
       'dateToReturn': dateToReturn?.toIso8601String(),
+      'usersWhoRequested': usersWhoRequested?.join(","),
     };
   }
 
@@ -147,7 +185,7 @@ class Book {
 
     void updateReadingState(ReadingState? newState) {
     hasRead = newState;
-    update(); // Save changes to the database
+    update();
   }
 }
 
@@ -170,6 +208,15 @@ Book createBook(record) {
   book.hasRead = record['hasRead'];
   book.dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;
   book.dateToReturn = record['dateToReturn'] != null ? DateTime.parse(record['dateToReturn']) : null;
+  String? requestIdsStr = record['usersWhoRequested'];
+  while (requestIdsStr != null && requestIdsStr.isNotEmpty) {
+    book.usersWhoRequested ??= [];
+    book.usersWhoRequested!.add(requestIdsStr.substring(0, 28));
+    requestIdsStr = requestIdsStr.replaceRange(0, 28, ""); // removing the id (28 chars long)
+    if (requestIdsStr.isNotEmpty) {
+      requestIdsStr = requestIdsStr.replaceRange(0, 1, ""); // removing the comma if it exists (in this case, there is another request id str to add to the list)
+    }
+  }
   return book;
 }
 
@@ -192,7 +239,7 @@ class LentBookInfo {
 LentBookInfo createLentBookInfo(Book book, dynamic record) {
   String? lenderId = record['lenderId'];
   LentBookInfo lentBook = LentBookInfo(lenderId);
-  lentBook.book = book;
   lentBook.bookDbKey = record['bookDbKey'];
+  lentBook.book = book;
   return lentBook;
 }

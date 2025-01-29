@@ -8,6 +8,8 @@ import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
+enum SearchQueryOption { normal, title, author }
+
 class SearchDriver {
   // used when displaying search results for optimization reasons (duplicate checks iterate through a users entire library so I cache the results, since ListView re-renders often)
   final Map<int, bool> _alreadyAddedBooks = {};
@@ -17,6 +19,7 @@ class SearchDriver {
   bool _noBooksFoundError = false;
   bool _noResponseError = false; // this detects lack of internet connection (or api being down maybe)
   bool _usingGoogleAPI = true;
+  SearchQueryOption _searchQueryOption = SearchQueryOption.normal;
   late final User _user;
   late final List<Book> _userLibrary;
 
@@ -34,6 +37,14 @@ class SearchDriver {
     _noResponseError = false;
   }
 
+  SearchQueryOption getSearchQueryOption() {
+    return _searchQueryOption;
+  }
+
+  void setSearchQueryOption(SearchQueryOption optionToSetTo) {
+    _searchQueryOption = optionToSetTo;
+  }
+
   Future<void> runSearch(String searchQuery, BuildContext context) async {
     if (searchQuery != _mostRecentSearch) {
       _mostRecentSearch = searchQuery;
@@ -49,8 +60,20 @@ class SearchDriver {
     }
   }
 
+  String _getApiSearchOption() {
+    switch (_searchQueryOption) {
+      case SearchQueryOption.normal:
+        return "";
+      case SearchQueryOption.title:
+        return "intitle:";
+      case SearchQueryOption.author:
+        return "inauthor:";
+    }
+  }
+
   Future<void> _searchWithOpenLibrary(String searchQuery) async {
-    final String endpoint = "https://openlibrary.org/search.json?q=$searchQuery&limit=$maxApiResponseSize";
+    String searchQueryOption = _getApiSearchOption();
+    final String endpoint = "https://openlibrary.org/search.json?q=$searchQueryOption$searchQuery&limit=$maxApiResponseSize";
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(
@@ -73,7 +96,8 @@ class SearchDriver {
   }
 
   Future<void> _searchWithGoogle(String searchQuery) async {
-    final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQuery&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
+    String searchQueryOption = _getApiSearchOption();
+    final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQueryOption$searchQuery&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(

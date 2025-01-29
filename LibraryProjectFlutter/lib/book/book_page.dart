@@ -215,7 +215,7 @@ class _BookPageState extends State<BookPage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        bookToRemove.remove();
+                        bookToRemove.remove(widget.user.uid);
                         // if the book is removed I need to pop the dialog and then pop again so this is how I make this happen
                         // for some reason just having 2 pops here wouldnt work when I added persistent bottombar but this does
                         Navigator.pop(context,

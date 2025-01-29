@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:library_project/models/book.dart';
+import 'package:library_project/models/book_requests.dart';
 import 'package:library_project/models/user.dart';
 import '../Social/friends/friends_page.dart';
 import 'dart:async';
@@ -26,6 +27,23 @@ DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lent
 
 void removeLentBookInfo(String lentDbKey, String borrowerId) {
   dbReference.child('booksLent/$borrowerId/$lentDbKey').remove();
+}
+
+DatabaseReference addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String bookDbKey) {
+  DatabaseReference id = dbReference.child('sentBookRequests/$senderId/$bookDbKey/');
+  id.set(sentBookRequest.toJson());
+  return id;
+}
+
+DatabaseReference addReceivedBookRequest(ReceivedBookRequest receivedBookRequest, String receiverId, String bookDbKey) {
+  DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
+  id.set(receivedBookRequest.toJson());
+  return id;
+}
+
+removeBookRequestData(String requesterId, String userId, String bookDbKey) {
+  dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
+  dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
 }
 
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
@@ -128,6 +146,52 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
     friendsBooksUpdated();
   });
   return friendsBooksSubscription;
+}
+
+StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
+  DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
+  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+    sentBookRequests.clear();
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        dynamic record = child.value;
+        String receiverId = record['receiverId'];
+        String bookDbKey = child.key!;
+        DatabaseEvent getBookEvent = await dbReference.child('books/$receiverId/$bookDbKey').once();
+        if (getBookEvent.snapshot.value != null) {
+          Book book = createBook(getBookEvent.snapshot.value);
+          book.setId(dbReference.child('books/$receiverId/${child.key}'));
+          SentBookRequest sentBookRequest = createSentBookRequest(child.value, book);
+          sentBookRequest.setId(dbReference.child('sentBookRequests/${user.uid}/${child.key}'));
+          sentBookRequests.add(sentBookRequest);
+        }
+      }
+    }
+    sentBookRequestsUpdated();
+  });
+  return sentBookRequestsSubscription;
+}
+
+StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
+  DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
+  StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription = receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+    receivedBookRequests.clear();
+    if (event.snapshot.value != null) {
+      for (DataSnapshot child in event.snapshot.children) {
+        String bookDbKey = child.key!;
+        DatabaseEvent getBookEvent = await dbReference.child('books/${user.uid}/$bookDbKey').once();
+        if (getBookEvent.snapshot.value != null) {
+          Book book = createBook(getBookEvent.snapshot.value);
+          book.setId(dbReference.child('books/${user.uid}/${child.key}'));
+          ReceivedBookRequest receivedBookRequest = createReceivedBookRequest(child.value, book);
+          receivedBookRequest.setId(dbReference.child('receivedBookRequests/${user.uid}/${child.key}'));
+          receivedBookRequests.add(receivedBookRequest);
+        }
+      }
+    }
+    receivedBookRequestsUpdated();
+  });
+  return receivedBookRequestsSubscription;
 }
 
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(

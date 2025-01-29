@@ -115,7 +115,7 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Widget displayList() {
     if (_selected == "list") {
-      return const FriendList();
+      return FriendList(widget.user);
     } else {
       return FriendRequestList(updateLists);
     }
@@ -310,8 +310,8 @@ Request createRequest(record, String id) {
 }
 
 class FriendList extends StatelessWidget {
-  const FriendList({super.key});
-
+  final User user;
+  const FriendList(this.user, {super.key});
   // final List<Friend> friends;
 
   @override
@@ -367,7 +367,7 @@ class FriendList extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) =>
-                                          FriendsLibraryPage(friends[index])));
+                                          FriendsLibraryPage(user, friends[index])));
                             },
                             style: ElevatedButton.styleFrom(
                                 backgroundColor:

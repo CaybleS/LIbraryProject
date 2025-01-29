@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
-import '../Social/friends/friends_page.dart';
 import 'package:library_project/misc_util/misc_helper_functions.dart';
 
 class BookLendPage extends StatefulWidget {
   final Book book;
   final User user;
-  const BookLendPage(this.book, this.user, {super.key});
+  final String? idToLendTo;
+  const BookLendPage(this.book, this.user, {this.idToLendTo, super.key});
 
   @override
   State<BookLendPage> createState() => _BookLendPageState();
@@ -26,6 +26,7 @@ class _BookLendPageState extends State<BookLendPage> {
   @override
   void initState() {
     super.initState();
+    _selectedFriendId = widget.idToLendTo;
     _friendsUpdatedListener = () {
       if (refreshNotifier.value == homepageIndex) {
         setState(() {});

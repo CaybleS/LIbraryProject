@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
+import 'package:library_project/models/book_requests.dart';
 import 'dart:async';
-
 import 'package:library_project/models/user.dart';
 
 const int homepageIndex = 0;
@@ -17,12 +17,16 @@ const int settingsIndex = 4;
 // pages can access these at any time, knowing that they will be up to date guaranteed
 List<Book> userLibrary = [];
 List<LentBookInfo> booksLentToMe = [];
+List<SentBookRequest> sentBookRequests = [];
+List<ReceivedBookRequest> receivedBookRequests = [];
 List<UserModel> friends = [];
 List<Request> requests = [];
 ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _userSubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
+late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
+late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
 // Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
@@ -35,12 +39,13 @@ int _prevIndex = 0;
 bool showBottombar = true;
 Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
-List<String> friendIdsSubscribedTo = [];
 
 void setupDatabaseSubscriptions(User user) {
   _userSubscription = setupUserSubscription(userModel, user.uid);
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
+  _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
+  _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
   _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
   _requestsSubscription = setupRequestsSubscription(requests, user, _friendsUpdated);
 }
@@ -51,21 +56,22 @@ void cancelDatabaseSubscriptions() {
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
   _requestsSubscription.cancel();
-  for (int i = 0; i < friendIdsSubscribedTo.length; i++) {
-    friendIdToLibrarySubscription[friendIdsSubscribedTo[i]]?.cancel();
-  }
+  _sentBookRequestsSubscription.cancel();
+  _receivedBookRequestsSubscription.cancel();
+  friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
   _resetGlobalData();
 }
 
 void _resetGlobalData() {
   userLibrary.clear();
   booksLentToMe.clear();
+  sentBookRequests.clear();
+  receivedBookRequests.clear();
   friends.clear();
   requests.clear();
   // these track or are built up from subscriptions so they should be cleared as well
   friendIdToBooks.clear();
   friendIdToLibrarySubscription.clear();
-  friendIdsSubscribedTo.clear();
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
@@ -93,6 +99,20 @@ void _lentToMeBooksUpdated() {
   }
 }
 
+void _sentBookRequestsUpdated() {
+  if (selectedIndex == homepageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void _receivedBookRequestsUpdated() {
+  if (selectedIndex == homepageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
 void _friendsUpdated() {
   if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
@@ -102,6 +122,13 @@ void _friendsUpdated() {
 
 void friendsBooksUpdated() {
   if (selectedIndex == friendsPageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void lentToMeRequestsUpdated() {
+  if (selectedIndex == homepageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }

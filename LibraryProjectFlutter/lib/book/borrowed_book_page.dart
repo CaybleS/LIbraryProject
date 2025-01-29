@@ -88,6 +88,8 @@ class _BorrowedBookPageState extends State<BorrowedBookPage> {
             _displayStatus(),
             const SizedBox(height: 10),
             Text("This book is lent to you from ${widget.lentBookInfo.lenderId}", style: const TextStyle(fontSize: 16), textAlign: TextAlign.center),
+            const SizedBox(height: 10,),
+            Text("This book has ${widget.lentBookInfo.book.usersWhoRequested?.length ?? 0} users who currently requested it!"), // TODO make this good
           ],
         ),
       ),

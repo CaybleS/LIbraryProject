@@ -69,44 +69,57 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: List.generate(
-          navigatorKeys.length,
-          (index) => _buildOffstageNavigator(index),
+    return PopScope( // this allows the android back button to work properly
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) {
+          return;
+        }
+        final navigator = Navigator.of(context);
+        bool shouldPop = !await navigatorKeys[selectedIndex].currentState!.maybePop();
+        if (shouldPop) {
+          navigator.pop(result);
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: List.generate(
+            navigatorKeys.length,
+            (index) => _buildOffstageNavigator(index),
+          ),
         ),
-      ),
-      bottomNavigationBar: (showBottombar) 
-        ? BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: "Homepage",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: "Add book",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_alt_rounded),
-              label: "Friends",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle_rounded),
-              label: "Profile",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: "Settings",
-            ),
-          ],
-          currentIndex: selectedIndex,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.white,
-          onTap: bottombarItemTapped,
-        )
-        : const SizedBox.shrink(),
+        bottomNavigationBar: (showBottombar)
+          ? BottomNavigationBar(
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: "Homepage",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: "Add book",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people_alt_rounded),
+                label: "Friends",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.account_circle_rounded),
+                label: "Profile",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: "Settings",
+              ),
+            ],
+            currentIndex: selectedIndex,
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: Colors.grey,
+            backgroundColor: Colors.white,
+            onTap: bottombarItemTapped,
+          )
+          : const SizedBox.shrink(),
+      )
     );
   }
 }

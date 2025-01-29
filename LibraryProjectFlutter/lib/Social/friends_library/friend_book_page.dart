@@ -1,9 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
+import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 
 class FriendBookPage extends StatelessWidget {
+  final User user;
   final Book _bookToView;
-  const FriendBookPage(this._bookToView, {super.key});
+  final UserModel friend;
+  const FriendBookPage(this.user, this._bookToView, this.friend, {super.key});
 
   Widget _displayStatus() {
     String availableTxt;
@@ -21,6 +27,10 @@ class FriendBookPage extends StatelessWidget {
       availableTxt,
       style: TextStyle(fontSize: 16, color: availableTxtColor),
     );
+  }
+
+  void _requestBook() {
+    _bookToView.sendBookRequest(user.uid, friend.uid);
   }
 
   @override
@@ -88,6 +98,25 @@ class FriendBookPage extends StatelessWidget {
             const Text("Current Status:", style: TextStyle(fontSize: 16)),
             Flexible(
               child: _displayStatus(),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_bookToView.usersWhoRequested != null && _bookToView.usersWhoRequested!.contains(user.uid)) {
+                  SharedWidgets.displayErrorDialog(context, "You have already requested this book!");
+                  }
+                else {
+                  SharedWidgets.displayPositiveFeedbackDialog(context, "Book requested");
+                  _requestBook();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue,
+                padding: const EdgeInsets.all(8),
+              ),
+              child: const Text(
+                "Request this book",
+                style: TextStyle(fontSize: 16, color: Colors.black),
+              ),
             ),
           ],
         ),
