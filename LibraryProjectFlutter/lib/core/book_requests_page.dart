@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/Social/friends_library/friend_book_page.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/book_page.dart';
@@ -147,7 +148,9 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                           onTap: () async {
                             // note that this book here, that we are going to, has the same DatabaseReference id, as the version of
                             // this book in the user library. Thus, it can be treated the same as any normal userLibrary book.
-                            await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(book, widget.user)));
+                            _showing == _ListToShow.receivedRequests
+                            ? await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(book, widget.user)))
+                            : await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, book, receiverId)));
                           },
                           child: SizedBox(
                             height: 160,

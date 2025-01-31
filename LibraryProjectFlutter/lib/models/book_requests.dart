@@ -1,22 +1,14 @@
-import 'package:firebase_database/firebase_database.dart';
-import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
+// maybe could have designed it better but basically, if a book is removed, all requests for it need to be deleted as well,
+// so most of the logic for these requests is in the book and database files. This file is just the simple requests which
+// we will have lists for throughout the app.
 
 class SentBookRequest {
   String receiverId;
   DateTime sendDate;
   late Book book;
-  late DatabaseReference _id;
 
   SentBookRequest(this.receiverId, this.sendDate);
-
-  void setId(DatabaseReference id) {
-    _id = id;
-  }
-
-  void remove() {
-    removeRef(_id);
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -34,33 +26,19 @@ SentBookRequest createSentBookRequest(dynamic record, Book book) {
   return sentBookRequest;
 }
 
+// In case you wonder why its done this way, basically the received requests store the receiver id first and then the book db key. It needs to be
+// this way so that any user can immediately view all requests sent to them, and also removing a book will remove all requests for this book.
+// Thats why its stored uid/bookkey, but beyond that there is just a bunch of senders, represented as a map of sender : dateSent. This is needed since any
+// book can have any N number of requests for it. Pretty sure this is optimal. So the representation in the database is not the representation of the object itself.
 class ReceivedBookRequest {
   String senderId;
   DateTime sendDate;
   late Book book;
-  late DatabaseReference _id;
-
+  
   ReceivedBookRequest(this.senderId, this.sendDate);
-
-  void setId(DatabaseReference id) {
-    _id = id;
-  }
-
-  void remove() {
-    removeRef(_id);
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'senderId': senderId,
-      'sendDate': sendDate.toIso8601String(),
-    };
-  }
 }
 
-ReceivedBookRequest createReceivedBookRequest(dynamic record, Book book) {
-  String senderId = record['senderId'];
-  DateTime sendDate = DateTime.parse(record['sendDate']);
+ReceivedBookRequest createReceivedBookRequest(String senderId, DateTime sendDate, Book book) {
   ReceivedBookRequest receivedBookRequest = ReceivedBookRequest(senderId, sendDate);
   receivedBookRequest.book = book;
   return receivedBookRequest;

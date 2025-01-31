@@ -81,7 +81,7 @@ class Book {
     updateBook(this, _id);
   }
 
-  void remove(String userId) {
+  Future<void> remove(String userId) async {
     if (lentDbKey != null && borrowerId != null) {
       removeLentBookInfo(lentDbKey!, borrowerId!);
     }
@@ -90,10 +90,9 @@ class Book {
     }
     if (usersWhoRequested != null) {
       for (int i = 0; i < usersWhoRequested!.length; i++) {
-        removeBookRequestData(usersWhoRequested![i], userId, _id.key!);
+        await removeBookRequestData(usersWhoRequested![i], userId, _id.key!, removeAllReceivedRequests: true);
       }
     }
-
     removeRef(_id);
   }
 
@@ -126,8 +125,7 @@ class Book {
       DateTime currTime = DateTime.now().toUtc();
       SentBookRequest sentBookRequest = SentBookRequest(receiverId, currTime);
       addSentBookRequest(sentBookRequest, senderId, _id.key!);
-      ReceivedBookRequest receivedBookRequest = ReceivedBookRequest(senderId, currTime);
-      addReceivedBookRequest(receivedBookRequest, receiverId, _id.key!);
+      addReceivedBookRequest(senderId, currTime, receiverId, _id.key!);
       usersWhoRequested ??= [];
       if (!usersWhoRequested!.contains(senderId)) {
         usersWhoRequested!.add(senderId);
@@ -165,7 +163,7 @@ class Book {
       'hasRead' : hasRead,
       'dateLent': dateLent?.toIso8601String(),
       'dateToReturn': dateToReturn?.toIso8601String(),
-      'usersWhoRequested': usersWhoRequested?.join(","),
+      'usersWhoRequested': usersWhoRequested,
     };
   }
 
@@ -208,13 +206,12 @@ Book createBook(record) {
   book.hasRead = record['hasRead'];
   book.dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;
   book.dateToReturn = record['dateToReturn'] != null ? DateTime.parse(record['dateToReturn']) : null;
-  String? requestIdsStr = record['usersWhoRequested'];
-  while (requestIdsStr != null && requestIdsStr.isNotEmpty) {
+  // now fetching users who requested, stored as a list kinda but with indicies in the database (it seems everything is stored as map so the keys are 0, 1, etc.)
+  if (record['usersWhoRequested'] != null) {
     book.usersWhoRequested ??= [];
-    book.usersWhoRequested!.add(requestIdsStr.substring(0, 28));
-    requestIdsStr = requestIdsStr.replaceRange(0, 28, ""); // removing the id (28 chars long)
-    if (requestIdsStr.isNotEmpty) {
-      requestIdsStr = requestIdsStr.replaceRange(0, 1, ""); // removing the comma if it exists (in this case, there is another request id str to add to the list)
+    dynamic usersWhoRequestedInDb = record['usersWhoRequested'];
+    for (dynamic userId in usersWhoRequestedInDb) {
+      book.usersWhoRequested!.add(userId);
     }
   }
   return book;

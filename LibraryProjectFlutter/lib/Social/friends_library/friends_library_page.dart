@@ -152,7 +152,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   }
 
   void _bookClicked(int index) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, _friendsLibrary[index], widget.friend)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, _friendsLibrary[index], widget.friend.uid)));
   }
 
   void _setShownListWithNoFilters() {
@@ -343,7 +343,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
                     },
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white70,
+                      fillColor: Colors.white,
                       hintText: "Filter by title or author",
                       hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                       border: const OutlineInputBorder(

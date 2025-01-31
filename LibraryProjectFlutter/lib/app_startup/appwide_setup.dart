@@ -93,7 +93,8 @@ void _ownedBooksUpdated() {
 
 void _lentToMeBooksUpdated() {
   // if we are on the pages which care about books lent to the user we refresh it
-  if (selectedIndex == homepageIndex) {
+  // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it 
+  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }

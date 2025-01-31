@@ -9,16 +9,17 @@ import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
 
-DatabaseReference addBook(Book book, User user) {
+void addBook(Book book, User user) {
   var id = dbReference.child('books/${user.uid}/').push();
   id.set(book.toJson());
-  return id;
 }
 
 void updateBook(Book book, DatabaseReference id) {
   id.update(book.toJson());
 }
 
+// for many of these, the onvalue subscriptions are what use the id, so we dont need to return id,
+// but in this case the id is needed for the book to know about this
 DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
   DatabaseReference id = dbReference.child('booksLent/$borrowerId/').push();
   id.set(lentBook.toJson(bookDbRef.key!));
@@ -29,21 +30,51 @@ void removeLentBookInfo(String lentDbKey, String borrowerId) {
   dbReference.child('booksLent/$borrowerId/$lentDbKey').remove();
 }
 
-DatabaseReference addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String bookDbKey) {
+void addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String bookDbKey) {
   DatabaseReference id = dbReference.child('sentBookRequests/$senderId/$bookDbKey/');
   id.set(sentBookRequest.toJson());
-  return id;
 }
 
-DatabaseReference addReceivedBookRequest(ReceivedBookRequest receivedBookRequest, String receiverId, String bookDbKey) {
-  DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
-  id.set(receivedBookRequest.toJson());
-  return id;
+Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String receiverId, String bookDbKey) async {
+  DatabaseEvent event = await dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/senders/').once();
+  Map<String, String> senders = {};
+  if (event.snapshot.value != null) {
+    // need to create the map like this, safely, rather than just raw type casting
+    Map<String, String> senders = (event.snapshot.value as Map).map(
+      (key, value) => MapEntry(key.toString(), value.toString()),
+    );
+    senders[senderId] = sendDate.toIso8601String();
+    DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
+    id.set({'senders': senders});
+  }
+  else {
+    DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
+    senders[senderId] = sendDate.toIso8601String();
+    id.set({'senders': senders});
+  }
 }
 
-removeBookRequestData(String requesterId, String userId, String bookDbKey) {
-  dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
+  if (removeAllReceivedRequests) {
+    dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
+  }
+  else {
+    // need to see current senders and update as needed
+    DatabaseEvent event = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').once();
+    if (event.snapshot.value != null) {
+      Map<String, String> senders = (event.snapshot.value as Map).map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
+      senders.remove(requesterId);
+      DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
+      id.set({'senders': senders});
+    }
+    else {
+      // there are no senders so we just remove everything
+      dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
+    }
+  }
 }
 
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
@@ -162,7 +193,6 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBoo
           Book book = createBook(getBookEvent.snapshot.value);
           book.setId(dbReference.child('books/$receiverId/${child.key}'));
           SentBookRequest sentBookRequest = createSentBookRequest(child.value, book);
-          sentBookRequest.setId(dbReference.child('sentBookRequests/${user.uid}/${child.key}'));
           sentBookRequests.add(sentBookRequest);
         }
       }
@@ -172,6 +202,8 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBoo
   return sentBookRequestsSubscription;
 }
 
+// it needs to listen for both new books being requested, and current requests being updated (as in another user requesting this book)
+// this is why the map stuff is happening
 StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
   DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
   StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription = receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
@@ -183,9 +215,15 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<Rec
         if (getBookEvent.snapshot.value != null) {
           Book book = createBook(getBookEvent.snapshot.value);
           book.setId(dbReference.child('books/${user.uid}/${child.key}'));
-          ReceivedBookRequest receivedBookRequest = createReceivedBookRequest(child.value, book);
-          receivedBookRequest.setId(dbReference.child('receivedBookRequests/${user.uid}/${child.key}'));
-          receivedBookRequests.add(receivedBookRequest);
+          dynamic record = child.value;
+          Map<String, String> senders = (record['senders'] as Map).map(
+            (key, value) => MapEntry(key.toString(), value.toString()),
+          );
+          senders.forEach((k, v) {
+            DateTime sendDate = DateTime.parse(v);
+            ReceivedBookRequest receivedBookRequest = createReceivedBookRequest(k, sendDate, book);
+            receivedBookRequests.add(receivedBookRequest);
+          });
         }
       }
     }

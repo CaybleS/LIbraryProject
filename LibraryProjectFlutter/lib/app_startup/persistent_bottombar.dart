@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
@@ -75,10 +76,10 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
         if (didPop) {
           return;
         }
-        final navigator = Navigator.of(context);
         bool shouldPop = !await navigatorKeys[selectedIndex].currentState!.maybePop();
         if (shouldPop) {
-          navigator.pop(result);
+          // ensuring the app closes, since in this case this only runs to close the app I believe
+          SystemNavigator.pop();
         }
       },
       child: Scaffold(

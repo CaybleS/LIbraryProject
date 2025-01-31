@@ -1,23 +1,51 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
-class FriendBookPage extends StatelessWidget {
-  final User user;
-  final Book _bookToView;
-  final UserModel friend;
-  const FriendBookPage(this.user, this._bookToView, this.friend, {super.key});
+class FriendBookPage extends StatefulWidget {
 
+  @override
+  State<FriendBookPage> createState() => _FriendBookPageState();
+  final User user;
+  final Book bookToView;
+  final String friendId;
+  const FriendBookPage(this.user, this.bookToView, this.friendId, {super.key});
+}
+
+class _FriendBookPageState extends State<FriendBookPage> {
+  late final VoidCallback _booksLentToMeUpdatedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _booksLentToMeUpdatedListener = () {
+      if (refreshNotifier.value == friendsPageIndex) {
+        setState(() {});
+      }
+    };
+    refreshNotifier.addListener(_booksLentToMeUpdatedListener);
+}
+
+  @override
+  void dispose() {
+    refreshNotifier.removeListener(_booksLentToMeUpdatedListener);
+    super.dispose();
+  }
   Widget _displayStatus() {
     String availableTxt;
     Color availableTxtColor;
 
-    if (_bookToView.lentDbKey != null) {
-      availableTxt = "Lent";
+    if (widget.bookToView.lentDbKey != null) {
       availableTxtColor = Colors.red;
+      if (_isBookAlreadyLentToUser()) {
+        availableTxt = "Lent to you";
+      }
+      else {
+        availableTxt = "Lent";
+      }
     } else {
       availableTxt = "Available";
       availableTxtColor = const Color(0xFF43A047);
@@ -30,7 +58,40 @@ class FriendBookPage extends StatelessWidget {
   }
 
   void _requestBook() {
-    _bookToView.sendBookRequest(user.uid, friend.uid);
+    widget.bookToView.sendBookRequest(widget.user.uid, widget.friendId);
+  }
+
+  bool _isBookAlreadyLentToUser() {
+    for (int i = 0; i < booksLentToMe.length; i++) {
+      if (booksLentToMe[i].book == widget.bookToView) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Widget _displayRequestButtonOrText() {
+    if (_isBookAlreadyLentToUser()) {
+      return const Text("You currently have this book lent to you!");
+    }
+    if (widget.bookToView.usersWhoRequested != null && widget.bookToView.usersWhoRequested!.contains(widget.user.uid)) {
+      return const Text("You have already requested this book!");
+    }
+    return ElevatedButton(
+      onPressed: () {
+        SharedWidgets.displayPositiveFeedbackDialog(context, "Book requested");
+        _requestBook();
+        setState(() {});
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColor.skyBlue,
+        padding: const EdgeInsets.all(8),
+      ),
+      child: const Text(
+        "Request this book",
+        style: TextStyle(fontSize: 16, color: Colors.black),
+      ),
+    );
   }
 
   @override
@@ -50,7 +111,7 @@ class FriendBookPage extends StatelessWidget {
                 children: [
                   AspectRatio(
                     aspectRatio: 0.7,
-                    child: _bookToView.getCoverImage(),
+                    child: widget.bookToView.getCoverImage(),
                   ),
                   const SizedBox(width: 5),
                   Flexible( 
@@ -59,7 +120,7 @@ class FriendBookPage extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            _bookToView.title ?? "No title found",
+                            widget.bookToView.title ?? "No title found",
                             style: const TextStyle(fontSize: 20),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -68,7 +129,7 @@ class FriendBookPage extends StatelessWidget {
                         const SizedBox(height: 5),
                         Flexible(
                           child: Text(
-                            _bookToView.author ?? "No author found",
+                            widget.bookToView.author ?? "No author found",
                             style: const TextStyle(fontSize: 16),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -87,7 +148,7 @@ class FriendBookPage extends StatelessWidget {
             Flexible(
               child: SingleChildScrollView(
                 child: Text(
-                  _bookToView.description ?? "No description found",
+                  widget.bookToView.description ?? "No description found",
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
@@ -99,25 +160,7 @@ class FriendBookPage extends StatelessWidget {
             Flexible(
               child: _displayStatus(),
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (_bookToView.usersWhoRequested != null && _bookToView.usersWhoRequested!.contains(user.uid)) {
-                  SharedWidgets.displayErrorDialog(context, "You have already requested this book!");
-                  }
-                else {
-                  SharedWidgets.displayPositiveFeedbackDialog(context, "Book requested");
-                  _requestBook();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue,
-                padding: const EdgeInsets.all(8),
-              ),
-              child: const Text(
-                "Request this book",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
+            _displayRequestButtonOrText(),
           ],
         ),
       ),
