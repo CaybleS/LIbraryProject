@@ -34,13 +34,18 @@ class _AddFriendPageState extends State<AddFriendPage> {
   void onSubmit(BuildContext context) async {
     String txt = controller.text;
     String id = await findUser(txt);
-    if (id != '') {
-      // debugPrint('--------------------------------------------------');
-      // debugPrint('--------------------------------------------------');
-      sendFriendRequest(widget.user, id);
-      SharedWidgets.displayPositiveFeedbackDialog(
-          context, 'Friend Request Sent!');
-      Navigator.pop(context);
+    if (id != '' && id != widget.user.uid) {
+      if (!friends.any((friend) => friend.uid == id)) {
+        sendFriendRequest(widget.user, id);
+        SharedWidgets.displayPositiveFeedbackDialog(
+            context, 'Friend Request Sent!');
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          _msg = "You are already friends with this user";
+          showErrorTxt = true;
+        });
+      }
     } else {
       setState(() {
         _msg = "User not found";

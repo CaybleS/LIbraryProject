@@ -239,10 +239,10 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        Friend friend = Friend('${child.key}');
-        friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
+        // Friend friend = Friend('${child.key}');
+        // friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
 
-        DatabaseEvent userEvent = await dbReference.child('users/${friend.friendId}').once();
+        DatabaseEvent userEvent = await dbReference.child('users/${child.key}').once();
         if (userEvent.snapshot.value != null) {
           Map data = userEvent.snapshot.value as Map;
           // if (data.containsKey('name')) {
@@ -368,24 +368,6 @@ Future<void> addFriend(Request request) async {
   id.set({"friendsSince": time});
 
   await request.delete();
-}
-
-// TODO: I'm not going to get rid of this since idk if it's used somewhere, but with the subscription thing, we shouldn't need it
-Future<List<UserModel>> getFriends(User user) async {
-  DatabaseEvent event = await dbReference.child('friends/${user.uid}/').once();
-  List<UserModel> friends = [];
-
-  if (event.snapshot.value != null) {
-    for (var child in event.snapshot.children) {
-      DatabaseEvent userEvent = await dbReference.child('users/${child.key}').once();
-      if (userEvent.snapshot.value != null) {
-        Map data = userEvent.snapshot.value as Map;
-        friends.add(UserModel.fromJson(data));
-      }
-    }
-  }
-
-  return friends;
 }
 
 Future<Map<String, dynamic>> getChatInfo(String roomID) async {

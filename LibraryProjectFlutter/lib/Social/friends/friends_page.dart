@@ -7,6 +7,7 @@ import 'package:library_project/Social/friends_library/friends_library_page.dart
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import '../../database/database.dart';
+import '../../models/user.dart';
 import 'add_friend_page.dart';
 import '../../core/appbar.dart';
 
@@ -20,19 +21,31 @@ class FriendsPage extends StatefulWidget {
 }
 
 class _FriendsPageState extends State<FriendsPage> {
-  // List<Request> requests = [];
-  // List<Friend> friends = [];
+  List<Request> showRequests = [];
+  List<UserModel> showFriends = [];
   String _selected = "list";
+  late final VoidCallback _friendpageListener;
 
   @override
   void initState() {
     super.initState();
-    updateLists();
+    _friendpageListener = () {
+      if (refreshNotifier.value == friendsPageIndex) {
+        updateLists();
+      }
+    };
+    refreshNotifier.addListener(_friendpageListener);
+  }
+
+  @override
+  void dispose() {
+    refreshNotifier.removeListener(_friendpageListener);
+    super.dispose();
   }
 
   void updateLists() async {
-    // await updateRequestList();
-    // await updateFriendsList();
+    showFriends = friends;
+    showRequests = requests;
     setState(() {});
   }
 
@@ -46,6 +59,20 @@ class _FriendsPageState extends State<FriendsPage> {
     setState(() {
       _selected = state;
     });
+  }
+
+  void _acceptClicked(int index, BuildContext context) async {
+    await addFriend(requests[index]);
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Accepted");
+    updateLists();
+  }
+
+  void _denyClicked(int index, BuildContext context) async {
+    await requests[index].delete();
+    SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Request Deleted");
+    updateLists();
   }
 
   Widget displayNavigationButtons() {
@@ -105,20 +132,182 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Future<void> updateRequestList() async {
-    requests = await getFriendRequests(widget.user);
-  }
-
-  Future<void> updateFriendsList() async {
-    // friends = await getFriends(widget.user);
-  }
-
   Widget displayList() {
     if (_selected == "list") {
-      return FriendList(widget.user);
+      return displayFriends();
     } else {
-      return FriendRequestList(updateLists);
+      return displayRequests();
     }
+  }
+
+  Widget displayRequests() {
+    return ListView.builder(
+        itemCount: showRequests.length,
+        itemBuilder: (BuildContext context, int index) {
+          return InkWell(
+              onTap: () {}, // TODO link to user profile
+              child: SizedBox(
+                  height: 150,
+                  child: Card(
+                      margin: const EdgeInsets.all(5),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: ClipOval(
+                                    child: SizedBox(
+                                        width: 75,
+                                        child: showFriends[index].photoUrl !=
+                                                null
+                                            ? Image.network(
+                                                showFriends[index].photoUrl!)
+                                            : Image.asset(
+                                                'assets/profile_pic.jpg')))),
+                            Expanded(
+                                child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Column(children: [
+                                const SizedBox(
+                                  height: 40,
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    showRequests[index].name,
+                                    style: const TextStyle(
+                                        color: Colors.black, fontSize: 20),
+                                    softWrap: true,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    showRequests[index].email,
+                                    style: const TextStyle(
+                                        color: Colors.black, fontSize: 20),
+                                    softWrap: true,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                )
+                              ]),
+                            )),
+                            ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 200),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(children: [
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          _acceptClicked(index, context);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color.fromRGBO(
+                                                    76, 175, 80, 1)),
+                                        child: const Text('Accept',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.black))),
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          _denyClicked(index, context);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color.fromRGBO(
+                                                    244, 67, 54, 1)),
+                                        child: const Text('Deny',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.black)))
+                                  ]),
+                                ))
+                          ]))));
+        });
+  }
+
+  Widget displayFriends() {
+    return ListView.builder(
+        itemCount: showFriends.length,
+        itemBuilder: (BuildContext context, int index) {
+          return InkWell(
+              onTap: () {}, // TODO link to user profile
+              child: SizedBox(
+                  height: 150,
+                  child: Card(
+                      margin: const EdgeInsets.all(5),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: ClipOval(
+                                    child: SizedBox(
+                                  width: 75,
+                                  child: showFriends[index].photoUrl != null
+                                      ? Image.network(
+                                          showFriends[index].photoUrl!)
+                                      : Image.asset('assets/profile_pic.jpg'),
+                                ))),
+                            Expanded(
+                                child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Column(children: [
+                                const SizedBox(
+                                  height: 40,
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    showFriends[index].name,
+                                    style: const TextStyle(
+                                        color: Colors.black, fontSize: 20),
+                                    softWrap: true,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    showFriends[index].email,
+                                    style: const TextStyle(
+                                        color: Colors.black, fontSize: 20),
+                                    softWrap: true,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                )
+                              ]),
+                            )),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 150),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: ElevatedButton(
+                                    onPressed: () async {
+                                      await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FriendsLibraryPage(
+                                                      widget.user,
+                                                      friends[index])));
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColor.pink),
+                                    child: const Text('View Library',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.black))),
+                              ),
+                            )
+                          ]))));
+        });
   }
 
   @override
@@ -136,153 +325,20 @@ class _FriendsPageState extends State<FriendsPage> {
             size: 30,
           )),
       body: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: [
             displayNavigationButtons(),
             const SizedBox(height: 10),
-            // Container(
-            //   decoration: const BoxDecoration(
-            //     borderRadius: BorderRadius.all(Radius.circular(20)),
-            //     color: Colors.white,
-            //   ),
-            //   padding: const EdgeInsets.all(15),
-            //   child: Row(
-            //     children: [
-            //       ClipOval(
-            //         child: SizedBox(
-            //           width: 50,
-            //           child: Image.asset(
-            //             "assets/profile_pic.jpg",
-            //             fit: BoxFit.cover,
-            //           ),
-            //         ),
-            //       ),
-            //       const SizedBox(width: 10),
-            //       const Column(
-            //         crossAxisAlignment: CrossAxisAlignment.start,
-            //         children: [
-            //           Text(
-            //             'milad',
-            //             style: TextStyle(
-            //               fontSize: 18,
-            //               fontWeight: FontWeight.w600,
-            //             ),
-            //           ),
-            //           Text(
-            //             'online',
-            //             style: TextStyle(
-            //               fontSize: 14,
-            //               color: Colors.green,
-            //               fontWeight: FontWeight.w500,
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //     ],
-            //   ),
-            // ),
             Expanded(
+                child: Padding(
+              padding: const EdgeInsets.fromLTRB(15, 1, 15, 25),
               child: displayList(),
-            )
+            ))
           ],
         ),
       ),
     );
-  }
-}
-
-class FriendRequestList extends StatelessWidget {
-  const FriendRequestList(this.callback, {super.key});
-
-  // final List<Request> requests;
-  final Function() callback;
-
-  void acceptClicked(int index, BuildContext context) async {
-    await addFriend(requests[index]);
-    SharedWidgets.displayPositiveFeedbackDialog(
-        context, "Friend Request Accepted");
-    callback();
-  }
-
-  void denyClicked(int index, BuildContext context) async {
-    await requests[index].delete();
-    SharedWidgets.displayPositiveFeedbackDialog(
-        context, "Friend Request Deleted");
-    callback();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: requests.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Card(
-              margin: const EdgeInsets.all(5),
-              child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                            flex: 4,
-                            child: Row(children: [
-                              ClipOval(
-                                child: SizedBox(
-                                    width: 75,
-                                    child:
-                                        Image.network(requests[index].photo)),
-                              ),
-                              const SizedBox(
-                                width: 20,
-                              ),
-                              Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      requests[index].name,
-                                      style: const TextStyle(
-                                          color: Colors.black, fontSize: 20),
-                                      softWrap: true,
-                                    ),
-                                    Text(
-                                      requests[index].email,
-                                      style: const TextStyle(
-                                          color: Colors.black, fontSize: 16),
-                                      softWrap: true,
-                                    ),
-                                  ]),
-                            ])),
-                        Expanded(
-                            flex: 1,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                ElevatedButton(
-                                    onPressed: () {
-                                      acceptClicked(index, context);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color.fromRGBO(
-                                            76, 175, 80, 1)),
-                                    child: const Text('Accept',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.black))),
-                                ElevatedButton(
-                                    onPressed: () {
-                                      denyClicked(index, context);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color.fromRGBO(
-                                            244, 67, 54, 1)),
-                                    child: const Text('Deny',
-                                        style: TextStyle(
-                                            fontSize: 16, color: Colors.black)))
-                              ],
-                            )),
-                      ])));
-        });
   }
 }
 
@@ -307,122 +363,4 @@ class Request {
 
 Request createRequest(record, String id) {
   return Request(record['sender'], id);
-}
-
-class FriendList extends StatelessWidget {
-  final User user;
-  const FriendList(this.user, {super.key});
-  // final List<Friend> friends;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: friends.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Card(
-            margin: const EdgeInsets.all(5),
-            child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        flex: 4,
-                        child: Row(children: [
-                          ClipOval(
-                            child: SizedBox(
-                              width: 75,
-                              // child: Image.network(friends[index].photo)),
-                              child: friends[index].photoUrl != null
-                                  ? Image.network(friends[index].photoUrl!)
-                                  : Image.asset('assets/profile_pic.jpg'),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  friends[index].name,
-                                  style: const TextStyle(
-                                      color: Colors.black, fontSize: 20),
-                                  softWrap: true,
-                                ),
-                                Text(
-                                  friends[index].email,
-                                  style: const TextStyle(
-                                      color: Colors.black, fontSize: 16),
-                                  softWrap: true,
-                                ),
-                              ]),
-                        ]),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: ElevatedButton(
-                            onPressed: () async {
-                              await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          FriendsLibraryPage(user, friends[index])));
-                            },
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromRGBO(76, 175, 80, 1)),
-                            child: const Text('View Library',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.black))),
-                      ),
-                    ])),
-          );
-        });
-    // SizedBox(
-    //   height: 100,
-    //   width: 70,
-    //   child: image,
-    // ),
-    // const SizedBox(
-    //   width: 10,
-    // ),
-    //   SizedBox(
-    //     width: 270,
-    //     height: 100,
-    //     child: Align(
-    //         alignment: Alignment.topLeft,
-    //         child: Text(
-    //           friends[index].friendId,
-    //           style:
-    //               const TextStyle(color: Colors.black, fontSize: 20),
-    //           softWrap: true,
-    //         )),
-    //   ),
-    // ]));
-    // });
-  }
-}
-
-class Friend {
-  String friendId;
-  late String name = "";
-  late String email = "";
-  late String photo = "";
-  late DatabaseReference _id;
-
-  @override
-  String toString() {
-    return 'Friend{friendId: $friendId, name: $name, email: $email, _id: $_id}';
-  }
-
-  void setId(DatabaseReference id) {
-    _id = id;
-  }
-
-  Future<void> delete() async {
-    await removeRef(_id);
-  }
-
-  Friend(this.friendId);
 }
