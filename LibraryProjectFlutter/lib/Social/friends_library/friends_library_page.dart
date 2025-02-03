@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
@@ -23,7 +24,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   List<Book> _friendsLibrary = [];
   List<int> _shownList = []; // this is the "driver" list which dictates what books in friendsLibrary are visible, and in what order, by storing indicies of books in friendsLibrary
   List<int> _unsortedShownList = []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
-  final TextEditingController _searchBarTextController = TextEditingController();
+  final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   bool _sortingAscending = true;
   bool _showEmptyLibraryMsg = false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
@@ -55,7 +56,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   @override
   void dispose() {
     refreshNotifier.removeListener(_friendsBooksUpdatedListener);
-    _searchBarTextController.dispose();
+    _filterBooksTextController.dispose();
     super.dispose();
   }
 
@@ -70,7 +71,8 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
 
   void _sortByTitle() {
     // since shownList stores indices of shownLibrary they are already mapped to each other making this sorting not too complex
-    _shownList.sort((a, b) => (_friendsLibrary[a].title ?? "No title found").compareTo(_friendsLibrary[b].title ?? "No title found"));
+    _shownList.sort((a, b) => (_friendsLibrary[a].title?.trim().toLowerCase() ?? "No title found").compareTo
+    (_friendsLibrary[b].title?.trim().toLowerCase() ?? "No title found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -78,7 +80,8 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   }
 
   void _sortByAuthor() {
-    _shownList.sort((a, b) => (_friendsLibrary[a].author ?? "No author found").compareTo(_friendsLibrary[b].author ?? "No author found"));
+    _shownList.sort((a, b) => (_friendsLibrary[a].author?.trim().toLowerCase() ?? "No author found").compareTo
+    (_friendsLibrary[b].author?.trim().toLowerCase() ?? "No author found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -147,7 +150,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   void _resetFilters() {
     _sortingAscending = true;
     _sortSelection = _SortingOption.dateAdded;
-    _searchBarTextController.clear();
+    _filterBooksTextController.clear();
     _filter("");
   }
 
@@ -163,8 +166,8 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
 
   void _updateList() {
     _setShownListWithNoFilters();
-    if (_searchBarTextController.text.isNotEmpty) {
-      _filter(_searchBarTextController.text);
+    if (_filterBooksTextController.text.isNotEmpty) {
+      _filter(_filterBooksTextController.text);
     }
     else {
       // these sorting functions will call the setState
@@ -337,7 +340,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _searchBarTextController,
+                    controller: _filterBooksTextController,
                     onChanged: (text) {
                       _filter(text);
                     },
@@ -352,7 +355,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
                       suffixIcon: IconButton(
                         onPressed: () {
                           _filter(""); // needed to signal to the filtering that there is no more filter being applied
-                          _searchBarTextController.clear();
+                          _filterBooksTextController.clear();
                         } ,
                         icon: const Icon(Icons.clear),
                       ),

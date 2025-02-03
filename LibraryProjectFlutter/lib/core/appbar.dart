@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/Social/message_home.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/auth.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 
 PreferredSizeWidget displayAppBar(BuildContext context, User user, String curPage) {
   void goToHome() {

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/core/book_requests_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_page.dart';
@@ -30,8 +30,7 @@ class _HomePageState extends State<HomePage> {
   bool _usingBooksLentToMe = false;
   late final VoidCallback
       _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
-  final TextEditingController _searchBarTextController =
-      TextEditingController();
+  final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   _BooksShowing _showing = _BooksShowing.all;
   bool _sortingAscending =
@@ -58,11 +57,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     refreshNotifier.removeListener(_homepageListener);
-    _searchBarTextController.dispose();
+    _filterBooksTextController.dispose();
     super.dispose();
   }
 
   // note that these sorting and filtering functions are only changing the composition of shownList.
+  // we dont store date added technically but I believe firebase stores stuff chronologically so
   void _sortByDateAdded() {
     _shownList = List.from(_unsortedShownList);
     if (!_sortingAscending) {
@@ -73,8 +73,8 @@ class _HomePageState extends State<HomePage> {
 
   void _sortByTitle() {
     // since shownList stores indices of shownLibrary they are already mapped to each other making this sorting not too complex
-    _shownList.sort((a, b) => (_shownLibrary[a].title ?? "No title found")
-        .compareTo(_shownLibrary[b].title ?? "No title found"));
+    _shownList.sort((a, b) => (_shownLibrary[a].title?.trim().toLowerCase() ?? "No title found")
+        .compareTo(_shownLibrary[b].title?.trim().toLowerCase() ?? "No title found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -82,8 +82,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _sortByAuthor() {
-    _shownList.sort((a, b) => (_shownLibrary[a].author ?? "No author found")
-        .compareTo(_shownLibrary[b].author ?? "No author found"));
+    _shownList.sort((a, b) => (_shownLibrary[a].author?.trim().toLowerCase() ?? "No author found")
+        .compareTo(_shownLibrary[b].author?.trim().toLowerCase() ?? "No author found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -157,7 +157,7 @@ class _HomePageState extends State<HomePage> {
     _sortingAscending = true;
     _sortSelection = _SortingOption.dateAdded;
     _showing = _BooksShowing.all;
-    _searchBarTextController.clear();
+    _filterBooksTextController.clear();
     _filter("");
   }
 
@@ -215,13 +215,13 @@ class _HomePageState extends State<HomePage> {
 
     _setShownListWithNoFilters();
     _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
-    if (_searchBarTextController.text.isNotEmpty) {
+    if (_filterBooksTextController.text.isNotEmpty) {
       // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
       // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
       // unnecessary to me but I guess with 2 filter systems (the _BooksShowing and filter bar) we need to consider both of them, which
       // is why prevShownList exists (we only show books with both filters applied to them).
       List<int> prevShownList = _shownList;
-      _filter(_searchBarTextController.text);
+      _filter(_filterBooksTextController.text);
       _shownList.removeWhere((item) => !prevShownList.contains(item));
       setState(() {});
     }
@@ -315,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                         ? const Padding(
                             padding: EdgeInsets.only(left: 6),
                             child: Icon(Icons.check,
-                                color: Colors.green, size: 25))
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -345,7 +345,7 @@ class _HomePageState extends State<HomePage> {
                         ? const Padding(
                             padding: EdgeInsets.only(left: 6),
                             child: Icon(Icons.check,
-                                color: Colors.green, size: 25))
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -375,7 +375,7 @@ class _HomePageState extends State<HomePage> {
                         ? const Padding(
                             padding: EdgeInsets.only(left: 6),
                             child: Icon(Icons.check,
-                                color: Colors.green, size: 25))
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -520,7 +520,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _searchBarTextController,
+                    controller: _filterBooksTextController,
                     onChanged: (text) {
                       _filter(text);
                     },
@@ -537,7 +537,7 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () {
                           _filter(
                               ""); // needed to signal to the filtering that there is no more filter being applied
-                          _searchBarTextController.clear();
+                          _filterBooksTextController.clear();
                         },
                         icon: const Icon(Icons.clear),
                       ),
@@ -559,7 +559,7 @@ class _HomePageState extends State<HomePage> {
               : const SizedBox.shrink(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(7, 9, 7, 6),
+              padding: const EdgeInsets.fromLTRB(7, 9, 7, 5),
               child: ListView.builder(
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
@@ -570,7 +570,7 @@ class _HomePageState extends State<HomePage> {
 
                   if (_shownLibrary[_shownList[index]].lentDbKey != null) {
                     availableTxt = "Lent";
-                    availableTxtColor = Colors.red;
+                    availableTxtColor = AppColor.cancelRed;
                   } else {
                     availableTxt = "Available";
                     availableTxtColor = const Color(0xFF43A047);

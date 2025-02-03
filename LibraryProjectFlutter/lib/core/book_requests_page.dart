@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/models/book.dart';
@@ -175,7 +175,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                           ),
                                           ElevatedButton(
                                             onPressed: () async {
-                                              await Navigator.push(context, MaterialPageRoute(builder: (context) => BookLendPage(book, widget.user, idToLendTo: senderId)));
+                                              await displayLendDialog(context, book, widget.user, idToLendTo: senderId);
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.green,
@@ -189,7 +189,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                           ElevatedButton(
                                             onPressed: () {
                                               book.unsendBookRequest(senderId, widget.user.uid);
-                                              SharedWidgets.displayPositiveFeedbackDialog(context, "Request denied");
+                                              SharedWidgets.displayPositiveFeedbackDialog(context, "Request Denied");
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,
@@ -213,7 +213,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                           ElevatedButton(
                                             onPressed: () {
                                               book.unsendBookRequest(widget.user.uid, receiverId);
-                                              SharedWidgets.displayPositiveFeedbackDialog(context, "Request unsent");
+                                              SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,

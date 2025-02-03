@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/custom_add.dart';
 import 'package:library_project/add_book/scan/scanner_driver.dart';
 import 'package:library_project/add_book/search/search_driver.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:library_project/ui/colors.dart';
 

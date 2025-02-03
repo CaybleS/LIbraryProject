@@ -20,6 +20,7 @@ class SearchDriver {
   bool _noResponseError = false; // this detects lack of internet connection (or api being down maybe)
   bool _usingGoogleAPI = true;
   SearchQueryOption _searchQueryOption = SearchQueryOption.normal;
+  SearchQueryOption _prevSearchQueryOption = SearchQueryOption.normal; // used to allow for a search where all you change is search query option (w/same query)
   late final User _user;
   late final List<Book> _userLibrary;
 
@@ -42,11 +43,15 @@ class SearchDriver {
   }
 
   void setSearchQueryOption(SearchQueryOption optionToSetTo) {
+    _prevSearchQueryOption = _searchQueryOption;
     _searchQueryOption = optionToSetTo;
   }
 
   Future<void> runSearch(String searchQuery, BuildContext context) async {
-    if (searchQuery != _mostRecentSearch) {
+    // we let users search again if 1.) the query is different or 2.) they got no response with their previous search
+    // or 3.) they change the search query option for their search
+    if (searchQuery != _mostRecentSearch || _noResponseError || _searchQueryOption != _prevSearchQueryOption) {
+      _prevSearchQueryOption = _searchQueryOption; // letting changing search query option with same query only allow for a search once
       _mostRecentSearch = searchQuery;
       // resetting values of most recent search ONLY when search query changes (so if search query doesnt change we just show last search results)
       resetLastSearchValues();
@@ -101,7 +106,7 @@ class SearchDriver {
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 13), // arbitrarily chosen number, if you change, change in search and scanner driver both pls
         onTimeout: () {
           throw "Timeout";
         },

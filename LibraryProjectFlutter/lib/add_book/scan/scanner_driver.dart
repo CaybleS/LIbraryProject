@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'dart:convert';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/add_book/shared_helper_util.dart';
@@ -132,7 +132,9 @@ class ScannerDriver {
       context: context,
       builder: (context) =>
         Dialog(
-          child: Container(
+          child: Material(
+          borderRadius: const BorderRadius.all(Radius.circular(25)), // dialog has a border, Material widget doesnt
+            child: Container(
             height: 300,
             width: 300,
             padding: const EdgeInsets.all(3),
@@ -229,6 +231,7 @@ class ScannerDriver {
             ),
           ),
         ),
+      ),
     );
   }
 
@@ -270,7 +273,7 @@ class ScannerDriver {
     final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn&key=$apiKey&maxResults=1";
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 13), // arbitrarily chosen number, if you change, change in search and scanner driver both pls
         onTimeout: () {
           throw "Timeout";
         },

@@ -1,27 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/friends/friends_page.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
-import 'package:library_project/models/book_requests.dart';
 import 'dart:async';
-import 'package:library_project/models/user.dart';
 
-const int homepageIndex = 0;
-const int addBookPageIndex = 1;
-const int friendsPageIndex = 2;
-const int profileIndex = 3;
-const int settingsIndex = 4;
-
-// pages can access these at any time, knowing that they will be up to date guaranteed
-List<Book> userLibrary = [];
-List<LentBookInfo> booksLentToMe = [];
-List<SentBookRequest> sentBookRequests = [];
-List<ReceivedBookRequest> receivedBookRequests = [];
-List<UserModel> friends = [];
-List<Request> requests = [];
-ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _userSubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
@@ -29,14 +13,6 @@ late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
-// Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
-// its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
-// this is needed due to the bottombar loading all 5 pages in memory at a time so it allows for logic to cause refreshes ONLY for pages the user is currently on.
-ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
-ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
-int selectedIndex = 0;
-int _prevIndex = 0;
-bool showBottombar = true;
 Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
 
@@ -59,19 +35,7 @@ void cancelDatabaseSubscriptions() {
   _sentBookRequestsSubscription.cancel();
   _receivedBookRequestsSubscription.cancel();
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
-  _resetGlobalData();
-}
-
-void _resetGlobalData() {
-  userLibrary.clear();
-  booksLentToMe.clear();
-  sentBookRequests.clear();
-  receivedBookRequests.clear();
-  friends.clear();
-  requests.clear();
-  // these track or are built up from subscriptions so they should be cleared as well
-  friendIdToBooks.clear();
-  friendIdToLibrarySubscription.clear();
+  resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
@@ -79,7 +43,7 @@ void resetBottombarValues() {
   refreshBottombar = ValueNotifier<bool>(false);
   refreshNotifier = ValueNotifier<int>(-1);
   selectedIndex = 0;
-  _prevIndex = 0;
+  prevIndex = 0;
 }
 
 // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
@@ -100,6 +64,7 @@ void _lentToMeBooksUpdated() {
   }
 }
 
+// TODO should these be on social page somewhere? Idk where but probably, or m,aybe not, idk.
 void _sentBookRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
     refreshNotifier.value = -1;
@@ -152,10 +117,10 @@ void bottombarItemTapped(int index) {
   } else {
     // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
     // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
-    navigatorKeys[_prevIndex].currentState?.popUntil((route) => route.isFirst);
+    navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
   }
   refreshNotifier.value = index;
-  _prevIndex = index;
+  prevIndex = index;
 }

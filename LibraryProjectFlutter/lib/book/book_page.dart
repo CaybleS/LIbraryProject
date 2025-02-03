@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 
 enum _ReadStatus { notRead, currentlyReading, unknown, read }
 
@@ -108,10 +109,7 @@ class _BookPageState extends State<BookPage> {
   Widget _lendBookButton() {
     return ElevatedButton(
       onPressed: () async {
-        await Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => BookLendPage(widget.book, widget.user)));
+        await displayLendDialog(context, widget.book, widget.user);
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -156,8 +154,14 @@ class _BookPageState extends State<BookPage> {
             : const SizedBox.shrink(),
         ElevatedButton(
           onPressed: () async {
-            widget.book.returnBook();
-            setState(() {});
+            bool shouldReturn = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to return this book?");
+            if (shouldReturn) {
+              widget.book.returnBook();
+              if (mounted) {
+                SharedWidgets.displayPositiveFeedbackDialog(context, "Book Returned");
+                setState(() {});
+              }
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromRGBO(129, 199, 132, 1),
@@ -171,79 +175,12 @@ class _BookPageState extends State<BookPage> {
     );
   }
 
-  Future<void> _displayConfirmRemoveDialog(Book bookToRemove) async {
-    String? retVal = await showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black,
-                blurRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Are you sure you want to remove this book from your library?",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, color: Colors.black),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      child: const Text("No!",
-                          style: TextStyle(fontSize: 16, color: Colors.black)),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        bookToRemove.remove(widget.user.uid);
-                        // if the book is removed I need to pop the dialog and then pop again so this is how I make this happen
-                        // for some reason just having 2 pops here wouldnt work when I added persistent bottombar but this does
-                        Navigator.pop(context,
-                            "removed"); // signaling to the outside of the dialog to pop from the page it was called from
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
-                      child: const Text("Yes!",
-                          style: TextStyle(fontSize: 16, color: Colors.black)),
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-    if (retVal != null && mounted) {
-      Navigator.pop(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Book Info"),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       backgroundColor: Colors.grey[400],
@@ -361,7 +298,13 @@ class _BookPageState extends State<BookPage> {
                   const SizedBox(width: 10),
                   ElevatedButton(
                     onPressed: () async {
-                      await _displayConfirmRemoveDialog(widget.book);
+                      bool hasRemoved = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
+                      if (hasRemoved) {
+                        widget.book.remove(widget.user.uid);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       shape: ContinuousRectangleBorder(

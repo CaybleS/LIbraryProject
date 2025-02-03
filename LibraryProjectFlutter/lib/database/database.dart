@@ -38,24 +38,22 @@ void addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String
 Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String receiverId, String bookDbKey) async {
   DatabaseEvent event = await dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/senders/').once();
   Map<String, String> senders = {};
+  // if there are already senders we need to fetch them before adding our new sender to them
   if (event.snapshot.value != null) {
     // need to create the map like this, safely, rather than just raw type casting
-    Map<String, String> senders = (event.snapshot.value as Map).map(
+    senders = (event.snapshot.value as Map).map(
       (key, value) => MapEntry(key.toString(), value.toString()),
     );
-    senders[senderId] = sendDate.toIso8601String();
-    DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
-    id.set({'senders': senders});
   }
-  else {
-    DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
-    senders[senderId] = sendDate.toIso8601String();
-    id.set({'senders': senders});
-  }
+  DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
+  senders[senderId] = sendDate.toIso8601String();
+  id.set({'senders': senders});
 }
 
 Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
+  // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
+  // for the number of request senders in this case to remove all the sender requests separately though).
   if (removeAllReceivedRequests) {
     dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
   }

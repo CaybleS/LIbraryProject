@@ -3,11 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/private_chat_screen.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/Social/chat_screen.dart';
 import 'package:library_project/Social/create_chat.dart';
 import 'package:library_project/models/user.dart';
-import '../app_startup/appwide_setup.dart';
 import '../core/appbar.dart';
 
 class MessageHome extends StatefulWidget {

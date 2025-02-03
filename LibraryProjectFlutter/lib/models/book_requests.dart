@@ -2,6 +2,8 @@ import 'package:library_project/models/book.dart';
 // maybe could have designed it better but basically, if a book is removed, all requests for it need to be deleted as well,
 // so most of the logic for these requests is in the book and database files. This file is just the simple requests which
 // we will have lists for throughout the app.
+// these dont have setId, or remove functions, since the deletion logic needs to be tied to both the requests and to the book
+// itself, so I felt it easier to just tie it to receiver id and/or sender id, and book db key (which is all that is needed to delete any)
 
 class SentBookRequest {
   String receiverId;

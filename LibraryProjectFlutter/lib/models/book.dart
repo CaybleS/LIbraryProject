@@ -90,6 +90,7 @@ class Book {
     }
     if (usersWhoRequested != null) {
       for (int i = 0; i < usersWhoRequested!.length; i++) {
+        // need to await it to remove all users who requested (removing all received requests is easy, removing all sent not as much)
         await removeBookRequestData(usersWhoRequested![i], userId, _id.key!, removeAllReceivedRequests: true);
       }
     }
