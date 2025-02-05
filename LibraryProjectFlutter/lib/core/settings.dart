@@ -9,7 +9,7 @@ class Settings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: displayAppBar(context, user, "settings"),
+      appBar: const CustomAppBar(curPage: "settings"),
       backgroundColor: Colors.grey[400],
       body: const Placeholder(),
     );

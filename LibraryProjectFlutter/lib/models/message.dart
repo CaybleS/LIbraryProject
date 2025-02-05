@@ -1,4 +1,4 @@
-enum MessageType { text, image, file }
+enum MessageType { text, image, file, event }
 // enum MessageStatus { sent, delivered, read }
 
 class MessageModel {

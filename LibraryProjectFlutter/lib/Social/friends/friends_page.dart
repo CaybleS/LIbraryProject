@@ -124,7 +124,7 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: displayAppBar(context, widget.user, "friends"),
+      appBar: const CustomAppBar(curPage: "friends"),
       backgroundColor: Colors.grey[400],
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class UserModel {
   final String uid;
   final String name;
@@ -5,12 +7,14 @@ class UserModel {
   final String? photoUrl;
   final bool isActive;
   final bool isTyping;
+  final Color avatarColor;
   final DateTime lastSignedIn;
 
   UserModel({
     required this.uid,
     required this.name,
     required this.email,
+    required this.avatarColor,
     this.photoUrl,
     required this.isActive,
     this.isTyping = false,
@@ -23,6 +27,7 @@ class UserModel {
       name: json['name'],
       email: json['email'],
       photoUrl: json['photoUrl'],
+      avatarColor: Color(json['avatarColor'] ?? Colors.grey.value),
       isActive: json['isActive'],
       isTyping: json['isTyping'],
       lastSignedIn: DateTime.parse(json['lastSignedIn']),
@@ -35,6 +40,7 @@ class UserModel {
       'name': name,
       'email': email,
       'photoUrl': photoUrl,
+      'avatarColor': avatarColor.value,
       'isActive': isActive,
       'isTyping': isTyping,
       'lastSignedIn': lastSignedIn.toIso8601String(),
@@ -45,4 +51,12 @@ class UserModel {
   String toString() {
     return 'UserModel{uid: $uid, name: $name, email: $email, photoUrl: $photoUrl, isActive: $isActive, isTyping: $isTyping, lastSignedIn: $lastSignedIn}';
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is UserModel && other.uid == uid;
+  }
+
+  @override
+  int get hashCode => uid.hashCode;
 }

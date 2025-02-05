@@ -22,7 +22,7 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: displayAppBar(context, widget.user, "profile"),
+        appBar: const CustomAppBar(curPage: "profile"),
         backgroundColor: Colors.grey[400],
         body: Card(
             margin: const EdgeInsets.all(10),

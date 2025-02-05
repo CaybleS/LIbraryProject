@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chat_screen.dart';
 import 'package:library_project/Social/private_chat_screen.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
@@ -61,9 +62,9 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     } //
     else if (members.length > 1 && groupNameController.text.trim().isNotEmpty) {
       members.add(userModel.value!);
-      String id = _database.child('chats/').push().key!;
+      String chatId = _database.child('chats/').push().key!;
       Chat chat = Chat(
-        id: id,
+        id: chatId,
         name: groupNameController.text.trim(),
         avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
         participants: members.map((e) => e.uid).toList(),
@@ -71,18 +72,19 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         createdBy: userModel.value!.uid,
       );
 
-      await _database.child('chats/$id').set(chat.toJson());
-      final messageId = _database.child('chats/$id/messages').push().key;
+      await _database.child('chats/$chatId').set(chat.toJson());
+      final messageId = _database.child('messages/$chatId').push().key;
       MessageModel message = MessageModel(
         id: messageId!,
         text: '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
         senderId: userModel.value!.uid,
         sentTime: DateTime.now(),
+        type: MessageType.event,
       );
-      await _database.child('chats/$id/messages/$messageId').set(message.toJson());
+      await _database.child('messages/$chatId/$messageId').set(message.toJson());
 
       for (var member in members) {
-        await _database.child('userChats/${member.uid}/$id').set({
+        await _database.child('userChats/${member.uid}/$chatId').set({
           'lastMessage': {
             'text': '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
             'timestamp': DateTime.now().millisecondsSinceEpoch,
@@ -128,6 +130,19 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+        ),
+        title: const Text(
+          'Create Chat',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 25,
+            fontFamily: 'Poppins',
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {

@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/book_requests.dart';
 import 'package:library_project/models/user.dart';
@@ -46,20 +49,19 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
     senders[senderId] = sendDate.toIso8601String();
     DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
     id.set({'senders': senders});
-  }
-  else {
+  } else {
     DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
     senders[senderId] = sendDate.toIso8601String();
     id.set({'senders': senders});
   }
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey,
+    {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   if (removeAllReceivedRequests) {
     dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
-  }
-  else {
+  } else {
     // need to see current senders and update as needed
     DatabaseEvent event = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').once();
     if (event.snapshot.value != null) {
@@ -69,8 +71,7 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
       senders.remove(requesterId);
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
-    }
-    else {
+    } else {
       // there are no senders so we just remove everything
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
@@ -101,7 +102,8 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(ValueNotifier<UserModel?
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('users/$userId/');
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
     if (event.snapshot.value != null) {
-      user.value = UserModel.fromJson(event.snapshot.value as Map<dynamic, dynamic>);
+      final userSnapShot = event.snapshot.value as Map<dynamic, dynamic>;
+      user.value = UserModel.fromJson(userSnapShot);
     }
   });
   return ownedSubscription;
@@ -179,9 +181,11 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
   return friendsBooksSubscription;
 }
 
-StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
+StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
+    List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
   DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription =
+      sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     sentBookRequests.clear();
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -204,9 +208,11 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBoo
 
 // it needs to listen for both new books being requested, and current requests being updated (as in another user requesting this book)
 // this is why the map stuff is happening
-StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
+StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
+    List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
   DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription = receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription =
+      receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     receivedBookRequests.clear();
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -323,16 +329,18 @@ Future<String> findUser(String txt) async {
 
 void addUser(User user) {
   final id = dbReference.child('users/${user.uid}');
-  UserModel userModel = UserModel(
+  UserModel currentUser = UserModel(
     uid: user.uid,
     name: user.displayName!,
     email: user.email!,
     photoUrl: user.photoURL,
+    avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
     isActive: true,
     isTyping: false,
     lastSignedIn: DateTime.now(),
   );
-  id.set(userModel.toJson());
+  id.set(currentUser.toJson());
+  userModel.value = currentUser;
 }
 
 void sendFriendRequest(User user, String friendId) {
@@ -386,45 +394,4 @@ Future<List<UserModel>> getFriends(User user) async {
   }
 
   return friends;
-}
-
-Future<Map<String, dynamic>> getChatInfo(String roomID) async {
-  DatabaseEvent event = await dbReference.child('chatInfo/$roomID').once();
-  Map<String, dynamic> map = {};
-
-  if (event.snapshot.value != null) {
-    Map<String, dynamic> tempMap = Map<String, dynamic>.from(event.snapshot.value as Map);
-
-    map['type'] = tempMap['type'];
-
-    Map<String, String> memberMap = {};
-    Map<String, String> memberIDs = Map<String, String>.from(tempMap['members'] as Map);
-
-    for (var child in memberIDs.values) {
-      memberMap[child] = await getUserDisplayName(child);
-    }
-
-    if (map['type'] == "group") {
-      map['name'] = tempMap['name'];
-    }
-
-    map['members'] = memberMap;
-  }
-
-  return map;
-}
-
-Future<String> getUserDisplayName(String id) async {
-  String name = "";
-  DatabaseEvent userInfo = await dbReference.child('users/$id').once();
-  if (userInfo.snapshot.value != null) {
-    Map data = userInfo.snapshot.value as Map;
-    if (data.containsKey('name')) {
-      name = data['name'];
-    } else {
-      name = id;
-    }
-  }
-
-  return name;
 }

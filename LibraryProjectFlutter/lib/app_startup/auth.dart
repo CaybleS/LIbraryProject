@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+
 // import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/database/database.dart';
+import 'package:library_project/models/user.dart';
+
 // import 'package:library_project/database/firebase_options.dart';
 import 'login.dart';
 
@@ -15,15 +18,12 @@ Future<User?> signInWithGoogle() async {
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-  final GoogleSignInAuthentication? googleSignInAuthentication =
-      await googleSignInAccount?.authentication;
+  final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
 
   final AuthCredential credential = GoogleAuthProvider.credential(
-      idToken: googleSignInAuthentication?.idToken,
-      accessToken: googleSignInAuthentication?.accessToken);
+      idToken: googleSignInAuthentication?.idToken, accessToken: googleSignInAuthentication?.accessToken);
 
-  final UserCredential userCredential =
-      await _auth.signInWithCredential(credential);
+  final UserCredential userCredential = await _auth.signInWithCredential(credential);
   final User? user = userCredential.user;
 
   if (user != null) {
@@ -36,6 +36,14 @@ Future<User?> signInWithGoogle() async {
     if (!(await userExists(user.uid))) {
       addUser(user);
     }
+
+    final userRef = await dbReference.child('users/${user.uid}').once();
+    if (userRef.snapshot.value != null) {
+      Map data = userRef.snapshot.value as Map;
+      userModel.value = UserModel.fromJson(data);
+    }
+
+    await changeStatus(true);
 
     return user;
   } else {
@@ -59,18 +67,23 @@ void logout(context) async {
     }
   }
   await _auth.signOut();
+  userModel.value = null;
 
   // we cant use the 5 bottombar navigators to do this logout, we use the root navigator
-  Navigator.of(context, rootNavigator: true).pushReplacement(
-      MaterialPageRoute(builder: (context) => const LoginPage()));
+  Navigator.of(context, rootNavigator: true)
+      .pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
 }
 
 Future<User?> logIn(String email, String password) async {
   try {
-    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email, password: password);
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
 
     await changeStatus(true);
+    final userRef = await dbReference.child('users/${userCredential.user!.uid}').once();
+    if (userRef.snapshot.value != null) {
+      Map data = userRef.snapshot.value as Map;
+      userModel.value = UserModel.fromJson(data);
+    }
 
     return userCredential.user;
   } catch (e) {
@@ -81,8 +94,7 @@ Future<User?> logIn(String email, String password) async {
 
 Future<User?> createAccount(String name, String email, String password) async {
   try {
-    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email, password: password);
+    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
 
     if (userCredential.user == null) {
       debugPrint("user null");
@@ -115,12 +127,9 @@ Future<User?> createAccount(String name, String email, String password) async {
 
 changeStatus(bool status) async {
   if (_auth.currentUser != null) {
-    final id = await dbReference.child('users/${_auth.currentUser!.uid}/').once();
-    if (id.snapshot.value != null) {
-      await FirebaseDatabase.instance.ref().child('users/${_auth.currentUser!.uid}/').update({
-        'isActive': status,
-        'lastSignedIn': DateTime.now().toIso8601String(),
-      });
-    }
+    await FirebaseDatabase.instance.ref().child('users/${_auth.currentUser!.uid}/').update({
+      'isActive': status,
+      'lastSignedIn': DateTime.now().toIso8601String(),
+    });
   }
 }

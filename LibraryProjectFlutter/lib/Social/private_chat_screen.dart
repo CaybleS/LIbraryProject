@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -83,11 +82,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                       style: const TextStyle(fontFamily: 'Poppins', color: Colors.white),
                     ),
                     Text(
-                      user.isTyping
-                          ? 'is typing...'
-                          : user.isActive
-                              ? 'online'
-                              : kGetTime(user.lastSignedIn),
+                      user.isTyping ? 'is typing...' : kGetTime(user.lastSignedIn),
                       style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.white),
                     ),
                   ],
@@ -106,10 +101,18 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               placeholder: (context, url) => const CircularProgressIndicator(),
                               errorWidget: (context, url, error) => const Icon(Icons.error),
                             )
-                          : Image.asset(
-                              'assets/profile_pic.jpg',
-                              fit: BoxFit.cover,
+                          : Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: user.avatarColor,
+                              ),
+                              width: 50,
                               height: 50,
+                              alignment: Alignment.center,
+                              child: Text(
+                                user.name[0].toUpperCase(),
+                                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                              ),
                             ),
                     ),
                   ),
@@ -192,7 +195,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        '${_createTimeTextWidget(message.sentTime)}',
+                                        _createTimeTextWidget(message.sentTime),
                                         style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 14,
@@ -208,13 +211,13 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                       ClipRRect(
                                         borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(isMe ||
-                                              isTopMessage ||
-                                              messages[index + 1].senderId != messages[index].senderId
+                                                  isTopMessage ||
+                                                  messages[index + 1].senderId != messages[index].senderId
                                               ? 20
                                               : 4),
                                           topRight: Radius.circular(!isMe ||
-                                              isTopMessage ||
-                                              messages[index + 1].senderId != messages[index].senderId
+                                                  isTopMessage ||
+                                                  messages[index + 1].senderId != messages[index].senderId
                                               ? 20
                                               : 4),
                                           bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
@@ -257,21 +260,15 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
             child: TextField(
               controller: messageController,
-              onChanged: (value) async {
+              onChanged: (value) {
                 if (_timer?.isActive ?? false) {
                   _timer?.cancel();
                 }
-                await FirebaseDatabase.instance
-                    .ref()
-                    .child('users/${userModel.value!.uid}/')
-                    .update({'isTyping': true});
+                FirebaseDatabase.instance.ref().child('users/${userModel.value!.uid}/').update({'isTyping': true});
                 _timer = Timer(
                   const Duration(milliseconds: 2000),
-                  () async {
-                    await FirebaseDatabase.instance
-                        .ref()
-                        .child('users/${userModel.value!.uid}/')
-                        .update({'isTyping': false});
+                  () {
+                    FirebaseDatabase.instance.ref().child('users/${userModel.value!.uid}/').update({'isTyping': false});
                   },
                 );
               },
@@ -305,7 +302,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Stream<List<MessageModel>> getChatMessages(String chatId) {
-    return _database.child('chats/$chatId/messages').onValue.map((event) {
+    return _database.child('messages/$chatId').onValue.map((event) {
       final messagesMap = event.snapshot.value;
       if (messagesMap == null) return [];
       updateUnreadCount(chatId, userModel.value!.uid);
@@ -317,13 +314,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   String _createTimeTextWidget(DateTime hm) {
-    final hours = hm.hour;
-    final minutes = hm.minute;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+    return DateFormat('hh:mm a').format(hm);
   }
 
   String kGetTime(DateTime lastSign) {
-    int time = DateTime.now().difference(lastSign).inMinutes;
+    int time = DateTime.now().toUtc().difference(lastSign.toUtc()).inMinutes;
     if (time < 1) return 'last seen recently';
     if (time >= 1 && time < 60) return '$time minutes ago';
     if (time < 60 && time >= 1440) return '${time ~/ 60} hours ago';
@@ -341,13 +336,13 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       messageController.clear();
       if (isEditing) {
         if (messageID == '-1') return;
-        await _database.child('chats/${widget.chatRoomId}/messages/$messageID').update({
+        await _database.child('messages/${widget.chatRoomId}/$messageID').update({
           'editedText': editingText,
           'isEdited': true,
         });
       } //
       else {
-        final id = _database.child('chats/${widget.chatRoomId}/messages').push().key;
+        final id = _database.child('messages/${widget.chatRoomId}').push().key;
         MessageModel message = MessageModel(
           id: id!,
           text: messageText,
@@ -359,20 +354,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           message.userReply = widget.contact.name;
         }
 
-        await _database.child('chats/${widget.chatRoomId}/messages/$id').set(message.toJson());
-        await _database.child('chats/${widget.chatRoomId}/info/avatarColor').once().then((avatarRef) async {
-          await _database.child('chats/${widget.chatRoomId}').update(Chat(
-                id: widget.chatRoomId,
-                lastMessage: messageText,
-                lastMessageTime: DateTime.now(),
-                avatarColor: avatarRef.snapshot.value != null
-                    ? Color(avatarRef.snapshot.value as int)
-                    : Colors.primaries[Random().nextInt(Colors.primaries.length)],
-                chatImage: widget.contact.photoUrl,
-                name: widget.contact.name,
-                participants: [userModel.value!.uid, widget.contact.uid],
-              ).toJson());
-        });
+        await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
+      await _database.child('chats/${widget.chatRoomId}').update(Chat(
+              id: widget.chatRoomId,
+              name: widget.contact.name,
+              participants: [userModel.value!.uid, widget.contact.uid],
+            ).toJson());
         await _database.child('userChats/${currentUser.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
             'text': messageText,
@@ -410,25 +397,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   void uploadImage() async {
-    debugPrint("image upload");
     ImagePicker imagePicker = ImagePicker();
     XFile? xFile = await imagePicker.pickImage(source: ImageSource.gallery);
 
     if (xFile != null) {
-      debugPrint("uploaded to app");
       File image = File(xFile.path);
       String filename = const Uuid().v1();
 
       final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
-      debugPrint("reference created");
 
       var uploadTask = await imageRef.putFile(image).catchError((error) {
         return null;
       });
 
       String url = await uploadTask.ref.getDownloadURL();
-      debugPrint("adding msg");
-      final messageId = _database.child('chats/${widget.chatRoomId}/messages').push().key!;
+      final messageId = _database.child('messages/${widget.chatRoomId}').push().key!;
       MessageModel message = MessageModel(
         id: messageId,
         senderId: userModel.value!.uid,
@@ -441,7 +424,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'sender': userModel.value!.uid
       };
-      await _database.child('chats/${widget.chatRoomId}/messages/$messageId').set(message.toJson());
+      await _database.child('messages/${widget.chatRoomId}/$messageId').set(message.toJson());
 
       await _database
           .child('userChats/${currentUser.uid}/${widget.chatRoomId}')
