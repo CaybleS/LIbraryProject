@@ -29,6 +29,8 @@ dependencies:
   csv: ^6.0.0 # used for parsing goodreads csv imports
   flutter_native_splash: 2.4.4 # do not update this unless you update flutter (you dont want to update flutter)
   url_launcher: ^6.3.1
+  firebase_messaging: ^15.2.1
+  flutter_local_notifications: ^17.0.1
 
 dependency_overrides:
   camera_android_camerax: 0.6.10+1

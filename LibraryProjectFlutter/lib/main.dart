@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -16,6 +17,9 @@ void main() async {
   FirebaseDatabase.instance.setPersistenceEnabled(true);
 
   await dotenv.load(fileName: ".env");
+  requestNotificationPermission(); // not awaiting it so the login page or homepage shows while the "allow notifications" is shown
+  // TODO is this a problem? It might be right? Does it need to be awaited, the request permission? It sets up some stuff, but with another instance 
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const MainApp());
 }
 
