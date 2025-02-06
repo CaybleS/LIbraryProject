@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
@@ -57,10 +57,6 @@ class _FriendBookPageState extends State<FriendBookPage> {
     );
   }
 
-  void _requestBook() {
-    widget.bookToView.sendBookRequest(widget.user.uid, widget.friendId);
-  }
-
   bool _isBookAlreadyLentToUser() {
     for (int i = 0; i < booksLentToMe.length; i++) {
       if (booksLentToMe[i].book == widget.bookToView) {
@@ -75,12 +71,40 @@ class _FriendBookPageState extends State<FriendBookPage> {
       return const Text("You currently have this book lent to you!");
     }
     if (widget.bookToView.usersWhoRequested != null && widget.bookToView.usersWhoRequested!.contains(widget.user.uid)) {
-      return const Text("You have already requested this book!");
+      return Column(
+        children: [
+          const Text("You have already requested this book!"),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () {
+              widget.bookToView.unsendBookRequest(widget.user.uid, widget.friendId);
+              SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: const EdgeInsets.all(8),
+            ),
+            child: const Text(
+              "Unsend Request",
+              style: TextStyle(fontSize: 16, color: Colors.black),
+            ),
+          ),
+        ],
+      );
     }
     return ElevatedButton(
-      onPressed: () {
-        SharedWidgets.displayPositiveFeedbackDialog(context, "Book requested");
-        _requestBook();
+      onPressed: () async {
+        for (int i = 0; i < userLibrary.length; i++) {
+          if (widget.bookToView == userLibrary[i]) {
+            if (!await SharedWidgets.displayWarningDialog(context, "You already own this book!", "Request Anyway")) {
+              return;
+            }
+          }
+        }
+        if (mounted) {
+          SharedWidgets.displayPositiveFeedbackDialog(context, "Book Requested");
+        }
+        widget.bookToView.sendBookRequest(widget.user.uid, widget.friendId);
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -142,9 +166,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
                 ],
               ),
             ),
-            const SizedBox(
-              height: 12,
-            ),
+            const SizedBox(height: 12),
             Flexible(
               child: SingleChildScrollView(
                 child: Text(
@@ -153,13 +175,12 @@ class _FriendBookPageState extends State<FriendBookPage> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             const Text("Current Status:", style: TextStyle(fontSize: 16)),
             Flexible(
               child: _displayStatus(),
             ),
+            const SizedBox(height: 12),
             _displayRequestButtonOrText(),
           ],
         ),

@@ -9,6 +9,10 @@ class AppColor {
   static const Color blue = Color(0xFF2868C6);
   static const Color skyBlue = Color(0xFF91D2F4);
   static const Color pink = Color(0xFFCBA2EA);
+  static const Color cancelRed = Color(0xFFD32F2F);
+  static const Color acceptGreen = Color(0xFF43A047);
+  static const Color appBackgroundColor = Color(0xFFBDBDBD); // eventually will change all scaffold background colors to this btw (its the same as grey[400])
+  static const Color lightGray = Color(0xFFEEEEEE); // grey[200]
   // static const Color purple = Color(0xFF3F3381);
   // static const Color darkPurple = Color(0xFF1D1F5A);
 }

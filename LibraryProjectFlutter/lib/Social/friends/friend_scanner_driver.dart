@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends/friend_scanner_screen.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
 // This is just a simplified version of the isbn scanner

@@ -8,7 +8,9 @@ import 'package:library_project/ui/shared_widgets.dart';
 const int maxApiResponseSize = 40; // currently 40 is the max for google books api. I wouldn't change this value unless google books api increases its max
 String apiKey = dotenv.env['GOOGLE_BOOKS_API_KEY'] ?? "";
 
-void addBookToLibrary(Book bookToAdd, User user, BuildContext context) {
+void addBookToLibrary(Book bookToAdd, User user, BuildContext context, {bool showFeedback = true}) {
   addBook(bookToAdd, user);
-  SharedWidgets.displayPositiveFeedbackDialog(context, "Book added");
+  if (showFeedback) {
+    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Added");
+  }
 }

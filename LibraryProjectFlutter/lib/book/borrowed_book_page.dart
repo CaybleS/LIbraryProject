@@ -88,8 +88,14 @@ class _BorrowedBookPageState extends State<BorrowedBookPage> {
             _displayStatus(),
             const SizedBox(height: 10),
             Text("This book is lent to you from ${widget.lentBookInfo.lenderId}", style: const TextStyle(fontSize: 16), textAlign: TextAlign.center),
-            const SizedBox(height: 10,),
-            Text("This book has ${widget.lentBookInfo.book.usersWhoRequested?.length ?? 0} users who currently requested it!"), // TODO make this good
+            const SizedBox(height: 10),
+            Text( 
+            // TODO determine if this feature needs a listener for this value. The concern being idk how often booksLentToMe would be fetched
+            // since the app can be background and brought back many times. How would this work, in general? Seems flawed, seems like things can go wrong
+            // in this scenario in general, like database entry changes not being detected, but maybe firebase has it covered and i dont need to care, who knows.
+              "This book has ${widget.lentBookInfo.book.usersWhoRequested?.length ?? 0} users who currently requested it",
+              style: const TextStyle(fontSize: 14), textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

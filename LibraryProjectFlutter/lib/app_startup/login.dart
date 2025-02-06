@@ -38,6 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (auth.currentUser != null) {
         user = auth.currentUser;
+        changeStatus(true);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
       }
     });

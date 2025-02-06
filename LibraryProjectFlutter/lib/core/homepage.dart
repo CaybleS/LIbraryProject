@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/core/book_requests_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_page.dart';
@@ -10,7 +10,6 @@ import 'package:library_project/ui/colors.dart';
 import 'appbar.dart';
 
 enum _SortingOption { dateAdded, title, author }
-
 enum _BooksShowing { all, fav, lent, lentToMe }
 
 class HomePage extends StatefulWidget {
@@ -29,11 +28,13 @@ class _HomePageState extends State<HomePage> {
       []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
   List<Book> _shownLibrary = [];
   bool _usingBooksLentToMe = false;
-  late final VoidCallback _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
-  final TextEditingController _searchBarTextController = TextEditingController();
+  late final VoidCallback
+      _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
+  final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   _BooksShowing _showing = _BooksShowing.all;
-  bool _sortingAscending = true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
+  bool _sortingAscending =
+      true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
   bool _showEmptyLibraryMsg =
       false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
 
@@ -56,11 +57,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     refreshNotifier.removeListener(_homepageListener);
-    _searchBarTextController.dispose();
+    _filterBooksTextController.dispose();
     super.dispose();
   }
 
   // note that these sorting and filtering functions are only changing the composition of shownList.
+  // we dont store date added technically but I believe firebase stores stuff chronologically so
   void _sortByDateAdded() {
     _shownList = List.from(_unsortedShownList);
     if (!_sortingAscending) {
@@ -71,8 +73,8 @@ class _HomePageState extends State<HomePage> {
 
   void _sortByTitle() {
     // since shownList stores indices of shownLibrary they are already mapped to each other making this sorting not too complex
-    _shownList.sort(
-        (a, b) => (_shownLibrary[a].title ?? "No title found").compareTo(_shownLibrary[b].title ?? "No title found"));
+    _shownList.sort((a, b) => (_shownLibrary[a].title?.trim().toLowerCase() ?? "No title found")
+        .compareTo(_shownLibrary[b].title?.trim().toLowerCase() ?? "No title found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
@@ -80,15 +82,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _sortByAuthor() {
-    _shownList.sort((a, b) =>
-        (_shownLibrary[a].author ?? "No author found").compareTo(_shownLibrary[b].author ?? "No author found"));
+    _shownList.sort((a, b) => (_shownLibrary[a].author?.trim().toLowerCase() ?? "No author found")
+        .compareTo(_shownLibrary[b].author?.trim().toLowerCase() ?? "No author found"));
     if (!_sortingAscending) {
       _shownList = _shownList.reversed.toList();
     }
     setState(() {});
   }
 
-  bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
+  bool _isFilterTextOneOfTheIndividualWords(
+      List<String> individualWordsToFilter, String filterText) {
     if (individualWordsToFilter.length < 2) {
       // in this case there is only 0 or 1 words detected, which defeats the whole purpose of this function
       return false;
@@ -103,8 +106,7 @@ class _HomePageState extends State<HomePage> {
 
   // so if you filter search for exactly title and author in that order, it will show up
   bool _isFilterTextTitleAndAuthor(String filterText, Book book) {
-    if ("${(book.title ?? "no title found").toLowerCase()} ${(book.author ?? "no author found").toLowerCase()}"
-        .contains(filterText)) {
+    if ("${(book.title ?? "no title found").toLowerCase()} ${(book.author ?? "no author found").toLowerCase()}".contains(filterText)) {
       return true;
     }
     return false;
@@ -119,9 +121,12 @@ class _HomePageState extends State<HomePage> {
       List<int> newShownList = [];
       List<String> individualWordsToFilter = filterText.split(" ");
       for (int i = 0; i < _shownLibrary.length; i++) {
-        if ((_shownLibrary[i].title?.toLowerCase() ?? "no title found").contains(filterText) ||
-            (_shownLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText) ||
-            _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText) ||
+        if ((_shownLibrary[i].title?.toLowerCase() ?? "no title found")
+                .contains(filterText) ||
+            (_shownLibrary[i].author?.toLowerCase() ?? "no author found")
+                .contains(filterText) ||
+            _isFilterTextOneOfTheIndividualWords(
+                individualWordsToFilter, filterText) ||
             _isFilterTextTitleAndAuthor(filterText, _shownLibrary[i])) {
           newShownList.add(i);
         }
@@ -152,16 +157,22 @@ class _HomePageState extends State<HomePage> {
     _sortingAscending = true;
     _sortSelection = _SortingOption.dateAdded;
     _showing = _BooksShowing.all;
-    _searchBarTextController.clear();
+    _filterBooksTextController.clear();
     _filter("");
   }
 
   void _bookClicked(int index) async {
     if (_usingBooksLentToMe) {
       await Navigator.push(
-          context, MaterialPageRoute(builder: (context) => BorrowedBookPage(booksLentToMe[index], widget.user)));
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  BorrowedBookPage(booksLentToMe[index], widget.user)));
     } else {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(userLibrary[index], widget.user)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => BookPage(userLibrary[index], widget.user)));
     }
   }
 
@@ -204,16 +215,17 @@ class _HomePageState extends State<HomePage> {
 
     _setShownListWithNoFilters();
     _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
-    if (_searchBarTextController.text.isNotEmpty) {
+    if (_filterBooksTextController.text.isNotEmpty) {
       // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
       // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
       // unnecessary to me but I guess with 2 filter systems (the _BooksShowing and filter bar) we need to consider both of them, which
       // is why prevShownList exists (we only show books with both filters applied to them).
       List<int> prevShownList = _shownList;
-      _filter(_searchBarTextController.text);
+      _filter(_filterBooksTextController.text);
       _shownList.removeWhere((item) => !prevShownList.contains(item));
       setState(() {});
-    } else {
+    }
+    else {
       // these sorting functions will call the setState
       switch (_sortSelection) {
         case _SortingOption.dateAdded:
@@ -249,7 +261,8 @@ class _HomePageState extends State<HomePage> {
 
   Widget _displayFilterDropdown() {
     return MenuAnchor(
-      builder: (BuildContext context, MenuController controller, Widget? child) {
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
         return IconButton(
           onPressed: () {
             if (controller.isOpen) {
@@ -300,7 +313,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     (_sortSelection == _SortingOption.dateAdded)
                         ? const Padding(
-                            padding: EdgeInsets.only(left: 6), child: Icon(Icons.check, color: Colors.green, size: 25))
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -328,7 +343,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     (_sortSelection == _SortingOption.title)
                         ? const Padding(
-                            padding: EdgeInsets.only(left: 6), child: Icon(Icons.check, color: Colors.green, size: 25))
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -356,7 +373,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     (_sortSelection == _SortingOption.author)
                         ? const Padding(
-                            padding: EdgeInsets.only(left: 6), child: Icon(Icons.check, color: Colors.green, size: 25))
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.check,
+                                color: AppColor.acceptGreen, size: 25))
                         : const SizedBox.shrink(),
                   ],
                 ),
@@ -374,7 +393,8 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     SizedBox(
                       width: 45,
-                      child: Text("reset filters", style: TextStyle(fontSize: 12)),
+                      child:
+                          Text("reset filters", style: TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -410,51 +430,51 @@ class _HomePageState extends State<HomePage> {
       children: [
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: buttonColor[0],
-            padding: const EdgeInsets.all(8),
+            backgroundColor: buttonColor[0], padding: const EdgeInsets.all(8),
           ),
           onPressed: () {
             if (_showing != _BooksShowing.all) {
               _changeDisplay(_BooksShowing.all);
             }
           },
-          child: const Text("All", style: TextStyle(color: Colors.black, fontSize: 16)),
+          child: const Text("All",
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: buttonColor[1],
-            padding: const EdgeInsets.all(8),
+            backgroundColor: buttonColor[1], padding: const EdgeInsets.all(8),
           ),
           onPressed: () {
             if (_showing != _BooksShowing.fav) {
               _changeDisplay(_BooksShowing.fav);
             }
           },
-          child: const Text("Favorites", style: TextStyle(color: Colors.black, fontSize: 16)),
+          child: const Text("Favorites",
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: buttonColor[2],
-            padding: const EdgeInsets.all(8),
+            backgroundColor: buttonColor[2], padding: const EdgeInsets.all(8),
           ),
           onPressed: () {
             if (_showing != _BooksShowing.lent) {
               _changeDisplay(_BooksShowing.lent);
             }
           },
-          child: const Text("Lent", style: TextStyle(color: Colors.black, fontSize: 16)),
+          child: const Text("Lent",
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: buttonColor[3],
-            padding: const EdgeInsets.all(8),
+            backgroundColor: buttonColor[3],padding: const EdgeInsets.all(8),
           ),
           onPressed: () {
             if (_showing != _BooksShowing.lentToMe) {
               _changeDisplay(_BooksShowing.lentToMe);
             }
           },
-          child: const Text("Lent to me", style: TextStyle(color: Colors.black, fontSize: 16)),
+          child: const Text("Lent to me",
+            style: TextStyle(color: Colors.black, fontSize: 16)),
         ),
       ],
     );
@@ -469,11 +489,10 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColor.skyBlue,
-              padding: const EdgeInsets.all(8),
+              backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
             ),
             onPressed: () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (context) => BookRequestsPage(widget.user)));
+              await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
             },
             child: const Text(
               "View",
@@ -492,14 +511,16 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.grey[400],
       body: Column(
         children: [
-          Padding(padding: const EdgeInsets.fromLTRB(8, 10, 8, 5), child: _displayShowButtons()),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 5),
+              child: _displayShowButtons()),
           Padding(
             padding: const EdgeInsets.fromLTRB(19, 8, 19, 5),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _searchBarTextController,
+                    controller: _filterBooksTextController,
                     onChanged: (text) {
                       _filter(text);
                     },
@@ -507,14 +528,16 @@ class _HomePageState extends State<HomePage> {
                       filled: true,
                       fillColor: Colors.white,
                       hintText: "Filter by title or author",
-                      hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                      hintStyle:
+                          const TextStyle(fontSize: 14, color: Colors.grey),
                       border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(25.0)),
                       ),
                       suffixIcon: IconButton(
                         onPressed: () {
-                          _filter(""); // needed to signal to the filtering that there is no more filter being applied
-                          _searchBarTextController.clear();
+                          _filter(
+                              ""); // needed to signal to the filtering that there is no more filter being applied
+                          _filterBooksTextController.clear();
                         },
                         icon: const Icon(Icons.clear),
                       ),
@@ -531,22 +554,23 @@ class _HomePageState extends State<HomePage> {
           (_showEmptyLibraryMsg && _showing == _BooksShowing.all)
               ? const Padding(
                   padding: EdgeInsets.only(top: 10),
-                  child:
-                      Text("Add books to view your library here", style: TextStyle(fontSize: 14, color: Colors.black)))
+                  child: Text("Add books to view your library here",
+                      style: TextStyle(fontSize: 14, color: Colors.black)))
               : const SizedBox.shrink(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(7, 9, 7, 6),
+              padding: const EdgeInsets.fromLTRB(7, 9, 7, 5),
               child: ListView.builder(
                 itemCount: _shownList.length,
                 itemBuilder: (BuildContext context, int index) {
-                  Widget coverImage = _shownLibrary[_shownList[index]].getCoverImage();
+                  Widget coverImage =
+                      _shownLibrary[_shownList[index]].getCoverImage();
                   String availableTxt;
                   Color availableTxtColor;
 
                   if (_shownLibrary[_shownList[index]].lentDbKey != null) {
                     availableTxt = "Lent";
-                    availableTxtColor = Colors.red;
+                    availableTxtColor = AppColor.cancelRed;
                   } else {
                     availableTxt = "Available";
                     availableTxtColor = const Color(0xFF43A047);
@@ -571,8 +595,11 @@ class _HomePageState extends State<HomePage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Icon(_getReadIcon(_shownLibrary[_shownList[index]])),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Icon(
+                                    _getReadIcon(_shownLibrary[_shownList[index]])
+                                  ),
                             ),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(10, 1, 10, 1),
@@ -585,12 +612,15 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                 children: [
                                   const SizedBox(
-                                      height: 12), // change this if you change card size id say to center the row
+                                      height:
+                                          12), // change this if you change card size id say to center the row
                                   Align(
                                     alignment: Alignment.topLeft,
                                     child: Text(
-                                      _shownLibrary[_shownList[index]].title ?? "No title found",
-                                      style: const TextStyle(color: Colors.black, fontSize: 18),
+                                      _shownLibrary[_shownList[index]].title ??
+                                          "No title found",
+                                      style: const TextStyle(
+                                          color: Colors.black, fontSize: 18),
                                       softWrap: true,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -599,8 +629,10 @@ class _HomePageState extends State<HomePage> {
                                   Align(
                                     alignment: Alignment.topLeft,
                                     child: Text(
-                                      _shownLibrary[_shownList[index]].author ?? "No author found",
-                                      style: const TextStyle(color: Colors.black, fontSize: 14),
+                                      _shownLibrary[_shownList[index]].author ??
+                                          "No author found",
+                                      style: const TextStyle(
+                                          color: Colors.black, fontSize: 14),
                                       softWrap: true,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -614,26 +646,34 @@ class _HomePageState extends State<HomePage> {
                                 : SizedBox(
                                     width: 80,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Flexible(
                                           child: Text(
                                             "Status:",
-                                            style: TextStyle(color: Colors.black, fontSize: 16),
+                                            style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16),
                                             softWrap: true,
                                           ),
                                         ),
                                         Flexible(
                                           child: Text(
                                             availableTxt,
-                                            style: TextStyle(color: availableTxtColor, fontSize: 16),
+                                            style: TextStyle(
+                                                color: availableTxtColor,
+                                                fontSize: 16),
                                             softWrap: true,
                                           ),
                                         ),
                                         Flexible(
                                           child: IconButton(
-                                            onPressed: () => {_favoriteButtonClicked(_shownList[index])},
+                                            onPressed: () => {
+                                              _favoriteButtonClicked(
+                                                  _shownList[index])
+                                            },
                                             icon: favIcon,
                                             splashColor: Colors.white,
                                             color: Colors.red,

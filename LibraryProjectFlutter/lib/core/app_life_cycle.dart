@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/connectivity_wrapper.dart';
 
 class AppLifeCycle extends StatefulWidget {
   const AppLifeCycle({super.key, required this.child});
@@ -19,7 +20,7 @@ class AppLifeCycleState extends State<AppLifeCycle> with WidgetsBindingObserver 
     if (auth.currentUser != null) {
       await FirebaseDatabase.instance.ref().child('users/${auth.currentUser!.uid}/').update({
         'isActive': status,
-        'lastSignedIn': DateTime.now().toUtc().toIso8601String(),
+        'lastSignedIn': DateTime.now().toIso8601String(),
       });
     }
   }
@@ -27,7 +28,6 @@ class AppLifeCycleState extends State<AppLifeCycle> with WidgetsBindingObserver 
   @override
   void initState() {
     super.initState();
-    changeStatus(true);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -42,6 +42,8 @@ class AppLifeCycleState extends State<AppLifeCycle> with WidgetsBindingObserver 
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       changeStatus(true);
+      // when app gets reopened the connection checker re-checks for connectivity changes, since in some "rare" cases the backgrounded app doesnt detect them correctly
+      connectivityKey.currentState?.initConnectivity();
     } //
     else {
       changeStatus(false);

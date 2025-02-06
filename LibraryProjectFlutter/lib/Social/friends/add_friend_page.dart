@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends/friend_scanner_driver.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -34,13 +34,18 @@ class _AddFriendPageState extends State<AddFriendPage> {
   void onSubmit(BuildContext context) async {
     String txt = controller.text;
     String id = await findUser(txt);
-    if (id != '') {
-      // debugPrint('--------------------------------------------------');
-      // debugPrint('--------------------------------------------------');
-      sendFriendRequest(widget.user, id);
-      SharedWidgets.displayPositiveFeedbackDialog(
-          context, 'Friend Request Sent!');
-      Navigator.pop(context);
+    if (id != '' && id != widget.user.uid) {
+      if (!friends.any((friend) => friend.uid == id)) {
+        sendFriendRequest(widget.user, id);
+        SharedWidgets.displayPositiveFeedbackDialog(
+            context, 'Friend Request Sent!');
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          _msg = "You are already friends with this user";
+          showErrorTxt = true;
+        });
+      }
     } else {
       setState(() {
         _msg = "User not found";
