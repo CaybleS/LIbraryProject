@@ -1,19 +1,31 @@
+import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
+import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/notifications/notification_database.dart';
 import 'dart:convert';
 import 'dart:async';
 
 // some notifications are "High Importance Channel" and some "Miscellaneous" notifciations because of the way
-// notifications are handled by the OS - background notifications will be miscellaneous 
-// default notification channel names "Miscellaneous".
+// notifications are handled by the OS - background notifications will be miscellaneous, so there is a way to fix by formatting the stuff a certain way I think
 // https://stackoverflow.com/questions/45937291/how-to-specify-android-notification-channel-for-fcm-push-messages-in-android-8 ensure this no happen k?
-// one known error is that powering off device and turning it back on, notifications just arent coming
+// one known error is that powering off device and turning it back on, notifications just arent coming. This is indeed still happening so TODO <--
+// its a weird problem, dont know if its even something we can reasonably solve. Kind of feels like some OS limitation. I also had times where I startup
+// the phone and get notifications that I went to myself 12 hours ago or something like this. Could be due to the above problem or no internet idk. It's just complicated stuff.
 
 
 // TODO read https://firebase.google.com/docs/cloud-messaging/flutter/receive
+
+// called setup device notifications since these things which run should be independent of the user. It's basically everything
+// except the stuff which deals with tokens; the general receiving functionality doesn't really care who's signed in, it's just receiving
+Future<void> setupDeviceNotifications() async {
+  await requestNotificationPermission(); // ensure this is first, many things rely on this being true, to work
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  notificationInstance = NotificationService();
+  notificationInstance.initialize();
+}
 
 Future<void> requestNotificationPermission() async {
   // this requests for permissions
@@ -38,8 +50,11 @@ Future<void> requestNotificationPermission() async {
 // TODO an issue is that this i think is just existing
 @pragma('vm:entry-point') // idk why this is needed, google it, its some background stuff
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // TODO I believe when notification part of the message is set, the OS takes it over, but when its not set, and only data field is set, this gets called
+  // so in theory it works, but we need some api to send notificaitons in this exact way. That's meant to be cloud functions. So it may work, may not.
+  AppBadgePlus.updateBadge(1);
   NotificationService notificationService = NotificationService();
-  // when notifications are setup its done and it wont be called again, plus teh show notification is independent of notification service instance
+  // when notifications are setup its done and it wont be called again, plus the show notification is independent of notification service instance
   // so its fine to call this object rather than another one I believe TODO confirm
   // also TODO does this get closed when device shuts down, and never reinitialized? Or is void main called when app reopens in this case? Notifs arent happening there at all so idk
   await notificationService.setupNotifications();
@@ -53,26 +68,25 @@ class NotificationService {
   late StreamSubscription<RemoteMessage> showNotificationListener;
   late StreamSubscription<RemoteMessage> notificationClickedListener;
 
-  Future<void> initialize(User user) async {
-    await _setupMessageHandlers();
-
-    // get fcm token, this part is important
+  // so with this, all the notification logic is setup when the app starts; this is the only stuff which runs upon login or logout.
+  // I believe it works correctly with this being the case, if you log out it says should not sent to this token so any logic wont send
+  // to the token, and if you uninstall the app I believe it changes the token when you reinstall.
+  Future<void> userLoggedIn(User user) async {
     token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
       writeUserTokenData(token!, user, shouldSendToThisToken: true);
     }
   }
 
-  void dispose(user) {
+  void userLoggedOut(User user) {
     if (token != null) {
       writeUserTokenData(token!, user, shouldSendToThisToken: false);
       token = null;
     }
-    showNotificationListener.cancel();
-    notificationClickedListener.cancel();
+  }
 
-    _localNotifications.cancelAll();
-    _isFlutterLocalNotificationsInitialized = false; // TODO this is needed right?
+  Future<void> initialize() async {
+    await _setupMessageHandlers();
   }
 
   // creating notification channels for every different notification. This is exactly what allows users to disable
@@ -158,6 +172,7 @@ class NotificationService {
     _isFlutterLocalNotificationsInitialized = true;
   }
 
+  // TODO make this somehow get the android notification details from the remoteMessage or something, so routing that message to its appropriate channel as needed.
   Future<void> showNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -197,7 +212,7 @@ class NotificationService {
     // listener which listens for the event where user clicks on a notification which opens the app
     notificationClickedListener = FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
 
-    // opened app (from a notification I think)
+    // opened app (from being closed I think)
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       _handleBackgroundMessage(initialMessage);
@@ -205,6 +220,7 @@ class NotificationService {
   }
 
   void _handleBackgroundMessage(RemoteMessage message) {
+    AppBadgePlus.updateBadge(0); // TODO ensure this goes here
     // TODO much to consider:
     // by default if you click on a notification which comes in the background, it will just open the app, but you can also pass
     // extra data from your firebase and specify which screen should be opened.
@@ -216,7 +232,7 @@ class NotificationService {
 
   // TODO found from https://www.youtube.com/watch?v=dXbd0GcKERU delete this comment k?
   // this dont work, basically this needs to be done through cloud functions using firebase admin sdk
-  // since the access token is weird to get otherwise, i think its optimal.
+  // since the access token is weird to get otherwise, its just something which is done by server not client. 
   Future<void> sendNotification(String title, String body) async {
     String accessToken = "";
     dynamic messagePayload = {

@@ -82,5 +82,5 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.3.0')
     //implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_verson"
     implementation 'com.google.firebase:firebase-analytics:17.2.0'
-    // implementation 'com.android.support:multidex:2.0.1'
+    implementation 'com.android.support:multidex:2.0.1'
 }
