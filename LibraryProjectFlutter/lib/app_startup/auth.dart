@@ -128,7 +128,7 @@ Future<User?> createAccount(String name, String email, String password) async {
 
 changeStatus(bool status) async {
   if (_auth.currentUser != null) {
-    await FirebaseDatabase.instance.ref().child('users/${_auth.currentUser!.uid}/').update({
+    await FirebaseDatabase.instance.ref('users/${_auth.currentUser!.uid}').update({
       'isActive': status,
       'lastSignedIn': DateTime.now().toIso8601String(),
     });

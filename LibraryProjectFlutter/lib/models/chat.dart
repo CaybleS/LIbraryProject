@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/global_variables.dart';
 
 enum ChatType { private, group }
 
@@ -31,16 +32,21 @@ class Chat {
     this.unreadCount = 0,
   });
 
-  factory Chat.fromJson(String id, Map<dynamic, dynamic> json) => Chat(
-        id: id,
-        type: ChatType.values.byName(json['info']['type'] ?? 'private'),
-        name: json['info']['name'],
-        chatImage: json['info']['chatImage'],
-        createdBy: json['info']['createdBy'],
-        avatarColor: Color(json['info']['avatarColor']?? Colors.grey.value),
-        participants: (json['participants'] as Map?)?.keys.cast<String>().toList() ?? [],
-        lastReadMessages: (json['cursor'] as Map?)?.cast<String, String?>() ?? {},
-      );
+  factory Chat.fromJson(String id, Map<dynamic, dynamic> json) {
+    List<String> names = (json['info']['name'] as String).split('*');
+    return Chat(
+      id: id,
+      type: ChatType.values.byName(json['info']['type'] ?? 'private'),
+      name: json['info']['type'] == 'group'
+          ? json['info']['name']
+          : names.firstWhere((element) => element != userModel.value!.name),
+      chatImage: json['info']['chatImage'],
+      createdBy: json['info']['createdBy'],
+      avatarColor: Color(json['info']['avatarColor'] ?? Colors.grey.value),
+      participants: (json['participants'] as Map?)?.keys.cast<String>().toList() ?? [],
+      lastReadMessages: (json['cursor'] as Map?)?.cast<String, String?>() ?? {},
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'info': {

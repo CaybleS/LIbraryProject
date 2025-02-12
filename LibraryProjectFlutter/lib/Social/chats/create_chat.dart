@@ -1,15 +1,15 @@
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:library_project/Social/chat_screen.dart';
-import 'package:library_project/Social/private_chat_screen.dart';
+import 'package:library_project/Social/chats/chat_screen.dart';
+import 'package:library_project/Social/chats/private_chat_screen.dart';
 import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class CreateChatScreen extends StatefulWidget {
   const CreateChatScreen({super.key});
@@ -206,12 +206,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                       padding: const EdgeInsets.all(10),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundImage: user.photoUrl != null
-                                ? CachedNetworkImageProvider(user.photoUrl!)
-                                : const AssetImage('assets/profile_pic.jpg'),
-                          ),
+                          UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(

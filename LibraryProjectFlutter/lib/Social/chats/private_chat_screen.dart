@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +12,7 @@ import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
 
 class PrivateChatScreen extends StatefulWidget {
@@ -29,7 +29,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   Timer? _timer;
   final _database = FirebaseDatabase.instance.ref();
   final messageController = TextEditingController();
-  late UserModel currentUser;
   final ScrollController _scrollController = ScrollController();
   bool isEditing = false;
   String editingText = '';
@@ -40,14 +39,19 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   @override
   void initState() {
     super.initState();
-    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-      final snapshot = FirebaseDatabase.instance.ref('/users/${userModel.value!.uid}').once();
-      snapshot.then((value) {
-        setState(() {
-          currentUser = UserModel.fromJson(value.snapshot.value as Map<dynamic, dynamic>);
-        });
-      });
-    });
+    updateUnreadCount(widget.chatRoomId, userModel.value!.uid);
+    scrollToBottom();
+  }
+
+  Future<void> scrollToBottom() async {
+    await Future.delayed(const Duration(milliseconds: 1));
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -64,6 +68,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               return Container();
             }
             final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+            print(user.lastSignedIn.isUtc);
             return Row(
               children: [
                 Expanded(
@@ -90,31 +95,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 Expanded(
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(50)),
-                      child: user.photoUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: user.photoUrl!,
-                              fit: BoxFit.cover,
-                              height: 50,
-                              width: 50,
-                              placeholder: (context, url) => const CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => const Icon(Icons.error),
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: user.avatarColor,
-                              ),
-                              width: 50,
-                              height: 50,
-                              alignment: Alignment.center,
-                              child: Text(
-                                user.name[0].toUpperCase(),
-                                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
-                              ),
-                            ),
-                    ),
+                    child: UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
                   ),
                 ),
               ],
@@ -302,14 +283,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Stream<List<MessageModel>> getChatMessages(String chatId) {
-    return _database.child('messages/$chatId').onValue.map((event) {
-      final messagesMap = event.snapshot.value;
-      if (messagesMap == null) return [];
-      updateUnreadCount(chatId, userModel.value!.uid);
-      return (messagesMap as Map).entries.map((entry) {
-        return MessageModel.fromJson(entry.key, entry.value);
-      }).toList()
-        ..sort((a, b) => b.sentTime.compareTo(a.sentTime));
+    final messagesRef = _database.child('messages/$chatId');
+    final clearedRef = _database.child('chats/$chatId/cleared/${userModel.value!.uid}');
+
+    return clearedRef.onValue.asyncExpand((event) {
+      int? clearedAt = event.snapshot.value as int?;
+
+      return messagesRef.orderByChild('sentTime').startAt(clearedAt ?? 0).onValue.map((event) {
+        final messagesMap = event.snapshot.value;
+
+        if (messagesMap == null) return [];
+        return (messagesMap as Map).entries.map((entry) {
+          return MessageModel.fromJson(entry.key, entry.value);
+        }).toList()
+          ..sort((a, b) => b.sentTime.compareTo(a.sentTime));
+      });
     });
   }
 
@@ -346,7 +334,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         MessageModel message = MessageModel(
           id: id!,
           text: messageText,
-          senderId: currentUser.uid,
+          senderId: userModel.value!.uid,
           sentTime: DateTime.now(),
         );
         if (isReply) {
@@ -355,12 +343,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         }
 
         await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
-      await _database.child('chats/${widget.chatRoomId}').update(Chat(
+        await _database.child('chats/${widget.chatRoomId}').update(Chat(
               id: widget.chatRoomId,
-              name: widget.contact.name,
+              name: '${widget.contact.name}*${userModel.value!.name}',
               participants: [userModel.value!.uid, widget.contact.uid],
             ).toJson());
-        await _database.child('userChats/${currentUser.uid}/${widget.chatRoomId}').update({
+        await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
             'text': messageText,
             'timestamp': DateTime.now().millisecondsSinceEpoch,
@@ -377,11 +365,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           'unreadCount': ServerValue.increment(1)
         });
       }
+      scrollToBottom();
     }
   }
 
   Future<void> updateUnreadCount(String chatId, String userId) async {
-    await FirebaseDatabase.instance.ref("userChats/$userId/$chatId/unreadCount").set(0);
+    await _database.child('userChats/$userId/$chatId/unreadCount').set(0);
   }
 
   bool _isSameDay(DateTime sentTime, DateTime sentTime2) {
@@ -427,11 +416,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       await _database.child('messages/${widget.chatRoomId}/$messageId').set(message.toJson());
 
       await _database
-          .child('userChats/${currentUser.uid}/${widget.chatRoomId}')
+          .child('userChats/${userModel.value!.uid}/${widget.chatRoomId}')
           .update({'lastMessage': userLastMessage, 'unreadCount': 0});
       await _database
           .child('userChats/${widget.contact.uid}/${widget.chatRoomId}')
           .update({'lastMessage': userLastMessage, 'unreadCount': ServerValue.increment(1)});
+      scrollToBottom();
     }
   }
 }

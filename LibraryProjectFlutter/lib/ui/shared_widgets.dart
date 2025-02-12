@@ -4,11 +4,11 @@ import 'package:library_project/ui/colors.dart';
 class SharedWidgets {
   SharedWidgets._(); // prevents class instantiation
 
-  static Widget displayCircularProgressIndicator() {
-    return const CircularProgressIndicator(
+  static Widget displayCircularProgressIndicator([double strokeWidth = 5]) {
+    return CircularProgressIndicator(
       color: AppColor.darkBlue,
       backgroundColor: AppColor.blue,
-      strokeWidth: 5.0,
+      strokeWidth: strokeWidth,
     );
   }
 
