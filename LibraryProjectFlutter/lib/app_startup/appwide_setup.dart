@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/database/database.dart';
+import 'package:library_project/models/profile_info.dart';
 import 'dart:async';
+import 'package:library_project/models/user.dart';
 
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
-late StreamSubscription<DatabaseEvent> _userSubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
@@ -15,9 +16,14 @@ late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
 Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
+Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
+Map<String, UserModel> userIdToUserModel = {};
+Map<String, StreamSubscription<DatabaseEvent>> userIdToProfileSubscription = {};
+Map<String, ProfileInfo> userIdToProfile = {};
 
 void setupDatabaseSubscriptions(User user) {
-  _userSubscription = setupUserSubscription(userModel, user.uid);
+  userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
+  userIdToProfileSubscription[user.uid] = setupProfileSubscription(userIdToProfile, user.uid, profileUpdated);
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
@@ -28,13 +34,14 @@ void setupDatabaseSubscriptions(User user) {
 
 void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
-  _userSubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
   _requestsSubscription.cancel();
   _sentBookRequestsSubscription.cancel();
   _receivedBookRequestsSubscription.cancel();
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
+  userIdToSubscription.forEach((k, v) => v.cancel());
+  userIdToProfileSubscription.forEach((k, v) => v.cancel());
   resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 
@@ -95,6 +102,20 @@ void friendsBooksUpdated() {
 
 void lentToMeRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void userUpdated() {
+  if (selectedIndex == profileIndex || selectedIndex == friendsPageIndex) {
+    refreshNotifier.value = -1;
+    refreshNotifier.value = selectedIndex;
+  }
+}
+
+void profileUpdated() {
+  if (selectedIndex == profileIndex || selectedIndex == friendsPageIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }

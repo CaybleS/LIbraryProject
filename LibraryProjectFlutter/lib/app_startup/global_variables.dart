@@ -45,4 +45,8 @@ void resetGlobalData() {
   // these track or are built up from subscriptions so they should be cleared as well
   friendIdToBooks.clear();
   friendIdToLibrarySubscription.clear();
+  userIdToSubscription.clear();
+  userIdToUserModel.clear();
+  userIdToProfileSubscription.clear();
+  userIdToProfile.clear();
 }

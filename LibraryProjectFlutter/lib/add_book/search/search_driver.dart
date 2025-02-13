@@ -12,7 +12,7 @@ enum SearchQueryOption { normal, title, author }
 
 class SearchDriver {
   // used when displaying search results for optimization reasons (duplicate checks iterate through a users entire library so I cache the results, since ListView re-renders often)
-  final Map<int, bool> _alreadyAddedBooks = {};
+  final Map<int, bool> alreadyAddedBooks = {};
   List<dynamic> _searchQueryBooks = [];
   String? _mostRecentSearch; // detects if user clicks search without changing the query, to prevent unnecessary api calls
   bool _otherSearchError = false;
@@ -22,12 +22,12 @@ class SearchDriver {
   SearchQueryOption _searchQueryOption = SearchQueryOption.normal;
   SearchQueryOption _prevSearchQueryOption = SearchQueryOption.normal; // used to allow for a search where all you change is search query option (w/same query)
   late final User _user;
-  late final List<Book> _userLibrary;
+  late final List<Book> userLibrary;
 
-  SearchDriver(this._user, this._userLibrary);
+  SearchDriver(this._user, this.userLibrary);
 
   void clearAlreadyAddedBooks() {
-    _alreadyAddedBooks.clear();
+    alreadyAddedBooks.clear();
   }
 
   void resetLastSearchValues() {
@@ -150,9 +150,9 @@ class SearchDriver {
     return "";
   }
 
-  void _bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) {
+  void bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) {
     addBookToLibrary(bookToAdd, _user, context);
-    _alreadyAddedBooks.clear(); // need to clear it since 2 of this same book can be in the search results (rather than just setting listview index to true)
+    alreadyAddedBooks.clear(); // need to clear it since 2 of this same book can be in the search results (rather than just setting listview index to true)
     setState(() {});
   }
 
@@ -161,7 +161,7 @@ class SearchDriver {
       return BookDetailsScreen(bookToView, isBookAlreadyAdded);
     }));
     if (retVal != null && context.mounted) {
-      _bookAddButtonClicked(bookToView, context, setState);
+      bookAddButtonClicked(bookToView, context, setState);
     }
   }
 
@@ -224,15 +224,15 @@ class SearchDriver {
               : null;
           }
           Book currentBook = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId);
-          if (_alreadyAddedBooks[index] == null) { // going through all books in user's library for this index in ListView (only done once due to this check)
-            _alreadyAddedBooks[index] = false;
-            for (int i = 0; i < _userLibrary.length; i++) {
-              if (currentBook == _userLibrary[i]) {
-                _alreadyAddedBooks[index] = true;
+          if (alreadyAddedBooks[index] == null) { // going through all books in user's library for this index in ListView (only done once due to this check)
+            alreadyAddedBooks[index] = false;
+            for (int i = 0; i < userLibrary.length; i++) {
+              if (currentBook == userLibrary[i]) {
+                alreadyAddedBooks[index] = true;
               }
             }
           }
-          if (_alreadyAddedBooks[index] == true) {
+          if (alreadyAddedBooks[index] == true) {
             isBookAlreadyAdded = true;
           }
           image = currentBook.getCoverImage();
@@ -299,7 +299,7 @@ class SearchDriver {
                         )
                       : ElevatedButton(
                         onPressed: () {
-                          _bookAddButtonClicked(currentBook, context, setState);
+                          bookAddButtonClicked(currentBook, context, setState);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.pink,

@@ -17,11 +17,11 @@ class ScannerDriver {
   bool _invalidISBNError = false;
   bool _invalidBarcodePhotoError = false;
   bool _unknownScannerScreenError = false; // no idea what would trigger this, its a mystery to me (unknown)
-  Book? _bookFromISBNScan;
+  Book? bookFromISBNScan;
   late final User _user;
-  late final List<Book> _userLibrary;
+  late final List<Book> userLibrary;
 
-  ScannerDriver(this._user, this._userLibrary);
+  ScannerDriver(this._user, this.userLibrary);
 
   Future<String?> runScanner(BuildContext context) async {
     _resetLastScanValues();
@@ -57,7 +57,7 @@ class ScannerDriver {
 
   Future<void> scannerSearchByIsbn(BuildContext context, String scannedISBN) async {
     await _isbnSearchWithGoogle(scannedISBN);
-    if (_bookFromISBNScan == null) {
+    if (bookFromISBNScan == null) {
       _noBooksFoundError = true;
     }
     String errorMessage = _getScanFailMessage();
@@ -65,8 +65,8 @@ class ScannerDriver {
       if (errorMessage.isNotEmpty) {
         SharedWidgets.displayErrorDialog(context, errorMessage);
       }
-      else if (_bookFromISBNScan != null) {
-        _displayScannerSuccessDialog(context);
+      else if (bookFromISBNScan != null) {
+        displayScannerSuccessDialog(context);
       }
     }
   }
@@ -103,7 +103,7 @@ class ScannerDriver {
   }
 
   void _resetLastScanValues() {
-    _bookFromISBNScan = null;
+    bookFromISBNScan = null;
     _otherSearchError = false;
     _noBooksFoundError = false;
     _cameraSetupError = false;
@@ -124,10 +124,10 @@ class ScannerDriver {
   }
 
   // ensure that bookFromISBNScan is not null before calling this
-  void _displayScannerSuccessDialog(BuildContext context) {
-    String title = _bookFromISBNScan!.title ?? "No title found";
-    String author = _bookFromISBNScan!.author ?? "No author found";
-    Widget image = _bookFromISBNScan!.getCoverImage();
+  void displayScannerSuccessDialog(BuildContext context) {
+    String title = bookFromISBNScan!.title ?? "No title found";
+    String author = bookFromISBNScan!.author ?? "No author found";
+    Widget image = bookFromISBNScan!.getCoverImage();
     showDialog(
       context: context,
       builder: (context) =>
@@ -219,7 +219,7 @@ class ScannerDriver {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      addBookToLibrary(_bookFromISBNScan!, _user, context);
+                      addBookToLibrary(bookFromISBNScan!, _user, context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColor.skyBlue,
@@ -253,7 +253,7 @@ class ScannerDriver {
         coverUrl = bookResponse?['cover_i'] != null
           ? "https://covers.openlibrary.org/b/id/${bookResponse?['cover_i']}-M.jpg"
           : null;
-        _bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl);
+        bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl);
       }
       else {
         _otherSearchError = true;
@@ -286,7 +286,7 @@ class ScannerDriver {
         coverUrl = bookResponse?['volumeInfo']?['imageLinks']?['thumbnail'];
         description = bookResponse?['volumeInfo']?['description'];
         googleBooksId = bookResponse?['id']; // id should always be set in google books but in case its ever not, I want it to just be null in the DB (no placeholder values)
-        _bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId);
+        bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId);
       }
       else {
         await _isbnSearchWithOpenLibrary(isbn);
@@ -325,8 +325,8 @@ class ScannerDriver {
       return "An unexpected error occurred while scanning the barcode. Please try again later.";
     }
     // checking if book is already in user's library
-    for (int i = 0; i < _userLibrary.length; i++) {
-      if (_bookFromISBNScan == _userLibrary[i]) {
+    for (int i = 0; i < userLibrary.length; i++) {
+      if (bookFromISBNScan == userLibrary[i]) {
         return "You already have this book added.";
       }
     }

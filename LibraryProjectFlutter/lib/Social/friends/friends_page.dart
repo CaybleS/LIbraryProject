@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_library/friends_library_page.dart';
+import 'package:library_project/Social/profile/profile.dart';
 import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
@@ -35,6 +36,7 @@ class _FriendsPageState extends State<FriendsPage> {
       }
     };
     refreshNotifier.addListener(_friendpageListener);
+    updateLists();
   }
 
   @override
@@ -62,16 +64,16 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   void _acceptClicked(int index, BuildContext context) async {
-    await addFriend(requests[index]);
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Accepted");
+    await addFriend(requests[index]);
     updateLists();
   }
 
   void _denyClicked(int index, BuildContext context) async {
-    await requests[index].delete();
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Deleted");
+    await requests[index].delete();
     updateLists();
   }
 
@@ -132,14 +134,6 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget displayList() {
-    if (_selected == "list") {
-      return displayFriends();
-    } else {
-      return displayRequests();
-    }
-  }
-
   Widget displayRequests() {
     return ListView.builder(
         itemCount: showRequests.length,
@@ -147,7 +141,7 @@ class _FriendsPageState extends State<FriendsPage> {
           return InkWell(
               onTap: () {}, // TODO link to user profile
               child: SizedBox(
-                  height: 150,
+                  height: 100,
                   child: Card(
                       margin: const EdgeInsets.all(5),
                       child: Row(
@@ -158,11 +152,10 @@ class _FriendsPageState extends State<FriendsPage> {
                                 padding: const EdgeInsets.all(20),
                                 child: ClipOval(
                                     child: SizedBox(
-                                        width: 75,
-                                        child: showFriends[index].photoUrl !=
-                                                null
+                                        width: 50,
+                                        child: showRequests[index].photo != ""
                                             ? Image.network(
-                                                showFriends[index].photoUrl!)
+                                                showRequests[index].photo)
                                             : Image.asset(
                                                 'assets/profile_pic.jpg')))),
                             Expanded(
@@ -170,14 +163,14 @@ class _FriendsPageState extends State<FriendsPage> {
                               alignment: Alignment.topLeft,
                               child: Column(children: [
                                 const SizedBox(
-                                  height: 40,
+                                  height: 22.5,
                                 ),
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
                                     showRequests[index].name,
                                     style: const TextStyle(
-                                        color: Colors.black, fontSize: 20),
+                                        color: Colors.black, fontSize: 16),
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -187,7 +180,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                   child: Text(
                                     showRequests[index].email,
                                     style: const TextStyle(
-                                        color: Colors.black, fontSize: 20),
+                                        color: Colors.black, fontSize: 14),
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -196,35 +189,53 @@ class _FriendsPageState extends State<FriendsPage> {
                             )),
                             ConstrainedBox(
                                 constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                    const BoxConstraints(maxWidth: 150),
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
-                                  child: Column(children: [
-                                    ElevatedButton(
-                                        onPressed: () {
-                                          _acceptClicked(index, context);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color.fromRGBO(
-                                                    76, 175, 80, 1)),
-                                        child: const Text('Accept',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.black))),
-                                    ElevatedButton(
-                                        onPressed: () {
-                                          _denyClicked(index, context);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color.fromRGBO(
-                                                    244, 67, 54, 1)),
-                                        child: const Text('Deny',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.black)))
-                                  ]),
+                                  // child: Column(children: [
+                                  //   ElevatedButton(
+                                  //       onPressed: () {
+                                  //         _acceptClicked(index, context);
+                                  //       },
+                                  //       style: ElevatedButton.styleFrom(
+                                  //           backgroundColor:
+                                  //               const Color.fromRGBO(
+                                  //                   76, 175, 80, 1)),
+                                  //       child: const Text('Accept',
+                                  //           style: TextStyle(
+                                  //               fontSize: 16,
+                                  //               color: Colors.black))),
+                                  //   ElevatedButton(
+                                  //       onPressed: () {
+                                  //         _denyClicked(index, context);
+                                  //       },
+                                  //       style: ElevatedButton.styleFrom(
+                                  //           backgroundColor:
+                                  //               const Color.fromRGBO(
+                                  //                   244, 67, 54, 1)),
+                                  //       child: const Text('Deny',
+                                  //           style: TextStyle(
+                                  //               fontSize: 16,
+                                  //               color: Colors.black)))
+                                  // ]),
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                          onPressed: () {
+                                            _acceptClicked(index, context);
+                                          },
+                                          color: const Color.fromRGBO(
+                                              76, 175, 80, 1),
+                                          icon: Icon(Icons.check)),
+                                      IconButton(
+                                          onPressed: () {
+                                            _denyClicked(index, context);
+                                          },
+                                          color: const Color.fromRGBO(
+                                              244, 67, 54, 1),
+                                          icon: Icon(Icons.close))
+                                    ],
+                                  ),
                                 ))
                           ]))));
         });
@@ -235,9 +246,15 @@ class _FriendsPageState extends State<FriendsPage> {
         itemCount: showFriends.length,
         itemBuilder: (BuildContext context, int index) {
           return InkWell(
-              onTap: () {}, // TODO link to user profile
+              onTap: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            Profile(widget.user, showFriends[index].uid)));
+              }, // TODO link to user profile
               child: SizedBox(
-                  height: 150,
+                  height: 100,
                   child: Card(
                       margin: const EdgeInsets.all(5),
                       child: Row(
@@ -248,7 +265,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 padding: const EdgeInsets.all(20),
                                 child: ClipOval(
                                     child: SizedBox(
-                                  width: 75,
+                                  width: 50,
                                   child: showFriends[index].photoUrl != null
                                       ? Image.network(
                                           showFriends[index].photoUrl!)
@@ -259,14 +276,14 @@ class _FriendsPageState extends State<FriendsPage> {
                               alignment: Alignment.topLeft,
                               child: Column(children: [
                                 const SizedBox(
-                                  height: 40,
+                                  height: 22.5,
                                 ),
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
                                     showFriends[index].name,
                                     style: const TextStyle(
-                                        color: Colors.black, fontSize: 20),
+                                        color: Colors.black, fontSize: 16),
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -276,7 +293,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                   child: Text(
                                     showFriends[index].email,
                                     style: const TextStyle(
-                                        color: Colors.black, fontSize: 20),
+                                        color: Colors.black, fontSize: 14),
                                     softWrap: true,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -313,7 +330,7 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(curPage:  "friends"),
+      appBar: const CustomAppBar(curPage: "friends"),
       backgroundColor: Colors.grey[400],
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
@@ -333,7 +350,9 @@ class _FriendsPageState extends State<FriendsPage> {
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 1, 15, 25),
-              child: displayList(),
+              child: _selected == "list"
+                  ? (showFriends.isNotEmpty ? displayFriends() : Container())
+                  : (showRequests.isNotEmpty ? displayRequests() : Container()),
             ))
           ],
         ),

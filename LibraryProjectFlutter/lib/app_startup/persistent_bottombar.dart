@@ -6,7 +6,7 @@ import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/core/homepage.dart';
-import 'package:library_project/Social/profile.dart';
+import 'package:library_project/Social/profile/profile.dart';
 import 'package:library_project/core/settings.dart';
 
 class PersistentBottomBar extends StatefulWidget {
@@ -28,7 +28,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     _pagesList[homepageIndex] = HomePage(widget.user);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);
-    _pagesList[profileIndex] = Profile(widget.user);
+    _pagesList[profileIndex] = Profile(widget.user, widget.user.uid);
     _pagesList[settingsIndex] = Settings(widget.user);
     _refreshBottombarListener = () {
       if (refreshBottombar.value == true) {

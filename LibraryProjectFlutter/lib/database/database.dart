@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/book_requests.dart';
+import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
 import '../Social/friends/friends_page.dart';
 import 'dart:async';
@@ -98,16 +99,6 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
   return ownedSubscription; // returning this only to be able to properly dispose of it
 }
 
-StreamSubscription<DatabaseEvent> setupUserSubscription(ValueNotifier<UserModel?> user, String userId) {
-  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('users/$userId/');
-  StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
-    if (event.snapshot.value != null) {
-      user.value = UserModel.fromJson(event.snapshot.value as Map<dynamic, dynamic>);
-    }
-  });
-  return ownedSubscription;
-}
-
 StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
     List<LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
   DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
@@ -180,6 +171,33 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
   return friendsBooksSubscription;
 }
 
+StreamSubscription<DatabaseEvent> setupUserSubscription(Map<String, UserModel> userIdToUserModel, String userId, Function userUpdated) {
+  DatabaseReference userReference = FirebaseDatabase.instance.ref('users/$userId/');
+  StreamSubscription<DatabaseEvent> userSubscription = userReference.onValue.listen((DatabaseEvent event) {
+    if (event.snapshot.value != null) {
+      UserModel user = UserModel.fromJson(event.snapshot.value as Map);
+      userIdToUserModel[userId] = user;
+    }
+    userUpdated();
+  });
+  return userSubscription;
+}
+
+StreamSubscription<DatabaseEvent> setupProfileSubscription(Map<String, ProfileInfo> userIdToProfile, String userId, Function profileUpdated) {
+  DatabaseReference profileReference = FirebaseDatabase.instance.ref('profileInfo/$userId/');
+  StreamSubscription<DatabaseEvent> profileSubscription = profileReference.onValue.listen((DatabaseEvent event) {
+    if (event.snapshot.value != null) {
+      ProfileInfo profile = ProfileInfo.fromJson(event.snapshot.value as Map);
+      userIdToProfile[userId] = profile;
+    } else {
+      ProfileInfo profile = ProfileInfo();
+      userIdToProfile[userId] = profile;
+    }
+    profileUpdated();
+  });
+  return profileSubscription;
+}
+
 StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
   DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
   StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
@@ -233,6 +251,8 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<Rec
   return receivedBookRequestsSubscription;
 }
 
+// TODO we should probably adjust this to use the user subscriptions instead of reading from the db each time
+// might be better to use our global variable friend list to track uids and user list for the actual info (?) or not idk
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(
     List<UserModel> friends, User user, Function friendsUpdated) {
   DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
@@ -264,6 +284,7 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
   return friendsSubscription;
 }
 
+// TODO we should probably adjust this to use the user subscriptions instead of reading from the db each time
 StreamSubscription<DatabaseEvent> setupRequestsSubscription(
     List<Request> requests, User user, Function requestsUpdated) {
   DatabaseReference requestsReference = FirebaseDatabase.instance.ref('requests/${user.uid}/');
@@ -340,23 +361,7 @@ void addUser(User user) {
 
 void sendFriendRequest(User user, String friendId) {
   var id = dbReference.child('requests/$friendId/').push();
-  id.set({'sender': user.uid, 'sendDate': DateTime.now().toIso8601String()});
-}
-
-// TODO: I'm not going to get rid of this since idk if it's used somewhere, but with the subscription thing, we shouldn't need it
-Future<List<Request>> getFriendRequests(User user) async {
-  DatabaseEvent event = await dbReference.child('requests/${user.uid}/').once();
-  List<Request> requests = [];
-
-  if (event.snapshot.value != null) {
-    for (var child in event.snapshot.children) {
-      Request request = createRequest(child.value, user.uid);
-      request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
-      requests.add(request);
-    }
-  }
-
-  return requests;
+  id.set({'sender': user.uid, 'sendDate': DateTime.now().toUtc().toIso8601String()});
 }
 
 Future<void> removeRef(DatabaseReference id) async {
@@ -365,7 +370,7 @@ Future<void> removeRef(DatabaseReference id) async {
 
 Future<void> addFriend(Request request) async {
   var id = dbReference.child('friends/${request.senderId}/${request.uid}');
-  String time = DateTime.now().toIso8601String();
+  String time = DateTime.now().toUtc().toIso8601String();
   id.set({"friendsSince": time});
   id = dbReference.child('friends/${request.uid}/${request.senderId}');
   id.set({"friendsSince": time});
@@ -412,4 +417,9 @@ Future<String> getUserDisplayName(String id) async {
   }
 
   return name;
+}
+
+Future<void> updateProfile(String uid, ProfileInfo profile) async {
+  var id = dbReference.child('profileInfo/$uid');
+  id.set(profile.toJson());
 }
