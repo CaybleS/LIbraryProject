@@ -20,7 +20,7 @@ class AppLifeCycleState extends State<AppLifeCycle> with WidgetsBindingObserver 
     if (auth.currentUser != null) {
       await FirebaseDatabase.instance.ref('users/${auth.currentUser!.uid}').update({
         'isActive': status,
-        'lastSignedIn': DateTime.now().toIso8601String(),
+        'lastSignedIn': DateTime.now().toUtc().toIso8601String(),
       });
     }
   }

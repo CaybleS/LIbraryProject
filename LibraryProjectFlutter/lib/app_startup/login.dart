@@ -17,9 +17,9 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final controllerEmail = TextEditingController();
   final controllerPswd = TextEditingController();
-  String emailErr = "";
-  String pswdErr = "";
-  String loginErr = "";
+  String emailErr = '';
+  String pswdErr = '';
+  String loginErr = '';
   bool showLoading = false;
 
   User? user;
@@ -36,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     FirebaseAuth auth = FirebaseAuth.instance;
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (auth.currentUser != null) {
+      if (auth.currentUser != null && auth.currentUser!.emailVerified) {
         user = auth.currentUser;
         changeStatus(true);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
@@ -44,72 +44,84 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void click() {
+  void click() async {
     setState(() {
       showLoading = true;
     });
-    signInWithGoogle().then((user) {
-      if (user != null) {
-        setState(() {
-          showLoading = false;
-        });
-        this.user = user;
+    final user = await signInWithGoogle();
+    setState(() {
+      showLoading = false;
+    });
+    if (user != null) {
+      this.user = user;
+      if (mounted) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
       }
-    });
+    }
   }
 
   Widget googleLoginButton() {
     return OutlinedButton(
-        onPressed: click,
-        child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  child: Image(image: AssetImage('assets/google_logo.png'), height: 30),
+      onPressed: click,
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+              child: Image(image: AssetImage('assets/google_logo.png'), height: 30),
+            ),
+            Padding(
+              padding: EdgeInsets.only(left: 10),
+              child: Text(
+                'Sign in with Google',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: Text('Sign in with Google',
-                        style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)))
-              ],
-            )));
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void loginBtnClicked() async {
     String email = controllerEmail.text;
     String pswd = controllerPswd.text;
-    emailErr = "";
-    pswdErr = "";
-    loginErr = "";
+    emailErr = '';
+    pswdErr = '';
+    loginErr = '';
 
-    if (email == "") {
-      emailErr = "Required";
+    if (email == '') {
+      emailErr = 'Required';
       setState(() {});
     }
 
-    if (pswd == "") {
-      pswdErr = "Required";
+    if (pswd == '') {
+      pswdErr = 'Required';
       setState(() {});
     }
 
-    if (email != "" && pswd != "") {
+    if (email != '' && pswd != '') {
       setState(() {
         showLoading = true;
       });
-      User? user = await logIn(email, pswd);
+      Map<String, dynamic> userLogin = await logIn(email, pswd);
 
-      if (user == null) {
-        loginErr = "Incorrect Email or Password";
+      if (userLogin['status'] == false) {
+        loginErr = userLogin['error'];
         setState(() {
           showLoading = false;
         });
       } else {
         if (mounted) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user)));
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => PersistentBottomBar(userLogin['user'])));
         }
       }
     }
@@ -127,6 +139,7 @@ class _LoginPageState extends State<LoginPage> {
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 28,
+              fontFamily: 'Poppins',
             ),
           ),
           centerTitle: true,
@@ -142,80 +155,58 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  Container(
-                    alignment: Alignment.center,
-                    width: size.width * 0.9,
-                    child: const Text(
-                      "Welcome!",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  const Text(
+                    'Welcome!',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
                     ),
                   ),
-                  Container(
-                    alignment: Alignment.center,
-                    width: size.width * 0.9,
-                    child: const Text(
-                      "Please Sign In",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  const Text(
+                    'Please Sign In',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
                     ),
                   ),
-                  SizedBox(
-                    height: size.height * 0.1,
+                  const SizedBox(height: 30),
+                  TextField(
+                    controller: controllerEmail,
+                    style: const TextStyle(fontFamily: 'Poppins'),
+                    decoration: InputDecoration(
+                        hintText: 'Email',
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        fillColor: Colors.white,
+                        filled: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                   ),
-                  Container(
-                    width: size.width * 0.9,
-                    alignment: Alignment.center,
-                    child: TextField(
-                      controller: controllerEmail,
-                      decoration: InputDecoration(
-                          hintText: 'Email',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                    ),
-                  ),
-                  SizedBox(
-                    height: size.height * 0.01,
-                  ),
+                  const SizedBox(height: 10),
                   Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  SizedBox(
-                    height: size.height * 0.01,
-                  ),
-                  Container(
-                    width: size.width * 0.9,
-                    alignment: Alignment.center,
-                    child: TextField(
-                      controller: controllerPswd,
-                      decoration: InputDecoration(
-                          hintText: 'Password',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: controllerPswd,
+                    style: const TextStyle(fontFamily: 'Poppins'),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
-                  SizedBox(
-                    height: size.height * 0.01,
-                  ),
+                  const SizedBox(height: 10),
                   Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  SizedBox(
-                    height: size.height * 0.015,
-                  ),
                   Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  SizedBox(
-                    height: size.height * 0.05,
-                  ),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                    Expanded(
-                      child: ElevatedButton(
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
                           onPressed: () {
                             loginBtnClicked();
@@ -224,17 +215,23 @@ class _LoginPageState extends State<LoginPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Log In",
-                                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                                'Log In',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               SizedBox(width: 4),
                               Icon(IconsaxPlusLinear.login, color: Colors.black),
                             ],
-                          )),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
                           onPressed: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()));
@@ -243,15 +240,22 @@ class _LoginPageState extends State<LoginPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Register",
-                                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                                'Register',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               SizedBox(width: 4),
                               Icon(IconsaxPlusLinear.user_add, color: Colors.black),
                             ],
-                          )),
-                    ),
-                  ]),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(
                     height: size.height * 0.025,
                   ),

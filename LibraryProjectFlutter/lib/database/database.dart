@@ -54,14 +54,14 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
   id.set({'senders': senders});
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey,
+    {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
   // for the number of request senders in this case to remove all the sender requests separately though).
   if (removeAllReceivedRequests) {
     dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
-  }
-  else {
+  } else {
     // need to see current senders and update as needed
     DatabaseEvent event = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').once();
     if (event.snapshot.value != null) {
@@ -71,8 +71,7 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
       senders.remove(requesterId);
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
-    }
-    else {
+    } else {
       // there are no senders so we just remove everything
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
@@ -171,7 +170,8 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
   return friendsBooksSubscription;
 }
 
-StreamSubscription<DatabaseEvent> setupUserSubscription(Map<String, UserModel> userIdToUserModel, String userId, Function userUpdated) {
+StreamSubscription<DatabaseEvent> setupUserSubscription(
+    Map<String, UserModel> userIdToUserModel, String userId, Function userUpdated) {
   DatabaseReference userReference = FirebaseDatabase.instance.ref('users/$userId/');
   StreamSubscription<DatabaseEvent> userSubscription = userReference.onValue.listen((DatabaseEvent event) {
     if (event.snapshot.value != null) {
@@ -186,7 +186,8 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(Map<String, UserModel> u
   return userSubscription;
 }
 
-StreamSubscription<DatabaseEvent> setupProfileSubscription(Map<String, ProfileInfo> userIdToProfile, String userId, Function profileUpdated) {
+StreamSubscription<DatabaseEvent> setupProfileSubscription(
+    Map<String, ProfileInfo> userIdToProfile, String userId, Function profileUpdated) {
   DatabaseReference profileReference = FirebaseDatabase.instance.ref('profileInfo/$userId/');
   StreamSubscription<DatabaseEvent> profileSubscription = profileReference.onValue.listen((DatabaseEvent event) {
     if (event.snapshot.value != null) {
@@ -201,9 +202,11 @@ StreamSubscription<DatabaseEvent> setupProfileSubscription(Map<String, ProfileIn
   return profileSubscription;
 }
 
-StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
+StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
+    List<SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
   DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription =
+      sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     sentBookRequests.clear();
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -226,9 +229,11 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(List<SentBoo
 
 // it needs to listen for both new books being requested, and current requests being updated (as in another user requesting this book)
 // this is why the map stuff is happening
-StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
+StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
+    List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
   DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription = receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription =
+      receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     receivedBookRequests.clear();
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {

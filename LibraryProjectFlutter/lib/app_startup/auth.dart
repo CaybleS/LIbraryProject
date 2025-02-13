@@ -18,36 +18,38 @@ final GoogleSignIn googleSignIn = GoogleSignIn();
 Future<User?> signInWithGoogle() async {
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-  final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
+  try {
+    final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
+    final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
+    if(googleSignInAuthentication == null) return null;
 
-  final AuthCredential credential = GoogleAuthProvider.credential(
-      idToken: googleSignInAuthentication?.idToken, accessToken: googleSignInAuthentication?.accessToken);
+    final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleSignInAuthentication.idToken, accessToken: googleSignInAuthentication.accessToken);
 
-  final UserCredential userCredential = await _auth.signInWithCredential(credential);
-  final User? user = userCredential.user;
+    final UserCredential userCredential = await _auth.signInWithCredential(credential);
+    final User? user = userCredential.user;
 
-  if (user != null) {
-    assert(!user.isAnonymous);
+    if (user != null) {
 
-    final User currentUser = _auth.currentUser!;
-    assert(currentUser.uid == user.uid);
+      // TODO: should probably send to some kind of profile set up instead of this, but for now this is fine
+      if (!(await userExists(user.uid))) {
+        addUser(user);
+      }
 
-    // TODO: should probably send to some kind of profile set up instead of this, but for now this is fine
-    if (!(await userExists(user.uid))) {
-      addUser(user);
+      final userRef = await dbReference.child('users/${user.uid}').once();
+      if (userRef.snapshot.value != null) {
+        Map data = userRef.snapshot.value as Map;
+        userModel.value = UserModel.fromJson(data);
+      }
+
+      await changeStatus(true);
+
+      return user;
+    } else {
+      return null;
     }
-
-    final userRef = await dbReference.child('users/${user.uid}').once();
-    if (userRef.snapshot.value != null) {
-      Map data = userRef.snapshot.value as Map;
-      userModel.value = UserModel.fromJson(data);
-    }
-
-    await changeStatus(true);
-
-    return user;
-  } else {
+  } catch (e) {
+    debugPrint(e.toString());
     return null;
   }
 }
@@ -75,9 +77,20 @@ void logout(context) async {
       .pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
 }
 
-Future<User?> logIn(String email, String password) async {
+Future<Map<String, dynamic>> logIn(String email, String password) async {
   try {
     UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+
+    if (userCredential.user == null) {
+      debugPrint("user null");
+    }
+
+    if (userCredential.user?.emailVerified == false) {
+      return {
+        'status': false,
+        'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
+      };
+    }
 
     await changeStatus(true);
     final userRef = await dbReference.child('users/${userCredential.user!.uid}').once();
@@ -86,10 +99,13 @@ Future<User?> logIn(String email, String password) async {
       userModel.value = UserModel.fromJson(data);
     }
 
-    return userCredential.user;
+    return {'status': true, 'user': userCredential.user};
   } catch (e) {
     debugPrint(e.toString());
-    return null;
+    return {
+      'status': false,
+      'error': 'Incorrect Email or Password',
+    };
   }
 }
 
@@ -105,6 +121,7 @@ Future<User?> createAccount(String name, String email, String password) async {
     await userCredential.user!.updateDisplayName(name);
     await userCredential.user!.reload();
     User? user = _auth.currentUser;
+    await user?.sendEmailVerification();
 
     if (user?.displayName == null) {
       debugPrint("display name null");
@@ -130,7 +147,7 @@ changeStatus(bool status) async {
   if (_auth.currentUser != null) {
     await FirebaseDatabase.instance.ref('users/${_auth.currentUser!.uid}').update({
       'isActive': status,
-      'lastSignedIn': DateTime.now().toIso8601String(),
+      'lastSignedIn': DateTime.now().toUtc().toIso8601String(),
     });
   }
 }

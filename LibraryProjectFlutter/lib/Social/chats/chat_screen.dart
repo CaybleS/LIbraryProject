@@ -135,8 +135,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 );
               }
-              return FutureBuilder(
-                future: dbRef.child('users/${message.senderId}').once(),
+              return StreamBuilder(
+                stream: dbRef.child('users/${message.senderId}').onValue,
                 builder: (context, snapshot) {
                   if (snapshot.data == null || snapshot.data!.snapshot.value == null) {
                     return const SizedBox();

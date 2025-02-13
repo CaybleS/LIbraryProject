@@ -43,7 +43,7 @@ class UserModel {
       'avatarColor': avatarColor.value,
       'isActive': isActive,
       'isTyping': isTyping,
-      'lastSignedIn': lastSignedIn.toIso8601String(),
+      'lastSignedIn': lastSignedIn.toUtc().toIso8601String(),
     };
   }
 

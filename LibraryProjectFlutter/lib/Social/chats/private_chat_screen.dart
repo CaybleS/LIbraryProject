@@ -68,7 +68,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               return Container();
             }
             final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
-            print(user.lastSignedIn.isUtc);
             return Row(
               children: [
                 Expanded(
