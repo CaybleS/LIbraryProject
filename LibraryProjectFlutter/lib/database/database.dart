@@ -177,6 +177,9 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(Map<String, UserModel> u
     if (event.snapshot.value != null) {
       UserModel user = UserModel.fromJson(event.snapshot.value as Map);
       userIdToUserModel[userId] = user;
+      if (userId == FirebaseAuth.instance.currentUser!.uid) {
+        userModel.value = user;
+      }
     }
     userUpdated();
   });
