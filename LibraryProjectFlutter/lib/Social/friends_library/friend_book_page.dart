@@ -16,7 +16,7 @@ class FriendBookPage extends StatefulWidget {
 }
 
 class _FriendBookPageState extends State<FriendBookPage> {
-  late final VoidCallback _booksLentToMeUpdatedListener;
+  late final VoidCallback _booksLentToMeUpdatedListener; // p sure its just for the thing that shows if its "lent" or "available"
 
   @override
   void initState() {
@@ -27,7 +27,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
       }
     };
     refreshNotifier.addListener(_booksLentToMeUpdatedListener);
-}
+  }
 
   @override
   void dispose() {
@@ -88,6 +88,15 @@ class _FriendBookPageState extends State<FriendBookPage> {
               "Unsend Request",
               style: TextStyle(fontSize: 16, color: Colors.black),
             ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            ((widget.bookToView.usersWhoRequested?.length ?? 0) <= 1)
+              ? (widget.bookToView.usersWhoRequested?.length == 1)
+                ? "This book has 1 request for it"
+                : "This book has no requests for it"
+              : "This book has ${widget.bookToView.usersWhoRequested?.length ?? 0} requests for it",
+            style: const TextStyle(fontSize: 14), textAlign: TextAlign.center,
           ),
         ],
       );

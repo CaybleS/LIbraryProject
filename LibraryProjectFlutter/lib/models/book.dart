@@ -18,6 +18,7 @@ class Book {
   String? borrowerId;
   String? description;
   String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)
+  int? isbn13; // stored mainly for goodreads exporting but it can be shown on some pages as well if desired
   int? bookCondition;
   String? publicBookNotes;
   int? rating;
@@ -36,6 +37,7 @@ class Book {
       this.coverUrl,
       this.description,
       this.googleBooksId,
+      this.isbn13,
       this.isManualAdded = false}
   );
 
@@ -80,8 +82,10 @@ class Book {
   void update() {
     updateBook(this, _id);
   }
-
+  
   Future<void> remove(String userId) async {
+    // I dont even think this should be needed for anything. Everywhere in the app, you cant remove a book if its lent out, intentionally.
+    // I just don't think any lent out books should be removable, the user should need to hit the "return book" button. TODO ensure this can be removed
     if (lentDbKey != null && borrowerId != null) {
       removeLentBookInfo(lentDbKey!, borrowerId!);
     }
@@ -155,6 +159,7 @@ class Book {
       'coverUrl': coverUrl,
       'description': description,
       'googleBooksId': googleBooksId,
+      'isbn13': isbn13,
       'isManualAdded': isManualAdded,
       'cloudCoverUrl': cloudCoverUrl,
       'borrowerId' : borrowerId,
@@ -195,6 +200,7 @@ Book createBook(record) {
     coverUrl: record['coverUrl'],
     description: record['description'],
     googleBooksId: record['googleBooksId'],
+    isbn13: record['isbn13'],
     isManualAdded: record['isManualAdded'],
   );
   book.lentDbKey = record['lentDbKey'];

@@ -208,6 +208,7 @@ class SearchDriver {
         itemBuilder: (BuildContext context, int index) {
           Widget image;
           String? title, author, coverUrl, description, googleBooksId;
+          int? isbn13; // note that openlibrary stores isbn13 sometimes, but their response body is a mess, its really not easy or good to extract
           bool isBookAlreadyAdded = false;
           if (_usingGoogleAPI) {
             title = _searchQueryBooks[index]?['volumeInfo']?['title'];
@@ -215,6 +216,12 @@ class SearchDriver {
             coverUrl = _searchQueryBooks[index]?['volumeInfo']?['imageLinks']?['thumbnail'];
             description = _searchQueryBooks[index]?['volumeInfo']?['description'];
             googleBooksId = _searchQueryBooks[index]?['id'];
+            List<dynamic> industryIdentifiers = _searchQueryBooks[index]?['volumeInfo']?['industryIdentifiers'] ?? [];
+            for (int i = 0; i < industryIdentifiers.length; i++) {
+              if (industryIdentifiers[i]?['type'] == 'ISBN_13') {
+                isbn13 = int.tryParse(_searchQueryBooks[index]?['volumeInfo']?['industryIdentifiers']?[i]?['identifier']);
+              }
+            }
           }
           else {
             title = _searchQueryBooks[index]?['title'];
@@ -223,7 +230,7 @@ class SearchDriver {
               ? "https://covers.openlibrary.org/b/id/${_searchQueryBooks[index]?['cover_i']}-M.jpg"
               : null;
           }
-          Book currentBook = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId);
+          Book currentBook = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId, isbn13: isbn13);
           if (alreadyAddedBooks[index] == null) { // going through all books in user's library for this index in ListView (only done once due to this check)
             alreadyAddedBooks[index] = false;
             for (int i = 0; i < userLibrary.length; i++) {

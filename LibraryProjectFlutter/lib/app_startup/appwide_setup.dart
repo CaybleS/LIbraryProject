@@ -56,7 +56,7 @@ void resetBottombarValues() {
 // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
 // for them, which will call setState and refresh the page with the updated userLibrary.
 void _ownedBooksUpdated() {
-  if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex) {
+  if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex || selectedIndex == settingsIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }
@@ -65,13 +65,12 @@ void _ownedBooksUpdated() {
 void _lentToMeBooksUpdated() {
   // if we are on the pages which care about books lent to the user we refresh it
   // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it 
-  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
+  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex || selectedIndex == settingsIndex) {
     refreshNotifier.value = -1;
     refreshNotifier.value = selectedIndex;
   }
 }
 
-// TODO should these be on social page somewhere? Idk where but probably, or m,aybe not, idk.
 void _sentBookRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
     refreshNotifier.value = -1;

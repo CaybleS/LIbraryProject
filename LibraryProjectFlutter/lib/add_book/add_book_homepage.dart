@@ -102,11 +102,6 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     if (mounted && scannedISBN != null) {
       await _bookScanInstance.scannerSearchByIsbn(context, scannedISBN);
     }
-    // this is commented out just because I decided not to include it, but its arguably good to have so I'm not deleting its implementation
-    // if (scannedISBN != null) {
-    //   // putting the scanned ISBN into the search query, for better user experience, done after the search rather than before
-    //   _searchQueryController.text = scannedISBN;
-    // }
     setState(() {
       _displayProgressIndicator = false;
     });
@@ -132,9 +127,12 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
         backgroundColor: AppColor.skyBlue,
         padding: const EdgeInsets.all(8),
       ),
-      child: Text(
-        buttonText,
-        style: const TextStyle(fontSize: 16, color: Colors.black),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          buttonText,
+          style: const TextStyle(fontSize: 16, color: Colors.black),
+        ),
       ),
     );
   }
@@ -283,20 +281,48 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
                 Row (
                   children: [
                     _displayFilterDropdown(),
-                    Expanded( child: SharedWidgets.displayTextField(_getTextFieldHelperText(), _searchQueryController, _noInput, "Please enter some text")),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchQueryController,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) { // this parameter for onSubmitted is just the controller.text
+                          _searchButtonClicked();
+                        },
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          hintText: _getTextFieldHelperText(),
+                          hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                          ),
+                          errorText: _noInput ? "Please enter some text" : null,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              _searchQueryController.clear();
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                        ),
+                        onTapOutside: (event) {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    const SizedBox.shrink(), // these only do things cuz of the row's mainAxisAlignment
-                    _otherOptionButton("Scan Barcode", _scanButtonClicked),
-                    _otherOptionButton("Add Manually", _customAddButtonClicked),
-                    const SizedBox.shrink(),
+                    Flexible( child: _otherOptionButton("Scan Barcode", _scanButtonClicked)),
+                    Flexible( child: _otherOptionButton("Add Manually", _customAddButtonClicked)),
                   ],
                 ),
                 const SizedBox(height: 8),
+                // This search button technically isn't needed since the textInputAction part of the text field can search
+                // plus there could be a search prefixIcon for the text field. But I'm keeping it because I think it makes
+                // the page look better.
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

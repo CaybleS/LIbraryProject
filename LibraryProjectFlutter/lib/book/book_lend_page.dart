@@ -6,6 +6,9 @@ import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
+// note that we dont check the receiver's library to see if they already own the book before lending it to them; we could do this
+// but it could use up database reads and add a slight delay between the "lend book" button click and the actual lending
+// so overall I decided its not worth.
 
 Future<void> displayLendDialog(BuildContext context, Book book, User user, {String? idToLendTo}) async {
   await showDialog(
@@ -112,6 +115,9 @@ class _BookLendDialogState extends State<BookLendDialog> {
   void _getUnfilteredShownList() {
     _shownList = Iterable<int>.generate(friends.length).toList();
     _sortShownList(); // TODO ensure this should exist, some sorting, preferable of the key display attribute of a user, which I would guess is username when thats working
+    if (!_sortingAscending) {
+      _flipShownList();
+    }
   }
 
   void _flipShownList() {
@@ -155,8 +161,9 @@ class _BookLendDialogState extends State<BookLendDialog> {
       children: [
         const Text("Lend Book", style: TextStyle(fontSize: 20, color: Colors.black)),
         const SizedBox(height: 6),
-        Row(
+        Row( // I'll say that in general a lot of the sizes here are fine tuned to make the search query controller in the center so be careful when editing
           children: [
+            const SizedBox(width: 43),
             Expanded(
               child: TextField(
                 controller: _filterFriendsTextController,
@@ -166,7 +173,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
-                  hintText: "Filter by uid, email, username",
+                  hintText: "Filter by name or email",
                   hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                   border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(25.0)),
@@ -191,7 +198,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                 setState(() {});
               },
               icon: Icon(
-                (_sortingAscending) ? Icons.arrow_upward : Icons.arrow_downward,
+                (_sortingAscending) ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 size: 30,
                 color: Colors.black45,
               ),
@@ -203,8 +210,8 @@ class _BookLendDialogState extends State<BookLendDialog> {
         ? const Text("You have no friends to lend to", style: TextStyle(fontSize: 14, color: Colors.black))
         : ConstrainedBox(
           // It seems for dynamic sizing, ListView always tries to take maximum size even if its length 1 or whatever it still asks for all
-          // the space, so i just make it max 300 height but with logic to make it smaller if shown list is smaller. Seems to work well.
-          constraints: BoxConstraints(maxHeight: _shownList.length <= 5 ? _shownList.length * 50 : 300),
+          // the space, so i just make it max 330 height but with logic to make it smaller if shown list is smaller. Seems to work well.
+          constraints: BoxConstraints(maxHeight: _shownList.length <= 5 ? _shownList.length * 55 : 330),
           child: ListView.builder(
           itemCount: _shownList.length,
           itemBuilder: (BuildContext context, int index) {
@@ -221,33 +228,39 @@ class _BookLendDialogState extends State<BookLendDialog> {
               });
             },
             child: Card(
-              margin: const EdgeInsets.all(5),
-              color: (_selectedFriendId == friends[_shownList[index]].uid) ? AppColor.acceptGreen : Colors.grey[200],
-              child: Row(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.person),
-                  ),
-                  Flexible( // this is what gives these widgets in the column constraints
-                  fit: FlexFit.tight,
-                    child: Column(
-                      children: [
-                        Text(
-                          friends[_shownList[index]].name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          friends[_shownList[index]].email,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+              color: (_selectedFriendId == friends[_shownList[index]].uid) ? AppColor.acceptGreen : Colors.grey[300],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                child: Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(1, 0, 5, 0),
+                      child: Icon(Icons.person),
                     ),
-                  ),
-                ],
-              )
+                    Expanded( // this is what gives these widgets in the column constraints
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            friends[_shownList[index]].name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // TODO look into this weight stuff. The concern is universality mainly
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            friends[_shownList[index]].email,
+                            style: const TextStyle(fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 30),
+                  ],
+                ),
+              ),
             ));
           }),
         ),
@@ -261,7 +274,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                   return AppColor.acceptGreen;
                 }
                 else {
-                  return Colors.grey[200];
+                  return Colors.grey[300];
                 }
               },
             ),
@@ -300,8 +313,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            SizedBox(
-              width: 140,
+            Expanded(
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -317,8 +329,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
               ),
             ),
             const SizedBox(width: 10),
-            SizedBox(
-              width: 140,
+            Expanded(
               child: ElevatedButton(
                 onPressed: () async {
                   _tryToLendBook();
@@ -327,15 +338,17 @@ class _BookLendDialogState extends State<BookLendDialog> {
                   backgroundColor: AppColor.acceptGreen,
                   padding: const EdgeInsets.all(8),
                 ),
-                child: const Text(
-                  "Flag book as lent",
-                  style: TextStyle(fontSize: 16, color: Colors.black),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "Flag as lent",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
                 ),
               ),
             ),
           ],
-        )
-        
+        ),
       ],
     );
   }

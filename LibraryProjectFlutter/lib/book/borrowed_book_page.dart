@@ -26,7 +26,6 @@ class _BorrowedBookPageState extends State<BorrowedBookPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,7 +92,12 @@ class _BorrowedBookPageState extends State<BorrowedBookPage> {
             // TODO determine if this feature needs a listener for this value. The concern being idk how often booksLentToMe would be fetched
             // since the app can be background and brought back many times. How would this work, in general? Seems flawed, seems like things can go wrong
             // in this scenario in general, like database entry changes not being detected, but maybe firebase has it covered and i dont need to care, who knows.
-              "This book has ${widget.lentBookInfo.book.usersWhoRequested?.length ?? 0} users who currently requested it",
+            // also this is in friends_book_page also if user has sent a request for this book just as an fyi.
+              ((widget.lentBookInfo.book.usersWhoRequested?.length ?? 0) <= 1)
+                ? (widget.lentBookInfo.book.usersWhoRequested?.length == 1)
+                  ? "This book has 1 request for it"
+                  : "This book has no requests for it"
+                : "This book has ${widget.lentBookInfo.book.usersWhoRequested?.length ?? 0} requests for it",
               style: const TextStyle(fontSize: 14), textAlign: TextAlign.center,
             ),
           ],

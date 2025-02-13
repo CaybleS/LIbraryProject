@@ -137,7 +137,7 @@ class ScannerDriver {
             child: Container(
             height: 300,
             width: 300,
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.fromLTRB(13, 10, 13, 12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -202,30 +202,46 @@ class ScannerDriver {
                     ],
                   ),
                 ),
-                SizedBox(
-                  width: 200,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.cancelRed,
+                          padding: const EdgeInsets.all(8),
+                        ),
+                        child: const Text(
+                          "Cancel",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                      ),
                     ),
-                    child: const Text("Cancel", style: TextStyle(fontSize: 18, color: Colors.black)),
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      addBookToLibrary(bookFromISBNScan!, _user, context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          addBookToLibrary(bookFromISBNScan!, _user, context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.acceptGreen,
+                          padding: const EdgeInsets.all(8),
+                        ),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Add",
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: const Text("Add", style: TextStyle(fontSize: 18, color: Colors.black)),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -281,12 +297,19 @@ class ScannerDriver {
       if (response.statusCode == 200) {
         var bookResponse = json.decode(response.body)['items'][0] ?? [];
         String? title, author, coverUrl, description, googleBooksId;
+        int? isbn13;
         title = bookResponse?['volumeInfo']?['title'];
         author = bookResponse?['volumeInfo']?['authors']?[0];
         coverUrl = bookResponse?['volumeInfo']?['imageLinks']?['thumbnail'];
         description = bookResponse?['volumeInfo']?['description'];
         googleBooksId = bookResponse?['id']; // id should always be set in google books but in case its ever not, I want it to just be null in the DB (no placeholder values)
-        bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId);
+        List<dynamic> industryIdentifiers = bookResponse?['volumeInfo']?['industryIdentifiers'] ?? [];
+        for (int i = 0; i < industryIdentifiers.length; i++) {
+          if (industryIdentifiers[i]?['type'] == 'ISBN_13') {
+            isbn13 = int.tryParse(bookResponse?['volumeInfo']?['industryIdentifiers']?[i]?['identifier']);
+          }
+        }
+        bookFromISBNScan = Book(title: title, author: author, coverUrl: coverUrl, description: description, googleBooksId: googleBooksId, isbn13: isbn13);
       }
       else {
         await _isbnSearchWithOpenLibrary(isbn);
