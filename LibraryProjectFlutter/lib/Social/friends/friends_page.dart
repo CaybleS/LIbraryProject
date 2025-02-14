@@ -351,8 +351,8 @@ class _FriendsPageState extends State<FriendsPage> {
                 child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 1, 15, 25),
               child: _selected == "list"
-                  ? (showFriends.isNotEmpty ? displayFriends() : Container())
-                  : (showRequests.isNotEmpty ? displayRequests() : Container()),
+                  ? (showFriends.isNotEmpty ? displayFriends() : const SizedBox.shrink())
+                  : (showRequests.isNotEmpty ? displayRequests() : const SizedBox.shrink()),
             ))
           ],
         ),

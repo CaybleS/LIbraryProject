@@ -110,7 +110,7 @@ class ScannerFavDriver extends ScannerDriver {
                     onPressed: () {
                       Navigator.pop(context);
                       // addBookToLibrary(_bookFromISBNScan!, _user, context);
-                      this.userLibrary.add(bookFromISBNScan!);
+                      userLibrary.add(bookFromISBNScan!);
                       SharedWidgets.displayPositiveFeedbackDialog(context, "Book Added");
                     },
                     style: ElevatedButton.styleFrom(
@@ -133,7 +133,7 @@ class SearchFavDriver extends SearchDriver {
 
   @override
   void bookAddButtonClicked(Book bookToAdd, BuildContext context, Function setState) {
-    this.userLibrary.add(bookToAdd);
+    userLibrary.add(bookToAdd);
     SharedWidgets.displayPositiveFeedbackDialog(context, "Book Added");
     alreadyAddedBooks.clear();
     setState((){});

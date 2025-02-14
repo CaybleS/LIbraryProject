@@ -219,7 +219,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                 _selected == "enter" ? addFriendDisplay() : friendCodeDisplay(),
                 _displayProgressIndicator
                     ? SharedWidgets.displayCircularProgressIndicator()
-                    : Container()
+                    : const SizedBox.shrink()
               ],
             )));
   }
