@@ -98,6 +98,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
                 label: "Homepage",
               ),
               BottomNavigationBarItem(
+                // can be search, my_library_add, add, add_circle, bookmark_add. I just think the search is intuitive enough, others dont look amazing
                 icon: Icon(Icons.search),
                 label: "Add book",
               ),

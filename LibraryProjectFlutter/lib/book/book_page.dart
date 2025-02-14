@@ -298,6 +298,10 @@ class _BookPageState extends State<BookPage> {
                   const SizedBox(width: 10),
                   ElevatedButton(
                     onPressed: () async {
+                      if (widget.book.lentDbKey != null && widget.book.borrowerId != null) {
+                        SharedWidgets.displayErrorDialog(context, "You can't remove lent books! Please return the book first.");
+                        return;
+                      }
                       bool hasRemoved = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
                       if (hasRemoved) {
                         widget.book.remove(widget.user.uid);

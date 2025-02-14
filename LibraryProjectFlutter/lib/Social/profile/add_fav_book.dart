@@ -36,7 +36,7 @@ class _AddFavBookState extends State<AddFavBook> {
         });
     }});
     // done because I cant access widget.<anything> before initState, hence the late object initialization
-    _bookSearchInstance = SearchFavDriver(widget.user, widget.favBooks); // TODO check for userLibrary
+    _bookSearchInstance = SearchFavDriver(widget.user, widget.favBooks);
     _bookScanInstance = ScannerFavDriver(widget.user, widget.favBooks);
     _addBookListener = () {
       if (refreshNotifier.value == addBookPageIndex) {

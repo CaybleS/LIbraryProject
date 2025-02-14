@@ -80,7 +80,7 @@ class _ProfileState extends State<Profile> {
                         MaterialPageRoute(
                             builder: (context) =>
                                 EditProfileScreen(widget.user)));
-                  }, // TODO add edit page
+                  },
                   child: const Text(
                     "Edit Profile",
                     style: TextStyle(color: Colors.black, fontSize: 16),
@@ -138,150 +138,147 @@ class _ProfileState extends State<Profile> {
         appBar: const CustomAppBar(curPage: "profile"),
         backgroundColor: Colors.grey[400],
         body: (_userInfo != null && _profileInfo != null)
-            ? Card(
-                margin: const EdgeInsets.all(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: _userInfo!.photoUrl != null
-                                ? NetworkImage(
-                                    _userInfo!.photoUrl!,
-                                  )
-                                : const AssetImage(
-                                    "assets/profile_pic.jpg",
-                                  ),
-                            radius: 40,
-                          ),
-                          // ClipOval(
-                          //   child: SizedBox(
-                          //     width: 100,
-                          //     child: _userInfo!.photoUrl != null
-                          //         ? Image.network(
-                          //             _userInfo!.photoUrl!,
-                          //           )
-                          //         : Image.asset(
-                          //       "assets/profile_pic.jpg",
-                          //     ),
-                          //   ),
-                          // ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _userInfo!.name,
-                                style: const TextStyle(fontSize: 25),
+            ? Padding(
+                padding: const EdgeInsets.all(15),
+                child: SingleChildScrollView(
+                    child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: _userInfo!.photoUrl != null
+                              ? NetworkImage(
+                                  _userInfo!.photoUrl!,
+                                )
+                              : const AssetImage(
+                                  "assets/profile_pic.jpg",
+                                ),
+                          radius: 40,
+                        ),
+                        // ClipOval(
+                        //   child: SizedBox(
+                        //     width: 100,
+                        //     child: _userInfo!.photoUrl != null
+                        //         ? Image.network(
+                        //             _userInfo!.photoUrl!,
+                        //           )
+                        //         : Image.asset(
+                        //       "assets/profile_pic.jpg",
+                        //     ),
+                        //   ),
+                        // ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _userInfo!.name,
+                              style: const TextStyle(fontSize: 25),
+                            ),
+                            Text(
+                              _userInfo!.email,
+                              style: const TextStyle(fontSize: 16),
+                            )
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _displayButtons(),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    _profileInfo?.aboutMe != null
+                        ? Card(
+                            color: AppColor.skyBlue,
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(
+                                _profileInfo!.aboutMe!,
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 14),
                               ),
-                              Text(
-                                _userInfo!.email,
-                                style: const TextStyle(fontSize: 16),
-                              )
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _displayButtons(),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      _profileInfo?.aboutMe != null
-                          ? Card(
-                              // color: Colors.blue[200],
-                              color: AppColor.skyBlue,
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  _profileInfo!.aboutMe!,
-                                  style: const TextStyle(
-                                      color: Colors.black, fontSize: 14),
-                                ),
-                              ))
-                          : Container(),
-                      _profileInfo!.favBooks.isNotEmpty
-                          ? ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 200),
-                              child: Card(
-                                  // color: Colors.blue[200],
-                                  color: AppColor.skyBlue,
-                                  child: Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Favorite Books:",
-                                              style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 14),
-                                            ),
-                                            Flexible(
-                                                child: ListView.builder(
-                                                    scrollDirection:
-                                                        Axis.horizontal,
-                                                    itemCount: _profileInfo
-                                                        ?.favBooks.length,
-                                                    itemBuilder:
-                                                        (BuildContext context,
-                                                            int index) {
-                                                      return Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(5),
-                                                          child: SizedBox(
-                                                              width: 120,
-                                                              child: Column(
-                                                                  children: [
-                                                                    SizedBox(
-                                                                        height:
-                                                                            120,
-                                                                        child: AspectRatio(
-                                                                            aspectRatio:
-                                                                                0.7,
-                                                                            child:
-                                                                                _profileInfo!.favBooks[index].getCoverImage())),
-                                                                    Text(
-                                                                      _profileInfo!
-                                                                          .favBooks[
-                                                                              index]
-                                                                          .title!,
-                                                                      style: const TextStyle(
-                                                                          color: Colors
-                                                                              .black,
-                                                                          fontSize:
-                                                                              14),
-                                                                      softWrap:
-                                                                          true,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis,
-                                                                    )
-                                                                  ])));
-                                                    }))
-                                          ]))))
-                          : const SizedBox.shrink(),
-                      _profileInfo?.favGenre != null
-                          ? Card(
-                              // color: Colors.blue[200],
-                              color: AppColor.skyBlue,
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Text(
-                                  "Favorite Genre: ${_profileInfo!.favGenre!}",
-                                  style: const TextStyle(
-                                      color: Colors.black, fontSize: 14),
-                                ),
-                              ))
-                          : Container(),
-                    ],
-                  ),
-                ))
+                            ))
+                        : const SizedBox.shrink(),
+                    _profileInfo!.favBooks.isNotEmpty
+                        ? ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            child: Card(
+                                color: AppColor.skyBlue,
+                                child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Favorite Books:",
+                                            style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14),
+                                          ),
+                                          Flexible(
+                                              child: ListView.builder(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  itemCount: _profileInfo
+                                                      ?.favBooks.length,
+                                                  itemBuilder:
+                                                      (BuildContext context,
+                                                          int index) {
+                                                    return Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(5),
+                                                        child: SizedBox(
+                                                            width: 120,
+                                                            child: Column(
+                                                                children: [
+                                                                  SizedBox(
+                                                                      height:
+                                                                          120,
+                                                                      child: AspectRatio(
+                                                                          aspectRatio:
+                                                                              0.7,
+                                                                          child: _profileInfo!
+                                                                              .favBooks[index]
+                                                                              .getCoverImage())),
+                                                                  Text(
+                                                                    _profileInfo!
+                                                                        .favBooks[
+                                                                            index]
+                                                                        .title!,
+                                                                    style: const TextStyle(
+                                                                        color: Colors
+                                                                            .black,
+                                                                        fontSize:
+                                                                            14),
+                                                                    softWrap:
+                                                                        true,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  )
+                                                                ])));
+                                                  }))
+                                        ]))))
+                        : const SizedBox.shrink(),
+                    _profileInfo?.favGenre != null
+                        ? Card(
+                            color: AppColor.skyBlue,
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(
+                                "Favorite Genre: ${_profileInfo!.favGenre!}",
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 14),
+                              ),
+                            ))
+                        : const SizedBox.shrink(),
+                  ],
+                )),
+              )
             : Center(child: SharedWidgets.displayCircularProgressIndicator()));
   }
 }

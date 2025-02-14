@@ -76,17 +76,22 @@ class SharedWidgets {
                     style: const TextStyle(fontSize: 14, color: Colors.black),
                   ),
                 ),
-                SizedBox(
-                  width: 140,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.acceptGreen,
-                      padding: const EdgeInsets.all(8),
+                Flexible( // hmm i guess all sizedbox need to be wrapped in flexible to guarantee no overflow
+                  child: SizedBox(
+                    width: 140,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.acceptGreen,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text("Ok", style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ),
                     ),
-                    child: const Text("Ok", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
                 ),
               ],
@@ -139,8 +144,7 @@ class SharedWidgets {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    SizedBox(
-                      width: 140,
+                    Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context, false);
@@ -149,12 +153,14 @@ class SharedWidgets {
                           backgroundColor: AppColor.cancelRed,
                           padding: const EdgeInsets.all(8),
                         ),
-                        child: const Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("Cancel", style: TextStyle(fontSize: 16, color: Colors.black)),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    SizedBox(
-                      width: 140,
+                    Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context, true);
@@ -163,7 +169,10 @@ class SharedWidgets {
                           backgroundColor: AppColor.acceptGreen,
                           padding: const EdgeInsets.all(8),
                         ),
-                        child: Text(aintCareDoItAnywaysText, style: const TextStyle(fontSize: 16, color: Colors.black)),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child:Text(aintCareDoItAnywaysText, style: const TextStyle(fontSize: 16, color: Colors.black)),
+                        ),
                       ),
                     ),
                   ],
@@ -217,8 +226,7 @@ class SharedWidgets {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    SizedBox(
-                      width: 140,
+                    Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context, false);
@@ -227,15 +235,14 @@ class SharedWidgets {
                           backgroundColor: AppColor.cancelRed,
                           padding: const EdgeInsets.all(8),
                         ),
-                        child: const Text(
-                          "No!",
-                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("No!", style: TextStyle(fontSize: 16, color: Colors.black)),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    SizedBox(
-                      width: 140,
+                    Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context, true);
@@ -244,9 +251,9 @@ class SharedWidgets {
                           backgroundColor: AppColor.acceptGreen,
                           padding: const EdgeInsets.all(8),
                         ),
-                        child: const Text(
-                          "Yes!",
-                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("Yes!", style: TextStyle(fontSize: 16, color: Colors.black)),
                         ),
                       ),
                     ),
@@ -266,7 +273,7 @@ class SharedWidgets {
     showDialog(
       context: context,
       builder: (context) {
-        Future.delayed(const Duration(milliseconds: 750), () { // feel free to change duration as you see fit
+        Future.delayed(const Duration(milliseconds: 1000), () { // feel free to change duration as you see fit
           if (context.mounted && !hasPopped) {
             hasPopped = true;
             Navigator.pop(context);
@@ -291,9 +298,12 @@ class SharedWidgets {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    msgToShow,
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      msgToShow,
+                      style: const TextStyle(fontSize: 16, color: Colors.black),
+                    ),
                   ),
                   const SizedBox(width: 20),
                   const Icon(

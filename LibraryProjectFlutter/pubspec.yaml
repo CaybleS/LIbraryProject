@@ -25,8 +25,8 @@ dependencies:
   flutter_dotenv: ^5.2.1
   iconsax_plus: ^1.0.0
   connectivity_plus: ^6.1.2
-  file_picker: ^8.3.1
-  csv: ^6.0.0
+  file_picker: ^8.3.5
+  csv: ^6.0.0 # used for parsing goodreads csv imports
 
 dependency_overrides:
   camera_android_camerax: 0.6.10+1

@@ -146,362 +146,331 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: Colors.blue,
       ),
       backgroundColor: AppColor.appBackgroundColor,
-      body: Card(
-          margin: const EdgeInsets.all(10),
-          child: Padding(
-              padding: const EdgeInsets.all(10),
+      body: Padding(
+          padding: const EdgeInsets.all(15),
+          child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                          flex: 1,
-                          child: Text(
-                            "Display Name:",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
-                        ),
-                        Flexible(
-                            flex: 3,
-                            child: SharedWidgets.displayTextField(
-                                "Display Name",
-                                _nameController,
-                                _showNameErr,
-                                "Please enter a name"))
-                      ]),
-                  const SizedBox(height: 10),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                          flex: 1,
-                          child: Text(
-                            "Profile Picture:",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
-                        ),
-                        Flexible(
-                          child: CircleAvatar(
-                            backgroundImage: (_picUploaded)
-                                ? FileImage(File(_profilePicFile!.path))
-                                : (_picFromDB != null)
-                                    ? NetworkImage(_picFromDB!)
-                                    : const AssetImage(
-                                        "assets/profile_pic.jpg",
-                                      ),
-                            radius: 40,
-                          ),
-                        ),
-                        Flexible(
-                            child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                              ElevatedButton(
-                                onPressed: () async {
-                                  _profilePicFile =
-                                      await selectCoverFromFile(context);
-                                  if (_profilePicFile != null) {
-                                    setState(() {
-                                      _picUploaded = true;
-                                    });
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColor.skyBlue,
-                                    padding: const EdgeInsets.all(8)),
-                                child: const FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text("Upload From File",
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.black))),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Flexible(
+                  flex: 1,
+                  child: Text(
+                    "Display Name:",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                Flexible(
+                    flex: 3,
+                    child: SharedWidgets.displayTextField("Display Name",
+                        _nameController, _showNameErr, "Please enter a name"))
+              ]),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Flexible(
+                  flex: 1,
+                  child: Text(
+                    "Profile Picture:",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                Flexible(
+                  child: CircleAvatar(
+                    backgroundImage: (_picUploaded)
+                        ? FileImage(File(_profilePicFile!.path))
+                        : (_picFromDB != null)
+                            ? NetworkImage(_picFromDB!)
+                            : const AssetImage(
+                                "assets/profile_pic.jpg",
                               ),
-                              (_profilePicFile != null && _picUploaded) ||
-                                      (!_picUploaded &&
-                                          _userModel?.photoUrl != null)
-                                  ? ElevatedButton(
+                    radius: 40,
+                  ),
+                ),
+                Flexible(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                      ElevatedButton(
+                        onPressed: () async {
+                          _profilePicFile = await selectCoverFromFile(context);
+                          if (_profilePicFile != null) {
+                            setState(() {
+                              _picUploaded = true;
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.skyBlue,
+                            padding: const EdgeInsets.all(8)),
+                        child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text("Upload From File",
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.black))),
+                      ),
+                      (_profilePicFile != null && _picUploaded) ||
+                              (!_picUploaded && _userModel?.photoUrl != null)
+                          ? ElevatedButton(
+                              onPressed: () async {
+                                setState(() {
+                                  _profileInfo = null;
+                                  _picFromDB = null;
+                                  _picUploaded = false;
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColor.skyBlue,
+                                  padding: const EdgeInsets.all(8)),
+                              child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text("Clear picture",
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.black))),
+                            )
+                          : const SizedBox.shrink(),
+                    ]))
+              ]),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Flexible(
+                  flex: 1,
+                  child: Text(
+                    "About Me:",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                Flexible(
+                    flex: 3,
+                    child: TextField(
+                      controller: _aboutMeController,
+                      keyboardType:
+                          TextInputType.multiline, // create multiline textbox
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "About Me",
+                        hintStyle:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                        ),
+                        // errorText:
+                        //     isInputInvalid ? invalidInputText : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _aboutMeController
+                                .clear(); // clears the page's controller since dart passes objects by reference
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                      ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ))
+              ]),
+              const SizedBox(height: 10),
+              ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Flexible(
+                                flex: 1,
+                                child: Text(
+                                  "Favorite Books:",
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.black),
+                                ),
+                              ),
+                              Flexible(
+                                  child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                    ElevatedButton(
                                       onPressed: () async {
-                                        setState(() {
-                                          _profileInfo = null;
-                                          _picFromDB = null;
-                                          _picUploaded = false;
-                                        });
+                                        await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    AddFavBook(widget.user,
+                                                        _favBooks)));
+                                        setState(() {});
                                       },
                                       style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColor.skyBlue,
                                           padding: const EdgeInsets.all(8)),
                                       child: const FittedBox(
                                           fit: BoxFit.scaleDown,
-                                          child: Text("Clear picture",
+                                          child: Text("Add Book",
                                               style: TextStyle(
                                                   fontSize: 16,
                                                   color: Colors.black))),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ]))
-                      ]),
-                  const SizedBox(height: 10),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                          flex: 1,
-                          child: Text(
-                            "About Me:",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
-                        ),
-                        Flexible(
-                            flex: 3,
-                            child: TextField(
-                              controller: _aboutMeController,
-                              keyboardType: TextInputType
-                                  .multiline, // create multiline textbox
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white,
-                                hintText: "About Me",
-                                hintStyle: const TextStyle(
-                                    fontSize: 14, color: Colors.grey),
-                                border: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(25.0)),
-                                ),
-                                // errorText:
-                                //     isInputInvalid ? invalidInputText : null,
-                                suffixIcon: IconButton(
-                                  onPressed: () {
-                                    _aboutMeController
-                                        .clear(); // clears the page's controller since dart passes objects by reference
-                                  },
-                                  icon: const Icon(Icons.clear),
-                                ),
-                              ),
-                              onTapOutside: (event) {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                              },
-                            ))
-                      ]),
-                  const SizedBox(height: 10),
-                  // TODO add fav books
-                  // _favBooks.isNotEmpty ?
-                  ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Flexible(
-                                    flex: 1,
-                                    child: Text(
-                                      "Favorite Books:",
-                                      style: TextStyle(
-                                          fontSize: 16, color: Colors.black),
                                     ),
-                                  ),
-                                  Flexible(
-                                      child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        AddFavBook(widget.user,
-                                                            _favBooks)));
-                                            setState(() {});
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColor.skyBlue,
-                                              padding: const EdgeInsets.all(8)),
-                                          child: const FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text("Add Book",
-                                                  style: TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.black))),
-                                        ),
-                                        (_favBooks.isNotEmpty)
-                                            ? ElevatedButton(
-                                                onPressed: () async {
-                                                  setState(() {
-                                                    _favBooks.clear();
-                                                  });
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        AppColor.skyBlue,
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            8)),
-                                                child: const FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    child: Text(
-                                                        "Clear Fav Books",
-                                                        style: TextStyle(
-                                                            fontSize: 16,
-                                                            color:
-                                                                Colors.black))),
-                                              )
-                                            : const SizedBox.shrink(),
-                                      ]))
-                                ]),
-                            _favBooks.isNotEmpty
-                                ? Flexible(
-                                    child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _favBooks.length,
-                                    itemBuilder:
-                                        (BuildContext context, int index) {
-                                      return Padding(
-                                          padding: const EdgeInsets.all(5),
-                                          child: SizedBox(
-                                              width: 120,
-                                              child: Column(children: [
-                                                SizedBox(
-                                                    height: 120,
-                                                    child: AspectRatio(
-                                                        aspectRatio: 0.7,
-                                                        child: _favBooks[index]
-                                                            .getCoverImage())),
-                                                Text(
-                                                  _favBooks[index].title!,
-                                                  style: const TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 14),
-                                                  softWrap: true,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    _favBooks.removeAt(index);
-                                                    setState(() {});
-                                                  },
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                          backgroundColor:
-                                                              AppColor
-                                                                  .cancelRed),
-                                                  child: const Text("Remove",
-                                                      style: TextStyle(
-                                                          fontSize: 16,
-                                                          color: Colors.black)),
-                                                ),
-                                              ])));
-                                    },
-                                    separatorBuilder: (context, index) {
-                                      return Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              0, 40, 0, 100),
-                                          child: IconButton(
+                                    (_favBooks.isNotEmpty)
+                                        ? ElevatedButton(
+                                            onPressed: () async {
+                                              setState(() {
+                                                _favBooks.clear();
+                                              });
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColor.skyBlue,
+                                                padding:
+                                                    const EdgeInsets.all(8)),
+                                            child: const FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text("Clear Fav Books",
+                                                    style: TextStyle(
+                                                        fontSize: 16,
+                                                        color: Colors.black))),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ]))
+                            ]),
+                        _favBooks.isNotEmpty
+                            ? Flexible(
+                                child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _favBooks.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  return Padding(
+                                      padding: const EdgeInsets.all(5),
+                                      child: SizedBox(
+                                          width: 120,
+                                          child: Column(children: [
+                                            SizedBox(
+                                                height: 120,
+                                                child: AspectRatio(
+                                                    aspectRatio: 0.7,
+                                                    child: _favBooks[index]
+                                                        .getCoverImage())),
+                                            Text(
+                                              _favBooks[index].title!,
+                                              style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 14),
+                                              softWrap: true,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            ElevatedButton(
                                               onPressed: () {
-                                                var temp = _favBooks[index];
-                                                _favBooks[index] =
-                                                    _favBooks[index + 1];
-                                                _favBooks[index + 1] = temp;
+                                                _favBooks.removeAt(index);
                                                 setState(() {});
                                               },
-                                              icon: const Icon(
-                                                  Icons.swap_horiz)));
-                                    },
-                                  ))
-                                : const SizedBox.shrink()
-                          ])),
-                  // : const SizedBox.shrink(),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                          flex: 1,
-                          child: Text(
-                            "Favorite Genre:",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
+                                              style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      AppColor.cancelRed),
+                                              child: const Text("Remove",
+                                                  style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.black)),
+                                            ),
+                                          ])));
+                                },
+                                separatorBuilder: (context, index) {
+                                  return Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          0, 40, 0, 100),
+                                      child: IconButton(
+                                          onPressed: () {
+                                            var temp = _favBooks[index];
+                                            _favBooks[index] =
+                                                _favBooks[index + 1];
+                                            _favBooks[index + 1] = temp;
+                                            setState(() {});
+                                          },
+                                          icon: const Icon(Icons.swap_horiz)));
+                                },
+                              ))
+                            : const SizedBox.shrink()
+                      ])),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Flexible(
+                  flex: 1,
+                  child: Text(
+                    "Favorite Genre:",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                Flexible(
+                    flex: 3,
+                    child: TextField(
+                      controller: _favGenreController,
+                      keyboardType:
+                          TextInputType.multiline, // create multiline textbox
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Favorite Genre",
+                        hintStyle:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
                         ),
-                        Flexible(
-                            flex: 3,
-                            child: TextField(
-                              controller: _favGenreController,
-                              keyboardType: TextInputType
-                                  .multiline, // create multiline textbox
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white,
-                                hintText: "Favorite Genre",
-                                hintStyle: const TextStyle(
-                                    fontSize: 14, color: Colors.grey),
-                                border: const OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(25.0)),
-                                ),
-                                // errorText:
-                                //     isInputInvalid ? invalidInputText : null,
-                                suffixIcon: IconButton(
-                                  onPressed: () {
-                                    _favGenreController
-                                        .clear(); // clears the page's controller since dart passes objects by reference
-                                  },
-                                  icon: const Icon(Icons.clear),
-                                ),
-                              ),
-                              onTapOutside: (event) {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                              },
-                            ))
-                      ]),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColor.skyBlue),
-                            child: const Text("Cancel",
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.black)),
-                          ),
+                        // errorText:
+                        //     isInputInvalid ? invalidInputText : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _favGenreController
+                                .clear(); // clears the page's controller since dart passes objects by reference
+                          },
+                          icon: const Icon(Icons.clear),
                         ),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _onSubmit();
-                            },
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColor.skyBlue),
-                            child: const Text("Save Changes",
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.black)),
-                          ),
-                        ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ))
+              ]),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.skyBlue),
+                        child: const Text("Cancel",
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.black)),
                       ),
-                    ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _onSubmit();
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.skyBlue),
+                        child: const Text("Save Changes",
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.black)),
+                      ),
+                    ),
                   ),
                 ],
-              ))),
+              ),
+            ],
+          ))),
     );
   }
 }
