@@ -306,11 +306,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
   String kGetTime(DateTime lastSign) {
     int time = DateTime.now().toUtc().difference(lastSign.toUtc()).inMinutes;
-    if (time < 1) return 'last seen recently';
-    if (time >= 1 && time < 60) return '$time minutes ago';
-    if (time < 60 && time >= 1440) return '${time ~/ 60} hours ago';
-    if (time >= 1440 && time < 10080) return 'last seen less than a week';
-    return 'last seen a long time ago';
+    print(time);
+    if (time <= 1) return 'Active now';
+    if (time > 1 && time < 60) return 'Last seen $time minutes ago';
+    if (time > 60 && time <= 1440) return 'Last seen ${time ~/ 60} hour${time ~/ 60 == 1?'':'s'} ago';
+    if (time >= 1440 && time < 10080) return 'Last seen less than a week';
+    return 'Last seen a long time ago';
   }
 
   Stream getUserData() {

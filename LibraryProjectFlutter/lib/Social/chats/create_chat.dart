@@ -33,54 +33,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     }
     showBottombar = true;
     refreshBottombar.value = true;
-    // if (members.length == 1) {
-    // } //
-    // else if (members.length > 1 && groupNameController.text.trim().isNotEmpty) {
-    //   members.add(userModel.value!);
-    //   String chatId = _database.child('chats/').push().key!;
-    //   Chat chat = Chat(
-    //     id: chatId,
-    //     name: groupNameController.text.trim(),
-    //     avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
-    //     participants: members.map((e) => e.uid).toList(),
-    //     type: ChatType.group,
-    //     createdBy: userModel.value!.uid,
-    //   );
-    //
-    //   await _database.child('chats/$chatId').set(chat.toJson());
-    //   final messageId = _database.child('messages/$chatId').push().key;
-    //   MessageModel message = MessageModel(
-    //     id: messageId!,
-    //     text: '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
-    //     senderId: userModel.value!.uid,
-    //     sentTime: DateTime.now(),
-    //     type: MessageType.event,
-    //   );
-    //   await _database.child('messages/$chatId/$messageId').set(message.toJson());
-    //
-    //   for (var member in members) {
-    //     await _database.child('userChats/${member.uid}/$chatId').set({
-    //       'lastMessage': {
-    //         'text': '${userModel.value!.name} created the group «${groupNameController.text.trim()}»',
-    //         'timestamp': DateTime.now().millisecondsSinceEpoch,
-    //         'sender': userModel.value!.uid,
-    //       },
-    //       'unreadCount': 0,
-    //     });
-    //   }
-    //   showBottombar = false;
-    //   refreshBottombar.value = true;
-    //   if (mounted) {
-    //     await Navigator.pushReplacement(
-    //       context,
-    //       MaterialPageRoute(
-    //         builder: (context) => ChatScreen(chat: chat),
-    //       ),
-    //     );
-    //   }
-    //   showBottombar = true;
-    //   refreshBottombar.value = true;
-    // }
+
   }
 
   Future<String> getChatRoomId(String currentUser, String contact) async {
