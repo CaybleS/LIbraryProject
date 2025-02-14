@@ -99,7 +99,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                                   width: 70,
                                   height: 70,
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: chat.avatarColor,
                                     shape: BoxShape.circle,
                                   ),
                                   padding: const EdgeInsets.all(20),

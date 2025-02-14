@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 
 class UserAvatarWidget extends StatelessWidget {
   const UserAvatarWidget({
@@ -31,7 +32,16 @@ class UserAvatarWidget extends StatelessWidget {
               fit: BoxFit.cover,
               height: height,
               width: width,
-              placeholder: (context, url) => const CircularProgressIndicator(),
+              placeholder: (context, url) => Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: avatarColor,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(10),
+                child: SharedWidgets.displayCircularProgressIndicator(2),
+              ),
               errorWidget: (context, url, error) => const Icon(Icons.error),
             )
           : Container(

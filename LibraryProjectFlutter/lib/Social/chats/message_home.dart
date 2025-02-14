@@ -73,6 +73,9 @@ class _MessageHomeState extends State<MessageHome> {
             alignment: Alignment.center,
             width: size.width * .85,
             child: SearchBar(
+              onTapOutside: (event) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               onChanged: (value) {
                 searchQuery.value = value;
               },
