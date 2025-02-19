@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/custom_add.dart';
 import 'package:library_project/add_book/scan/scanner_driver.dart';
 import 'package:library_project/add_book/search/search_driver.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/appbar.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:library_project/ui/colors.dart';
 
@@ -36,22 +37,19 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
     _bookSearchInstance = SearchDriver(widget.user, userLibrary);
     _bookScanInstance = ScannerDriver(widget.user, userLibrary);
     _addBookListener = () {
-      if (refreshNotifier.value == addBookPageIndex) {
-        // whats happening here? Basically this refreshes the already added books if we are on this page, if
-        // userLibrary has been updated. This will currently ONLY occur if userLibrary was updated in another instance
-        // of the app on homepage, but if users are, in the future, able to remove added books 
-        // on this search page, it should work for that also.
+      // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
+      if (selectedIndex == addBookPageIndex) {
         _bookSearchInstance.clearAlreadyAddedBooks();
         setState(() {});
       }
     };
-    refreshNotifier.addListener(_addBookListener);
+    pageRefreshNotifier.addListener(_addBookListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
-    refreshNotifier.removeListener(_addBookListener);
+    pageRefreshNotifier.removeListener(_addBookListener);
     super.dispose();
   }
 
@@ -264,12 +262,7 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Books"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
-      ),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user, title: "Add Books"),
       body: Column(
         children: [
           Padding(

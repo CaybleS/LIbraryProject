@@ -6,11 +6,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,7 +50,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         title: const Text(
           'Edit chat info',
           style: TextStyle(
@@ -251,7 +252,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: textId!,
         text: '${userModel.value!.name} changed group name to «${controller.text}»',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$textId').set(textMessage.toJson());
@@ -264,7 +265,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: textId!,
         text: '${userModel.value!.name} updated group photo',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$textId').set(titleMessage.toJson());
@@ -273,7 +274,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: photoId!,
         text: chat.chatImage!,
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$photoId').set(photoMessage.toJson());
@@ -284,7 +285,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       await dbReference.child('userChats/$participantId/${chat.id}').update({
         'lastMessage': {
           'text': messages.last.text,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
           'sender': userModel.value!.uid
         },
         'unreadCount': participantId == userModel.value!.uid ? 0 : ServerValue.increment(messages.length),

@@ -1,23 +1,20 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/chats/message_home.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/auth.dart';
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/core/settings.dart';
+import 'package:library_project/ui/colors.dart';
 
-class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
-  const CustomAppBar({super.key, required this.curPage});
-
-  final String curPage;
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final User user;
+  const CustomAppBar(this.user, {this.title = "", super.key});
 
   @override
+  // this is the default appbar "toolbar" height I believe, kToolbarHeight is usually 56px but it seems it can vary
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  State<CustomAppBar> createState() => _CustomAppBarState();
-}
-
-class _CustomAppBarState extends State<CustomAppBar> {
+  
   void goToHome() {
     bottombarItemTapped(homepageIndex);
   }
@@ -26,30 +23,34 @@ class _CustomAppBarState extends State<CustomAppBar> {
     bottombarItemTapped(profileIndex);
   }
 
-  void goToSettings() {
-    bottombarItemTapped(settingsIndex);
+  void goToSettings(BuildContext context) {
+    // dont need to check if current page is settings here since settings isnt a "root" page so it doesnt use the custom appbar, 
+    // so you cant get to settings from settings anyways
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Settings(user)));
   }
 
   void goToFriends() {
     bottombarItemTapped(friendsPageIndex);
   }
 
-  void goToMessages() {
-    if (widget.curPage != "chats") {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const MessageHome()));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.blue,
+      backgroundColor: AppColor.appbarColor,
       leading: MenuAnchor(
         menuChildren: [
-          MenuItemButton(onPressed: () => {goToHome()}, child: const Icon(Icons.home)),
-          MenuItemButton(onPressed: () => {goToProfile()}, child: const Icon(Icons.person)),
-          MenuItemButton(onPressed: () => {goToSettings()}, child: const Icon(Icons.settings)),
-          MenuItemButton(onPressed: () => {logout(context)}, child: const Icon(Icons.logout))
+          MenuItemButton(onPressed: () => {
+            goToHome()
+          }, child: const Icon(Icons.home)),
+          const Divider(),
+          MenuItemButton(onPressed: () => {
+            goToSettings(context)
+          }, child: const Icon(Icons.settings)),
+          const Divider(),
+          MenuItemButton(onPressed: () => {
+            logout(context)
+            
+          }, child: const Icon(Icons.logout)),
         ],
         builder: (context, controller, child) {
           return IconButton(
@@ -67,83 +68,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
           );
         },
       ),
-      actions: [
-        GestureDetector(
-          onTap: () {
-            goToMessages();
-          },
-          child: Stack(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(
-                  Icons.message_rounded,
-                  size: 30,
-                ),
-              ),
-              StreamBuilder(
-                stream: getChatList(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Container();
-                  }
-                  int unreadMessages = snapshot.data!;
-
-                  if (unreadMessages == 0) {
-                    return const SizedBox(height: 22);
-                  }
-                  return Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        unreadMessages.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontFamily: 'Poppins',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(
-          width: 10,
-        ),
-        IconButton(
-            onPressed: () {
-              goToFriends();
-            },
-            icon: const Icon(Icons.person_add_alt_1, size: 30)),
-        const SizedBox(
-          width: 10,
-        )
-      ],
+      title: Text(title),
+      centerTitle: true,
     );
-  }
-
-  Stream<int> getChatList() {
-    if (userModel.value == null) return Stream.value(0);
-    return dbReference.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) {
-      final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (chatsMap == null) return 0;
-      int unreadMessages = 0;
-      for (var entry in chatsMap.entries) {
-        final unreadCount = entry.value['unreadCount'] as int;
-        if (unreadCount > 0) unreadMessages += unreadCount;
-      }
-      return unreadMessages;
-    });
   }
 }

@@ -5,7 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/user.dart';
 
@@ -39,7 +39,7 @@ Future<User?> signInWithGoogle() async {
       final userRef = await dbReference.child('users/${user.uid}').once();
       if (userRef.snapshot.value != null) {
         Map data = userRef.snapshot.value as Map;
-        userModel.value = UserModel.fromJson(data);
+        userModel.value = UserModel.fromJson(data, userRef.snapshot.key!);
       }
 
       await changeStatus(true);
@@ -96,7 +96,7 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
     final userRef = await dbReference.child('users/${userCredential.user!.uid}').once();
     if (userRef.snapshot.value != null) {
       Map data = userRef.snapshot.value as Map;
-      userModel.value = UserModel.fromJson(data);
+      userModel.value = UserModel.fromJson(data, userRef.snapshot.key!);
     }
 
     return {'status': true, 'user': userCredential.user};

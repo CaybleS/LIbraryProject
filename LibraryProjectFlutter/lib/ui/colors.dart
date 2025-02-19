@@ -11,8 +11,9 @@ class AppColor {
   static const Color pink = Color(0xFFCBA2EA);
   static const Color cancelRed = Color(0xFFD32F2F);
   static const Color acceptGreen = Color(0xFF43A047);
-  static const Color appBackgroundColor = Color(0xFFBDBDBD); // eventually will change all scaffold background colors to this btw (its the same as grey[400])
+  static const Color appBackgroundColor = Color(0xFFBDBDBD); // grey[400], also dont set this in Scaffold widgets you create; its set in main.dart for all scaffolds
   static const Color lightGray = Color(0xFFEEEEEE); // grey[200]
+  static const Color appbarColor = Colors.blue;
   // static const Color purple = Color(0xFF3F3381);
   // static const Color darkPurple = Color(0xFF1D1F5A);
 }

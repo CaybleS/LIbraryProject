@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends/friend_scanner_driver.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -205,9 +205,8 @@ class _AddFriendPageState extends State<AddFriendPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColor.appbarColor,
         ),
-        backgroundColor: Colors.grey[400],
         body: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(

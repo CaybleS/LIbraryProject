@@ -1,11 +1,12 @@
 import 'dart:math';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/appbar.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
@@ -16,7 +17,8 @@ import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class MessageHome extends StatefulWidget {
-  const MessageHome({super.key});
+  final User user; // only used for rendering the appbar
+  const MessageHome(this.user, {super.key});
 
   @override
   State<MessageHome> createState() => _MessageHomeState();
@@ -25,6 +27,29 @@ class MessageHome extends StatefulWidget {
 class _MessageHomeState extends State<MessageHome> {
   final _database = FirebaseDatabase.instance.ref();
   ValueNotifier<String> searchQuery = ValueNotifier('');
+  // Since this page is loaded into memory via offstage from the bottombar right when the app starts up, it would previously try to setup
+  // streams listening on user's data, but the user is not fetched yet. So this listener simply waits for the user data to be fetched
+  // and just refreshes the page. There is also logic to not render the page at all in the build method until the userModel value is set.
+  late final VoidCallback _userHasBeenSetListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _userHasBeenSetListener = () {
+      if (userModel.value != null) {
+        // user is set here so we can start rendering this page
+        setState(() {});
+        userModel.removeListener(_userHasBeenSetListener);
+      }
+    };
+    userModel.addListener(_userHasBeenSetListener);
+  }
+
+  @override
+  void dispose() {
+    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    super.dispose();
+  }
 
   void goToNewChatScreen() {
     Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateChatScreen()));
@@ -32,25 +57,12 @@ class _MessageHomeState extends State<MessageHome> {
 
   @override
   Widget build(BuildContext context) {
+    if (userModel.value == null) { // This page's logic requires userModel value to be set. This page's initState() handles it.
+      return const SizedBox.shrink();
+    }
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
-        ),
-        title: const Text(
-          'Chats',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            fontFamily: 'Poppins',
-          ),
-        ),
-      ),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user, title: "Chats"),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           goToNewChatScreen();
@@ -181,7 +193,7 @@ class _MessageHomeState extends State<MessageHome> {
                                     ),
                                   );
                                 } //
-                                contact = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+                                contact = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
                                 return _chatItemBuilder(context, chat, contact);
                               },
                             );
@@ -237,7 +249,7 @@ class _MessageHomeState extends State<MessageHome> {
   }
 
   String _formatTimestamp(DateTime date) {
-    return DateFormat('hh:mm a').format(date);
+    return DateFormat('hh:mm a').format(date.toLocal());
   }
 
   Widget _createAvatarWidget(Chat chat, UserModel? contact) {
@@ -479,7 +491,7 @@ class _MessageHomeState extends State<MessageHome> {
       await checkAndDeleteGroupIfEmpty(chat);
     }
 
-    int timestamp = DateTime.now().millisecondsSinceEpoch;
+    int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
     await dbReference.child('chats/${chat.id}/cleared/${userModel.value!.uid}').set(timestamp);
   }
 
@@ -495,7 +507,7 @@ class _MessageHomeState extends State<MessageHome> {
         id: id!,
         text: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -505,7 +517,7 @@ class _MessageHomeState extends State<MessageHome> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': ServerValue.increment(1),

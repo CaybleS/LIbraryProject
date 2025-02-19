@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
 
@@ -59,15 +60,15 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     final size = MediaQuery.sizeOf(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         automaticallyImplyLeading: false,
         title: StreamBuilder(
           stream: FirebaseDatabase.instance.ref('users/${widget.contact.uid}').onValue,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return Container();
+              return const SizedBox.shrink();
             }
-            final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+            final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
             return Row(
               children: [
                 Expanded(
@@ -301,11 +302,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   String _createTimeTextWidget(DateTime hm) {
-    return DateFormat('hh:mm a').format(hm);
+    return DateFormat('hh:mm a').format(hm.toLocal());
   }
 
   String kGetTime(DateTime lastSign) {
-    int time = DateTime.now().toUtc().difference(lastSign.toUtc()).inMinutes;
+    int time = DateTime.now().toUtc().difference(lastSign).inMinutes;
     print(time);
     if (time <= 1) return 'Active now';
     if (time > 1 && time < 60) return 'Last seen $time minutes ago';
@@ -314,7 +315,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     return 'Last seen a long time ago';
   }
 
-  Stream getUserData() {
+  Stream getUserData() { // TODO this isnt used btw but i didnt make this file so idk if its planned to be used or not just letting you know
     return FirebaseDatabase.instance.ref('users/${widget.contact.uid}').onValue;
   }
 
@@ -335,7 +336,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           id: id!,
           text: messageText,
           senderId: userModel.value!.uid,
-          sentTime: DateTime.now(),
+          sentTime: DateTime.now().toUtc(),
         );
         if (isReply) {
           message.replyTo = replyText;
@@ -351,7 +352,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
             'text': messageText,
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': 0
@@ -359,7 +360,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         await _database.child('userChats/${widget.contact.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
             'text': messageText,
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': ServerValue.increment(1)
@@ -378,11 +379,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   String _formatDate(DateTime sentTime) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     if (_isSameDay(sentTime, now)) return 'Today';
     if (_isSameDay(sentTime, yesterday)) return 'Yesterday';
-    return DateFormat('MM/dd/yyyy').format(sentTime);
+    return DateFormat('MM/dd/yyyy').format(sentTime.toLocal());
   }
 
   void uploadImage() async {
@@ -406,11 +407,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         senderId: userModel.value!.uid,
         text: url,
         type: MessageType.image,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
       );
       Map<String, dynamic> userLastMessage = {
         'text': '${userModel.value!.name}: Photo',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
         'sender': userModel.value!.uid
       };
       await _database.child('messages/${widget.chatRoomId}/$messageId').set(message.toJson());

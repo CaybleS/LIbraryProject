@@ -20,13 +20,16 @@ ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 const int homepageIndex = 0;
 const int addBookPageIndex = 1;
 const int friendsPageIndex = 2;
-const int profileIndex = 3;
-const int settingsIndex = 4;
+const int messagesIndex = 3;
+const int profileIndex = 4;
 
-// Needed to run functions on the 5 pages when a page is selected on the bottombar. Initialized as -1 to signal that we are not really on a page yet, and when
-// its set to values 0-4 for each page, if that page has a listener for when its set to that value, that page can run some stuff whenever its selected on the bottombar
-// this is needed due to the bottombar loading all 5 pages in memory at a time so it allows for logic to cause refreshes ONLY for pages the user is currently on.
-ValueNotifier<int> refreshNotifier = ValueNotifier<int>(-1);
+// all these do is trigger some logic for any listeners, whenever they get updated. So this one is the main refresh notifier,
+// I just increment it to signify that the page should refresh
+ValueNotifier<int> pageRefreshNotifier = ValueNotifier<int>(0);
+// Basically, the valueNotifier refreshes every time it gets updated, so having it as a bool is not really the best
+// since if you set it to true to signal a refresh you'd need to set it to false after and that would trigger another refresh.
+// It only has 1 listener though so I just check if the value is true and if so update it and set it to false again.
+// But for the normal refresh notifier this is too complicated so its just incremented to signal a refresh.
 ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
 bool showBottombar = true; // this and the refreshBottombar allows for logic to hide bottombar on certain pages
 int selectedIndex = 0;

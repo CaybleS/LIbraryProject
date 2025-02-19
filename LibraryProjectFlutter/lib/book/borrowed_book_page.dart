@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
+import 'package:library_project/ui/colors.dart';
 
 class BorrowedBookPage extends StatefulWidget {
   final User user;
@@ -30,9 +31,10 @@ class _BorrowedBookPageState extends State<BorrowedBookPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        title: const Text("Borrowed Book Info"),
+        centerTitle: true,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(

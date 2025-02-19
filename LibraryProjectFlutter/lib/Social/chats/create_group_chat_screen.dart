@@ -8,11 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/Social/chats/chat_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
@@ -38,7 +39,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
@@ -280,7 +281,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
       id: messageId!,
       text: '${userModel.value!.name} created the group «${controller.text.trim()}»',
       senderId: userModel.value!.uid,
-      sentTime: DateTime.now(),
+      sentTime: DateTime.now().toUtc(),
       type: MessageType.event,
     );
     await _database.child('messages/$chatId/$messageId').set(message.toJson());
@@ -289,7 +290,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
       await _database.child('userChats/${member.uid}/$chatId').set({
         'lastMessage': {
           'text': '${userModel.value!.name} created the group «${controller.text.trim()}»',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
           'sender': userModel.value!.uid,
         },
         'unreadCount': 0,

@@ -2,8 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/profile/edit_profile.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/database/subscriptions.dart';
 // import 'package:library_project/models/book.dart';
 import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
@@ -40,18 +40,19 @@ class _ProfileState extends State<Profile> {
               userIdToProfile, widget.profileUserId, profileUpdated);
     }
     _userProfileUpdatedListener = () {
-      if (refreshNotifier.value == profileIndex) {
+      // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
+      if (selectedIndex == profileIndex) {
         // _userInfo = userIdToUserModel[widget.profileUserId]!;
         _updateProfile();
       }
     };
-    refreshNotifier.addListener(_userProfileUpdatedListener);
+    pageRefreshNotifier.addListener(_userProfileUpdatedListener);
     _updateProfile();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_userProfileUpdatedListener);
+    pageRefreshNotifier.removeListener(_userProfileUpdatedListener);
     super.dispose();
   }
 
@@ -135,8 +136,7 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: const CustomAppBar(curPage: "profile"),
-        backgroundColor: Colors.grey[400],
+        appBar: CustomAppBar(widget.user),
         body: (_userInfo != null && _profileInfo != null)
             ? Padding(
                 padding: const EdgeInsets.all(15),

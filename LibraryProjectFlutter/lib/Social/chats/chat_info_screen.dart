@@ -3,12 +3,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/edit_chat_info_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class ChatInfoScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColor.appbarColor,
           actions: [
             GestureDetector(
               onTap: () async {
@@ -217,7 +218,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
     for (final userId in chat.participants) {
       final userRef = await dbReference.child('users/$userId').once();
       if (userRef.snapshot.value != null) {
-        members.add(UserModel.fromJson(userRef.snapshot.value as Map<dynamic, dynamic>));
+        members.add(UserModel.fromJson(userRef.snapshot.value as Map<dynamic, dynamic>, userRef.snapshot.key!));
       }
     }
     setState(() {});
@@ -351,7 +352,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
           id: id!,
           text: '${userModel.value!.name} added ${member.name} to a group',
           senderId: userModel.value!.uid,
-          sentTime: DateTime.now(),
+          sentTime: DateTime.now().toUtc(),
           type: MessageType.event,
         );
         await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -360,7 +361,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} added ${newMembers.last.name} to a group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': participantId == userModel.value!.uid ? 0 : ServerValue.increment(newMembers.length),
@@ -389,7 +390,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
       await dbReference.child('chats/${chat.id}').remove();
     }//
     else{
-      int timestamp = DateTime.now().millisecondsSinceEpoch;
+      int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
       await dbReference.child('chats/${chat.id}/cleared/${userModel.value!.uid}').set(timestamp);
 
       final id = dbReference.child('messages/${chat.id}').push().key;
@@ -397,7 +398,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         id: id!,
         text: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -407,7 +408,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': ServerValue.increment(1),

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
 enum _ReadStatus { notRead, currentlyReading, unknown, read }
@@ -181,9 +182,8 @@ class _BookPageState extends State<BookPage> {
       appBar: AppBar(
         title: const Text("Book Info"),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -302,8 +302,8 @@ class _BookPageState extends State<BookPage> {
                         SharedWidgets.displayErrorDialog(context, "You can't remove lent books! Please return the book first.");
                         return;
                       }
-                      bool hasRemoved = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
-                      if (hasRemoved) {
+                      bool shouldRemove = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
+                      if (shouldRemove) {
                         widget.book.remove(widget.user.uid);
                         if (context.mounted) {
                           Navigator.pop(context);

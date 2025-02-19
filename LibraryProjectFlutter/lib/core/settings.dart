@@ -1,35 +1,13 @@
-/*TODO (remove these comments when done) things to put in settings. Some of these are just ideas, some of these must exist.
-1.) ability to disable or enable every single notification, independently
-(this should probably be a nested listview which can be hidden which is common design for settings it seems) (at least thats my first/only thought for ui of it)
-2.) ability to clear entire user library (prob should exist at this point now that goodreads importing exists imo)
-3.) ability to not show real name (the name pulled from google) (maybe they should be able to edit this name also but idk)
-(could this extend to only showing your real name to certain people or is that extra?)
-4.) 🚨🚨delete account🚨🚨 
-(how would this affect chats with this user? Most things just get deleted but would their messages in the chats remain, and would their name in
-the chats remain, imo their name should change to <Deleted User> or something but msg should remain. No idea if thats feasible tho or how to do it)
-5.) Logout
-6.) certain stats such as num books lent out, num books lent to me, etc.
-7.) letting users specify AM/PM or 24 hour time in chats
-8.) maybe a "dont ask again", independent for every SharedWidgets.displayConfirmActionDialog? After thinking on it, dont like the idea, but its an idea. Better for web.
-9.) maybe this page could have goodreads import or will it be on add books page? idk probably latter right?
-(it could also have export too, issue being it would only export the books which have isbns in google books/open library apis, which is fine I guess, is it worth idk)
-10.) idk
-// TODO stuff which can be here. Delete this eventually.
+// TODO stuff which can be here. Just ideas to be clear, not requirements. Delete this eventually.
 // logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats, goodreads stuff, rate button which links to google play store,
 // feedback form which links to an anonymous feedback google form or something
-
-
-
-*/
-
 
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/goodreads/goodreads_dialog.dart';
 import 'package:library_project/app_startup/auth.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
-import 'appbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Settings extends StatefulWidget {
@@ -53,29 +31,25 @@ class _SettingsState extends State<Settings> {
   void initState() {
     super.initState();
     _userLibraryListener = () {
-      if (refreshNotifier.value == settingsIndex) {
-        numBooksLent = 0;
-        for (int i = 0; i < userLibrary.length; i++) {
-          if (userLibrary[i].lentDbKey != null) {
-            numBooksLent++;
-          }
+      numBooksLent = 0;
+      for (int i = 0; i < userLibrary.length; i++) {
+        if (userLibrary[i].lentDbKey != null) {
+          numBooksLent++;
         }
         setState(() {});
       }
     };
     _booksLentToMeListener = () {
-      if (refreshNotifier.value == settingsIndex) {
-        setState(() {});
-      }
+      setState(() {});
     };
-    refreshNotifier.addListener(_userLibraryListener);
-    refreshNotifier.addListener(_booksLentToMeListener);
+    pageRefreshNotifier.addListener(_userLibraryListener);
+    pageRefreshNotifier.addListener(_booksLentToMeListener);
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_userLibraryListener);
-    refreshNotifier.removeListener(_booksLentToMeListener);
+    pageRefreshNotifier.removeListener(_userLibraryListener);
+    pageRefreshNotifier.removeListener(_booksLentToMeListener);
     super.dispose();
   }
 
@@ -163,16 +137,15 @@ class _SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(curPage: "settings"),
-      backgroundColor: Colors.grey[400],
+      appBar: AppBar(
+        backgroundColor: AppColor.appbarColor,
+        title: const Text("Settings"),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 25),
         child: Column(
           children: [
-            const Text(
-              "Settings",
-              style: TextStyle(fontSize: 20, color: Colors.black),
-            ),
             ElevatedButton(
               onPressed: () async {
                 if (_pressedAButton) {

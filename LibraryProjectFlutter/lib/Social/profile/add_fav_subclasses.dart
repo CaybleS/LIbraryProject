@@ -230,9 +230,8 @@ class _CustomAddFavState extends State<CustomAddFav> {
       appBar: AppBar(
         title: const Text("Input Book To Add"),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Padding(
         padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
         child: Column(

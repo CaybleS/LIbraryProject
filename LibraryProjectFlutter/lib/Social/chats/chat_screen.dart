@@ -7,11 +7,12 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/Social/chats/chat_info_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
 
@@ -141,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (snapshot.data == null || snapshot.data!.snapshot.value == null) {
                     return const SizedBox();
                   }
-                  final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+                  final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
                   return Column(
                     children: [
                       if (!_isSameDay(messages[index + 1].sentTime, message.sentTime))
@@ -289,9 +290,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.grey[400],
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
@@ -422,7 +422,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _createTimeTextWidget(DateTime hm) {
-    return DateFormat('hh:mm a').format(hm);
+    return DateFormat('hh:mm a').format(hm.toLocal());
   }
 
   void sendMessage() async {
@@ -447,7 +447,7 @@ class _ChatScreenState extends State<ChatScreen> {
           id: id!,
           text: messageText,
           senderId: userModel.value!.uid,
-          sentTime: DateTime.now(),
+          sentTime: DateTime.now().toUtc(),
         );
 
         await dbRef.child('messages/${chat.id}/$id').set(message.toJson());
@@ -456,7 +456,7 @@ class _ChatScreenState extends State<ChatScreen> {
           dbRef.child('userChats/$participantId/${chat.id}').update({
             'lastMessage': {
               'text': '${userModel.value!.name}: $messageText',
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
+              'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
               'sender': userModel.value!.uid
             },
             'unreadCount': participantId == userModel.value!.uid ? 0 : ServerValue.increment(1)
@@ -472,11 +472,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _formatDate(DateTime sentTime) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     if (_isSameDay(sentTime, now)) return 'Today';
     if (_isSameDay(sentTime, yesterday)) return 'Yesterday';
-    return DateFormat('MM/dd/yyyy').format(sentTime);
+    return DateFormat('MM/dd/yyyy').format(sentTime.toLocal());
   }
 
   void uploadImage() async {
@@ -500,11 +500,11 @@ class _ChatScreenState extends State<ChatScreen> {
         senderId: userModel.value!.uid,
         text: url,
         type: MessageType.image,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
       );
       Map<String, dynamic> userLastMessage = {
         'text': '${userModel.value!.name}: Photo',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
         'sender': userModel.value!.uid
       };
       await dbRef.child('messages/${chat.id}/$messageId').set(message.toJson());

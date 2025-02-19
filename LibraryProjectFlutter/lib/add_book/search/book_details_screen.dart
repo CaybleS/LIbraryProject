@@ -11,9 +11,10 @@ class BookDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        title: const Text("Book Info"),
+        centerTitle: true,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(

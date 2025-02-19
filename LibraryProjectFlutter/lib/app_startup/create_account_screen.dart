@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'auth.dart';
 
@@ -66,7 +67,7 @@ class _CreateAccountState extends State<CreateAccount> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColor.appbarColor,
           leading: GestureDetector(
             onTap: () => Navigator.pop(context),
             child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
@@ -82,7 +83,6 @@ class _CreateAccountState extends State<CreateAccount> {
           ),
           centerTitle: true,
         ),
-        backgroundColor: Colors.grey[400],
         body: Stack(
           children: [
             SingleChildScrollView(

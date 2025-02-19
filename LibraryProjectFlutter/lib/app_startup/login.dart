@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/app_startup/create_account_screen.dart';
 import 'package:library_project/app_startup/persistent_bottombar.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'auth.dart';
 
@@ -132,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
     final size = MediaQuery.of(context).size;
     return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColor.appbarColor,
           title: const Text(
             'ShelfSwap',
             style: TextStyle(
@@ -147,7 +148,6 @@ class _LoginPageState extends State<LoginPage> {
           //  TODO: add app logo
           // ],
         ),
-        backgroundColor: Colors.grey[400],
         body: Stack(
           children: [
             SingleChildScrollView(
@@ -158,7 +158,8 @@ class _LoginPageState extends State<LoginPage> {
                   const Text(
                     'Welcome!',
                     style: TextStyle(
-                      color: Colors.blue,
+                      // it was originally the color of the appbar (hard-coded color blue) by whoever made this. I think it's fine to make it the same color as appbar.
+                      color: AppColor.appbarColor,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',

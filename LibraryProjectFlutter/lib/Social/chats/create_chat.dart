@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/create_group_chat_screen.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class CreateChatScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),

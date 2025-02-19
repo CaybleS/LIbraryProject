@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/database/subscriptions.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 
 enum _SortingOption {dateAdded, title, author}
 
@@ -37,25 +38,23 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
       friendIdToLibrarySubscription[widget.friend.uid] = setupFriendsBooksSubscription(friendIdToBooks, widget.friend.uid, friendsBooksUpdated);
     }
     _friendsBooksUpdatedListener = () {
-      if (refreshNotifier.value == friendsPageIndex) {
-        _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
-        if (friendIdToBooks[widget.friend.uid]!.isEmpty) {
-          _showEmptyLibraryMsg = true;
-        }
-        else {
-          _showEmptyLibraryMsg = false;
-        }
-        _updateList();
+      _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
+      if (friendIdToBooks[widget.friend.uid]!.isEmpty) {
+        _showEmptyLibraryMsg = true;
       }
+      else {
+        _showEmptyLibraryMsg = false;
+      }
+      _updateList();
     };
-    refreshNotifier.addListener(_friendsBooksUpdatedListener);
+    pageRefreshNotifier.addListener(_friendsBooksUpdatedListener);
     _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
     _updateList();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_friendsBooksUpdatedListener);
+    pageRefreshNotifier.removeListener(_friendsBooksUpdatedListener);
     _filterBooksTextController.dispose();
     super.dispose();
   }
@@ -329,9 +328,8 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
       appBar: AppBar( // TODO in my view a messenger link should be somewhere. Could be on appbar, idk, but decide if it should be somewhere here or not.
         title: Text("${widget.friend.uid.substring(0, 10)}'s books"), // TODO change this to be username or somethng idk
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Column(
         children: [
           Padding(

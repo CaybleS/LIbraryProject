@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
@@ -42,27 +42,25 @@ class _BookLendDialogState extends State<BookLendDialog> {
     super.initState();
     _selectedFriendId = widget.idToLendTo;
     _friendsUpdatedListener = () {
-      if (refreshNotifier.value == homepageIndex) {
-        if (friends.isEmpty) {
-          _noFriends = true;
-        }
-        else {
-          _noFriends = false;
-        }
-        // if the selected friend got removed from friends list
-        if (_selectedFriendId != null && !(friends.map((item) => item.uid).contains(_selectedFriendId))) {
-          _selectedFriendId = null;
-        }
-        _filter(_filterFriendsTextController.text);
+      if (friends.isEmpty) {
+        _noFriends = true;
       }
+      else {
+        _noFriends = false;
+      }
+      // if the selected friend got removed from friends list
+      if (_selectedFriendId != null && !(friends.map((item) => item.uid).contains(_selectedFriendId))) {
+        _selectedFriendId = null;
+      }
+      _filter(_filterFriendsTextController.text);
     };
-    refreshNotifier.addListener(_friendsUpdatedListener);
+    pageRefreshNotifier.addListener(_friendsUpdatedListener);
     _getUnfilteredShownList();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_friendsUpdatedListener);
+    pageRefreshNotifier.removeListener(_friendsUpdatedListener);
     _filterFriendsTextController.dispose();
     super.dispose();
   }
@@ -114,7 +112,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
 
   void _getUnfilteredShownList() {
     _shownList = Iterable<int>.generate(friends.length).toList();
-    _sortShownList(); // TODO ensure this should exist, some sorting, preferable of the key display attribute of a user, which I would guess is username when thats working
+    _sortShownList();
     if (!_sortingAscending) {
       _flipShownList();
     }
@@ -133,9 +131,8 @@ class _BookLendDialogState extends State<BookLendDialog> {
       List<int> newShownList = [];
       List<String> individualWordsToFilter = filterText.split(" ");
       for (int i = 0; i < friends.length; i++) {
-        if ((friends[i].uid.toLowerCase()).contains(filterText)
+        if ((friends[i].name.toLowerCase()).contains(filterText)
         || (friends[i].email.toLowerCase()).contains(filterText)
-        || (friends[i].name.toLowerCase()).contains(filterText)
         || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)) {
           newShownList.add(i);
         }
@@ -161,7 +158,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
       children: [
         const Text("Lend Book", style: TextStyle(fontSize: 20, color: Colors.black)),
         const SizedBox(height: 6),
-        Row( // I'll say that in general a lot of the sizes here are fine tuned to make the search query controller in the center so be careful when editing
+        Row( // I'll say that in general a lot of the sizes here are fine tuned to make the filter controller in the center so be careful when editing
           children: [
             const SizedBox(width: 43),
             Expanded(
@@ -173,7 +170,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
-                  hintText: "Filter by name or email",
+                  hintText: "Filter by name or username",
                   hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                   border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(25.0)),

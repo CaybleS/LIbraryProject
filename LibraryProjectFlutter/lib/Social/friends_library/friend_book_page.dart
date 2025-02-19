@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
@@ -22,16 +22,14 @@ class _FriendBookPageState extends State<FriendBookPage> {
   void initState() {
     super.initState();
     _booksLentToMeUpdatedListener = () {
-      if (refreshNotifier.value == friendsPageIndex) {
-        setState(() {});
-      }
+      setState(() {});
     };
-    refreshNotifier.addListener(_booksLentToMeUpdatedListener);
+    pageRefreshNotifier.addListener(_booksLentToMeUpdatedListener);
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_booksLentToMeUpdatedListener);
+    pageRefreshNotifier.removeListener(_booksLentToMeUpdatedListener);
     super.dispose();
   }
   Widget _displayStatus() {
@@ -131,9 +129,10 @@ class _FriendBookPageState extends State<FriendBookPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        title: const Text("Book Info"),
+        centerTitle: true,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: Colors.grey[400],
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(

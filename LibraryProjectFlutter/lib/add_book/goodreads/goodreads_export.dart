@@ -1,7 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'dart:typed_data';
@@ -46,9 +46,8 @@ Future<void> tryGoodreadsExport(BuildContext context) async {
 
   try {
     Uint8List fileContentsAsBytes = utf8.encode(fileContents);
-    DateTime currTime = DateTime.now();
-    DateFormat timeFormat = DateFormat.yMd();
-    String time = timeFormat.format(currTime);
+    DateTime currTime = DateTime.now().toUtc();
+    String time = DateFormat.yMd().format(currTime.toLocal());
     String? filePath = await FilePicker.platform.saveFile(
       dialogTitle: 'save this shelfswap export file',
       fileName: 'shelfswap_export_$time.csv',
@@ -56,8 +55,6 @@ Future<void> tryGoodreadsExport(BuildContext context) async {
       allowedExtensions: ['txt', 'csv', 'xls'], // this just doesnt work :(
       bytes: fileContentsAsBytes,
     );
-
-
 
     if (filePath != null) {
       if (context.mounted) {

@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/core/book_requests_page.dart';
+import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/book/book_requests_page.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/book/borrowed_book_page.dart';
@@ -42,7 +42,8 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _homepageListener = () {
-      if (refreshNotifier.value == homepageIndex) {
+      // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
+      if (selectedIndex == homepageIndex) {
         if (userLibrary.isEmpty) {
           _showEmptyLibraryMsg = true;
         } else {
@@ -51,12 +52,12 @@ class _HomePageState extends State<HomePage> {
         _updateList();
       }
     };
-    refreshNotifier.addListener(_homepageListener);
+    pageRefreshNotifier.addListener(_homepageListener);
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_homepageListener);
+    pageRefreshNotifier.removeListener(_homepageListener);
     _filterBooksTextController.dispose();
     super.dispose();
   }
@@ -507,8 +508,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(curPage: "home"),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user),
       body: Column(
         children: [
           Padding(

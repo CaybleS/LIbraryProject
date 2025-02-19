@@ -4,7 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_library/friends_library_page.dart';
 import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import '../../database/database.dart';
@@ -31,17 +31,18 @@ class _FriendsPageState extends State<FriendsPage> {
   void initState() {
     super.initState();
     _friendpageListener = () {
-      if (refreshNotifier.value == friendsPageIndex) {
+      // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
+      if (selectedIndex == friendsPageIndex) {
         updateLists();
       }
     };
-    refreshNotifier.addListener(_friendpageListener);
+    pageRefreshNotifier.addListener(_friendpageListener);
     updateLists();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_friendpageListener);
+    pageRefreshNotifier.removeListener(_friendpageListener);
     super.dispose();
   }
 
@@ -330,8 +331,7 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(curPage: "friends"),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
           onPressed: () {

@@ -21,9 +21,9 @@ class UserModel {
     required this.lastSignedIn,
   });
 
-  factory UserModel.fromJson(Map<dynamic, dynamic> json) {
+  factory UserModel.fromJson(Map<dynamic, dynamic> json, String uid) {
     return UserModel(
-      uid: json['uid'],
+      uid: uid,
       name: json['name'],
       email: json['email'],
       photoUrl: json['photoUrl'],
@@ -34,6 +34,10 @@ class UserModel {
     );
   }
 
+  // TODO need to remove uid from this and add username and change the user== to compare username I'd say since that should be unique to a specific user as well.
+  // with this, users would be identified only with name and username, username being unique and name obviously not being unique. This file will be updated to reflect this.
+  // which will involve first setting a default username value in addUser in database.dart and then later on setting up the option for user to set username on profile
+  // and the profile setup page which doesnt exist yet
   Map<String, dynamic> toJson() {
     return {
       'uid': uid,
@@ -43,7 +47,7 @@ class UserModel {
       'avatarColor': avatarColor.value,
       'isActive': isActive,
       'isTyping': isTyping,
-      'lastSignedIn': lastSignedIn.toUtc().toIso8601String(),
+      'lastSignedIn': lastSignedIn.toIso8601String(),
     };
   }
 

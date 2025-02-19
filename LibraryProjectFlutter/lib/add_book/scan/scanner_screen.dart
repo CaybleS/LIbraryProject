@@ -163,7 +163,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       appBar: AppBar(
         title: const Text("Scan Barcode"),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
       ),
       backgroundColor: Colors.black,
       floatingActionButton: FloatingActionButton.extended(
