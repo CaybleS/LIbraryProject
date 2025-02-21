@@ -75,6 +75,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
     for (UserModel friend in friends) {
       if (friend.uid == borrowerId) {
         foundFriend = true;
+        widget.book.userLent = friend.name;
       }
     }
     if (!foundFriend) {
