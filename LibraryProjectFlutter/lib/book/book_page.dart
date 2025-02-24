@@ -253,9 +253,9 @@ class _BookPageState extends State<BookPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 200,
-                    width: 150,
+                  Flexible(
+                    //height: 200,
+                    //width: 150,
                     //left column with status, rating, and condition
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -272,7 +272,7 @@ class _BookPageState extends State<BookPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: [ Flexible( child:
                             DropdownButton<String?>(
                               value: _selectedRating,
                               iconSize: 0.0,
@@ -296,6 +296,7 @@ class _BookPageState extends State<BookPage> {
                                 }
                               },
                             ),
+                          ),
                             //_displayRating(),
                             const Padding(
                               padding: EdgeInsets.only(top: 3.0),
@@ -380,7 +381,7 @@ class _BookPageState extends State<BookPage> {
                             child: const SizedBox(
                               height: 160,
                               width: 50,
-                              child: Flexible(
+                              //child: Flexible(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -401,7 +402,8 @@ class _BookPageState extends State<BookPage> {
                                 ),
                               ),
                             ),
-                          ),
+                           // ),
+                          
                         ],
                       ),
                       SizedBox(height: 5),
@@ -440,7 +442,8 @@ class _BookPageState extends State<BookPage> {
               ),
             ),
             //const SizedBox(height: 10),
-            Flexible(
+            //Column( mainAxisAlignment:MainAxisAlignment.start, children: [
+              Flexible(
               child: SegmentedButton<_ReadStatus>(
                 selected: selection,
                 onSelectionChanged: (Set<_ReadStatus> newSelection) {
@@ -466,6 +469,8 @@ class _BookPageState extends State<BookPage> {
                 ],
               ),
             ),
+            //],
+            //),
             
             Row(
               children: [
