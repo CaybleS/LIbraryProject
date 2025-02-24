@@ -16,14 +16,15 @@ class Book {
   String? coverUrl;
   String? cloudCoverUrl; // needed to detect when a book is using our cloud storage to store cover url so it can be deleted as needed
   String? borrowerId;
+  String? userLent;
   String? description;
   String? googleBooksId; // needed for add book duplicate checking only in cases where google books api books dont have title/author (else we can just use those)
   int? isbn13; // stored mainly for goodreads exporting but it can be shown on some pages as well if desired
-  int? bookCondition;
-  String? publicBookNotes;
-  int? rating;
-  ReadingState? hasRead;
-  bool isManualAdded; // needed because manually added books should be changable by users
+  String? bookCondition;
+  String? bookNotes;
+  String? rating;
+  String? hasRead;
+  bool? isManualAdded; // needed because manually added books should be changable by users
   DateTime? dateLent;
   DateTime? dateToReturn;
   // basically this 1.) stores how many requests this book has and 2.) stores who exactly is requesting it. We need to know who, to delete the
@@ -38,7 +39,9 @@ class Book {
       this.description,
       this.googleBooksId,
       this.isbn13,
-      this.isManualAdded = false}
+      this.isManualAdded = false,
+      this.rating = "-",
+      this.bookCondition = "-"}
   );
 
   // probably couldve written this better but it works so im not touching it
@@ -163,8 +166,9 @@ class Book {
       'isManualAdded': isManualAdded,
       'cloudCoverUrl': cloudCoverUrl,
       'borrowerId' : borrowerId,
+      'userLent' : userLent,
       'bookCondition' : bookCondition,
-      'publicBookNotes' : publicBookNotes,
+      'publicBookNotes' : bookNotes,
       'rating' : rating,
       'hasRead' : hasRead,
       'dateLent': dateLent?.toIso8601String(),
@@ -187,7 +191,7 @@ class Book {
     }
   }
 
-    void updateReadingState(ReadingState? newState) {
+    void updateReadingState(String? newState) {
     hasRead = newState;
     update();
   }
@@ -207,8 +211,9 @@ Book createBook(record) {
   book.favorite = record['favorite'];
   book.cloudCoverUrl = record['cloudCoverUrl'];
   book.borrowerId = record['borrowerId'];
+  book.userLent = record['userLent'];
   book.bookCondition = record['bookCondition'];
-  book.publicBookNotes = record['publicBookNotes'];
+  book.bookNotes = record['publicBookNotes'];
   book.rating = record['rating'];
   book.hasRead = record['hasRead'];
   book.dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;

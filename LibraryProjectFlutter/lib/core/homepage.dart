@@ -175,6 +175,9 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(
               builder: (context) => BookPage(userLibrary[index], widget.user)));
     }
+    setState((){
+      _updateList();
+    });
   }
 
   // this is needed to change the display button colors
@@ -249,13 +252,13 @@ class _HomePageState extends State<HomePage> {
 
   IconData _getReadIcon(Book book) {
     switch (book.hasRead) {
-      case ReadingState.notRead:
+      case "nr":
         return Icons.bookmark_remove;
-      case ReadingState.currentlyReading:
+      case "cr":
         return Icons.auto_stories;
-      case ReadingState.read:
+      case "rd":
         return Icons.book;
-      case null:
+      default:
         return Icons.question_mark;
     }
   }
