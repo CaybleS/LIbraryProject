@@ -46,13 +46,13 @@ class _ProfileState extends State<Profile> {
         _updateProfile();
       }
     };
-    pageRefreshNotifier.addListener(_userProfileUpdatedListener);
+    pageDataUpdatedNotifier.addListener(_userProfileUpdatedListener);
     _updateProfile();
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_userProfileUpdatedListener);
+    pageDataUpdatedNotifier.removeListener(_userProfileUpdatedListener);
     super.dispose();
   }
 

@@ -113,6 +113,7 @@ void addUser(User user) {
   UserModel currentUser = UserModel(
     uid: user.uid,
     name: user.displayName!,
+    username: "placeholderUsername", // TODO add username thing here from some setup page or something
     email: user.email!,
     photoUrl: user.photoURL,
     avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],

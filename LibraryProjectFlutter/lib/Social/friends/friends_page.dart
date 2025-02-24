@@ -36,13 +36,13 @@ class _FriendsPageState extends State<FriendsPage> {
         updateLists();
       }
     };
-    pageRefreshNotifier.addListener(_friendpageListener);
+    pageDataUpdatedNotifier.addListener(_friendpageListener);
     updateLists();
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_friendpageListener);
+    pageDataUpdatedNotifier.removeListener(_friendpageListener);
     super.dispose();
   }
 

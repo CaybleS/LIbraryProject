@@ -47,14 +47,14 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
       }
       _updateList();
     };
-    pageRefreshNotifier.addListener(_friendsBooksUpdatedListener);
+    pageDataUpdatedNotifier.addListener(_friendsBooksUpdatedListener);
     _friendsLibrary = List.from(friendIdToBooks[widget.friend.uid] ?? []);
     _updateList();
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_friendsBooksUpdatedListener);
+    pageDataUpdatedNotifier.removeListener(_friendsBooksUpdatedListener);
     _filterBooksTextController.dispose();
     super.dispose();
   }

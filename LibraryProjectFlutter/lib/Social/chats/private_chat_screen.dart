@@ -110,7 +110,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               stream: getChatMessages(widget.chatRoomId),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Container();
+                  return const SizedBox.shrink();
                 }
                 List<MessageModel> messages = snapshot.data!;
                 return ListView.builder(

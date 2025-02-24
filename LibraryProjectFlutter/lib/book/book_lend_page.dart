@@ -17,6 +17,33 @@ Future<void> displayLendDialog(BuildContext context, Book book, User user, {Stri
   );
 }
 
+void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Book book, {int daysToReturn = 30}) {
+    if (selectedFriendId == null) {
+      SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
+      return;
+    }
+    String borrowerId = selectedFriendId;
+    bool foundFriend = false;
+    for (UserModel friend in friends) {
+      if (friend.uid == borrowerId) {
+        foundFriend = true;
+        book.userLent = friend.name;
+      }
+    }
+    if (!foundFriend) {
+      // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
+      SharedWidgets.displayErrorDialog(context, "This user does not exist");
+      return;
+    }
+    DateTime dateLent = DateTime.now().toUtc();
+    DateTime dateToReturn = dateLent.add(Duration(days: daysToReturn));
+    // could add a SharedWidgets.displayConfirmActionDialog() to confirm the lend action right here, but I decided its not
+    // necessary, its just 1 extra button press. If the user screws up they can just unlend right after.
+    book.lendBook(dateLent, dateToReturn, borrowerId, user.uid);
+    Navigator.pop(context);
+    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Lent");
+  }
+
 class BookLendDialog extends StatefulWidget {
   final Book book;
   final User user;
@@ -54,42 +81,15 @@ class _BookLendDialogState extends State<BookLendDialog> {
       }
       _filter(_filterFriendsTextController.text);
     };
-    pageRefreshNotifier.addListener(_friendsUpdatedListener);
+    pageDataUpdatedNotifier.addListener(_friendsUpdatedListener);
     _getUnfilteredShownList();
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_friendsUpdatedListener);
+    pageDataUpdatedNotifier.removeListener(_friendsUpdatedListener);
     _filterFriendsTextController.dispose();
     super.dispose();
-  }
-
-  void _tryToLendBook() async {
-    if (_selectedFriendId == null) {
-      SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
-      return;
-    }
-    String borrowerId = _selectedFriendId!;
-    bool foundFriend = false;
-    for (UserModel friend in friends) {
-      if (friend.uid == borrowerId) {
-        foundFriend = true;
-        widget.book.userLent = friend.name;
-      }
-    }
-    if (!foundFriend) {
-      // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
-      SharedWidgets.displayErrorDialog(context, "This user does not exist");
-      return;
-    }
-    DateTime dateLent = DateTime.now().toUtc();
-    DateTime dateToReturn = dateLent.add(Duration(days: _daysToReturn.single));
-    // could add a SharedWidgets.displayConfirmActionDialog() to confirm the lend action right here, but I decided its not
-    // necessary, its just 1 extra button press. If the user screws up they can just unlend right after.
-    widget.book.lendBook(dateLent, dateToReturn, borrowerId, widget.user.uid);
-    Navigator.pop(context);
-    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Lent");
   }
 
   bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
@@ -123,7 +123,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
     _shownList = _shownList.reversed.toList();
   }
 
-  void _filter(String filterText) { // TODO update the filtering whenever user attributes are finalized
+  void _filter(String filterText) {
     filterText = filterText.toLowerCase().trim();
     if (filterText.isEmpty) {
       // setting shown list with no filters here
@@ -133,7 +133,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
       List<String> individualWordsToFilter = filterText.split(" ");
       for (int i = 0; i < friends.length; i++) {
         if ((friends[i].name.toLowerCase()).contains(filterText)
-        || (friends[i].email.toLowerCase()).contains(filterText)
+        || (friends[i].username.toLowerCase()).contains(filterText)
         || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)) {
           newShownList.add(i);
         }
@@ -247,7 +247,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            friends[_shownList[index]].email,
+                            friends[_shownList[index]].username,
                             style: const TextStyle(fontSize: 14),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -329,8 +329,8 @@ class _BookLendDialogState extends State<BookLendDialog> {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
-                onPressed: () async {
-                  _tryToLendBook();
+                onPressed: () {
+                  tryToLendBook(_selectedFriendId, context, widget.user, widget.book, daysToReturn: _daysToReturn.single);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColor.acceptGreen,

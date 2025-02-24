@@ -42,14 +42,14 @@ class _SettingsState extends State<Settings> {
     _booksLentToMeListener = () {
       setState(() {});
     };
-    pageRefreshNotifier.addListener(_userLibraryListener);
-    pageRefreshNotifier.addListener(_booksLentToMeListener);
+    pageDataUpdatedNotifier.addListener(_userLibraryListener);
+    pageDataUpdatedNotifier.addListener(_booksLentToMeListener);
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_userLibraryListener);
-    pageRefreshNotifier.removeListener(_booksLentToMeListener);
+    pageDataUpdatedNotifier.removeListener(_userLibraryListener);
+    pageDataUpdatedNotifier.removeListener(_booksLentToMeListener);
     super.dispose();
   }
 

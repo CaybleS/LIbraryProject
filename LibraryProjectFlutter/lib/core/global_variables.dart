@@ -25,12 +25,17 @@ const int profileIndex = 4;
 
 // all these do is trigger some logic for any listeners, whenever they get updated. So this one is the main refresh notifier,
 // I just increment it to signify that the page should refresh
-ValueNotifier<int> pageRefreshNotifier = ValueNotifier<int>(0);
+ValueNotifier<int> pageDataUpdatedNotifier = ValueNotifier<int>(0);
 // Basically, the valueNotifier refreshes every time it gets updated, so having it as a bool is not really the best
 // since if you set it to true to signal a refresh you'd need to set it to false after and that would trigger another refresh.
 // It only has 1 listener though so I just check if the value is true and if so update it and set it to false again.
 // But for the normal refresh notifier this is too complicated so its just incremented to signal a refresh.
 ValueNotifier<bool> refreshBottombar = ValueNotifier<bool>(false);
+// this is used to allow for logic for things to happen when you click off a page via the bottombar, for example homepage
+// filters should reset when you click off it on the bottombar, but not when a book is added. Thus, page data updated notifier
+// and bottombar index changed notifier must exist to track these 2 different things. It works by signaling the
+// page the user switches off of (using prevIndex) so if the user switches off the homepage, it immediately updates the homepage using this.
+ValueNotifier<int> bottombarIndexChangedNotifier = ValueNotifier<int>(0);
 bool showBottombar = true; // this and the refreshBottombar allows for logic to hide bottombar on certain pages
 int selectedIndex = 0;
 int prevIndex = 0;

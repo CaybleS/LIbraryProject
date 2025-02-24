@@ -29,12 +29,12 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
     _requestsChangedListener = () {
       _updateList();
     };
-    pageRefreshNotifier.addListener(_requestsChangedListener);
+    pageDataUpdatedNotifier.addListener(_requestsChangedListener);
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_requestsChangedListener);
+    pageDataUpdatedNotifier.removeListener(_requestsChangedListener);
     super.dispose();
   }
 
@@ -194,7 +194,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                             ),
                                             ElevatedButton(
                                               onPressed: () async {
-                                                await displayLendDialog(context, book, widget.user, idToLendTo: senderId);
+                                                tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.green,

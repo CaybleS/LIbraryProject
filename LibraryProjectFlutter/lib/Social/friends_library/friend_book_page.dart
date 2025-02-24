@@ -24,12 +24,12 @@ class _FriendBookPageState extends State<FriendBookPage> {
     _booksLentToMeUpdatedListener = () {
       setState(() {});
     };
-    pageRefreshNotifier.addListener(_booksLentToMeUpdatedListener);
+    pageDataUpdatedNotifier.addListener(_booksLentToMeUpdatedListener);
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_booksLentToMeUpdatedListener);
+    pageDataUpdatedNotifier.removeListener(_booksLentToMeUpdatedListener);
     super.dispose();
   }
   Widget _displayStatus() {

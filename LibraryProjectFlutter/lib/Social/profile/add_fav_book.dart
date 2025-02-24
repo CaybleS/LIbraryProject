@@ -42,13 +42,13 @@ class _AddFavBookState extends State<AddFavBook> {
       _bookSearchInstance.clearAlreadyAddedBooks();
       setState(() {});
     };
-    pageRefreshNotifier.addListener(_addBookListener);
+    pageDataUpdatedNotifier.addListener(_addBookListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
-    pageRefreshNotifier.removeListener(_addBookListener);
+    pageDataUpdatedNotifier.removeListener(_addBookListener);
     super.dispose();
   }
 

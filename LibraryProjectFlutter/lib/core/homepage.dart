@@ -22,26 +22,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<int> _shownList =
-      []; // this is the "driver" list which dictates what books in shownLibrary are visible, and in what order, by storing indicies of books in shownLibrary
-  List<int> _unsortedShownList =
-      []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
+  // this is the "driver" list which dictates what books in shownLibrary are visible, and in what order, by storing indicies of books in shownLibrary
+  List<int> _shownList = [];
+  // needed to always be able to sort by 'date added" even when shownList changes to sort by title
+  List<int> _unsortedShownList = [];
   List<Book> _shownLibrary = [];
   bool _usingBooksLentToMe = false;
-  late final VoidCallback
-      _homepageListener; // used to run some stuff everytime we go to this page from the bottombar
+  late final VoidCallback _homepageContentUpdatedListener; // used to run some stuff everytime we go to this page from the bottombar
+  late final VoidCallback _homepageClickedOffListener;
   final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   _BooksShowing _showing = _BooksShowing.all;
-  bool _sortingAscending =
-      true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
-  bool _showEmptyLibraryMsg =
-      false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
+  bool _sortingAscending = true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
+  bool _showEmptyLibraryMsg = false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
 
   @override
   void initState() {
     super.initState();
-    _homepageListener = () {
+    _homepageContentUpdatedListener = () {
       // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
       if (selectedIndex == homepageIndex) {
         if (userLibrary.isEmpty) {
@@ -52,12 +50,22 @@ class _HomePageState extends State<HomePage> {
         _updateList();
       }
     };
-    pageRefreshNotifier.addListener(_homepageListener);
+    _homepageClickedOffListener = () {
+      if (bottombarIndexChangedNotifier.value == homepageIndex) {
+        // it only resets the filters since thats all that immediately needs to occur
+        // the bottombar also has logic to refresh the page when we go back to it; this is the
+        // normal contant updated refresher which does this
+        _resetFilters();
+      }
+    };
+    bottombarIndexChangedNotifier.addListener(_homepageClickedOffListener);
+    pageDataUpdatedNotifier.addListener(_homepageContentUpdatedListener);
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_homepageListener);
+    pageDataUpdatedNotifier.removeListener(_homepageContentUpdatedListener);
+    bottombarIndexChangedNotifier.removeListener(_homepageClickedOffListener);
     _filterBooksTextController.dispose();
     super.dispose();
   }
