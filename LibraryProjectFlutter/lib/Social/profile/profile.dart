@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:library_project/Social/profile/edit_profile.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/database/database.dart';
 import 'package:library_project/database/subscriptions.dart';
-// import 'package:library_project/models/book.dart';
 import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
 import '../../core/appbar.dart';
@@ -67,70 +67,139 @@ class _ProfileState extends State<Profile> {
     setState(() {});
   }
 
+  void _addFriend() {
+    String id = widget.profileUserId;
+    if (id != '' && id != widget.user.uid) {
+      if (!friendIDs.contains(id)) {
+        sendFriendRequest(widget.user, id);
+        SharedWidgets.displayPositiveFeedbackDialog(
+            context, 'Friend Request Sent!');
+        Navigator.pop(context);
+      } else {
+        SharedWidgets.displayErrorDialog(
+            context, "You are already friends with this user");
+      }
+    } else {
+      SharedWidgets.displayErrorDialog(context, "User not found");
+    }
+  }
+
   Widget _displayButtons() {
-    return widget.user.uid == widget.profileUserId
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    bool isFriend = friendIDs.contains(widget.profileUserId);
+    int friendCount =
+        widget.user.uid == widget.profileUserId ? friendIDs.length : 0;
+    return SizedBox(
+        height: 50,
+        child: ListView(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
             children: [
-              ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
-                  onPressed: () async {
-                    await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                EditProfileScreen(widget.user)));
-                  },
-                  child: const Text(
-                    "Edit Profile",
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  )),
-              ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
-                  onPressed: () => {}, // TODO friend count/list on profile
-                  child: const Text(
-                    "Friends: 12",
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  ))
-            ],
-          )
-        : Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
-                  onPressed: () => {}, // TODO link messaging to profile
-                  child: const Text(
-                    "Message",
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  )),
-              ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
-                  onPressed: () async {
-                    await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                FriendsLibraryPage(widget.user, _userInfo!)));
-                  },
-                  child: const Text(
-                    "View Library",
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  )),
-              ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
-                  onPressed: () => {}, // TODO friend count/list on profile
-                  child: const Text(
-                    "Friends: 12",
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  ))
-            ],
-          );
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  widget.user.uid == widget.profileUserId
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.pink),
+                          onPressed: () async {
+                            await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        EditProfileScreen(widget.user)));
+                          },
+                          child: const Text(
+                            "Edit Profile",
+                            style: TextStyle(color: Colors.black, fontSize: 16),
+                          ))
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.pink),
+                          onPressed: () => {}, // TODO link messaging to profile
+                          child: const Text(
+                            "Message",
+                            style: TextStyle(color: Colors.black, fontSize: 16),
+                          )),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.pink),
+                      onPressed: () async {
+                        if (widget.user.uid == widget.profileUserId) {
+                          bottombarItemTapped(homepageIndex);
+                        } else {
+                          await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => FriendsLibraryPage(
+                                      widget.user, _userInfo!)));
+                        }
+                      },
+                      child: const Text(
+                        "View Library",
+                        style: TextStyle(color: Colors.black, fontSize: 16),
+                      )),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.pink),
+                      onPressed: () {
+                        if (widget.user.uid == widget.profileUserId) {
+                          bottombarItemTapped(friendsPageIndex);
+                        } else {
+                          // friend list of other user
+                        }
+                      }, // TODO friend count/list on profile
+                      child: Text(
+                        "Friends: $friendCount",
+                        style:
+                            const TextStyle(color: Colors.black, fontSize: 16),
+                      )),
+                  widget.user.uid != widget.profileUserId
+                      ? const SizedBox(
+                          width: 20,
+                        )
+                      : const SizedBox.shrink(),
+                  widget.user.uid != widget.profileUserId
+                      ? ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColor.pink),
+                          onPressed: () async {
+                            if (!isFriend) {
+                              _addFriend();
+                            } else {
+                              // TODO unfriend button - we probably need the books lent check here too right?
+                              if (booksLentToMe.any((book) =>
+                                  book.lenderId == widget.profileUserId)) {
+                                SharedWidgets.displayErrorDialog(context,
+                                    "Cannot unfriend: User has books lent to you");
+                              } else if (userLibrary.any((book) =>
+                                  book.borrowerId == widget.profileUserId)) {
+                                SharedWidgets.displayErrorDialog(context,
+                                    "Cannot unfriend: You have books lent to this user");
+                              } else {
+                                await removeFriend(
+                                    widget.user.uid, widget.profileUserId);
+                                SharedWidgets.displayPositiveFeedbackDialog(
+                                    context, "Removed Friend");
+                              }
+                            }
+                            setState(() {});
+                          },
+                          child: Text(
+                            isFriend ? "Unfriend" : "Add Friend",
+                            style: const TextStyle(
+                                color: Colors.black, fontSize: 16),
+                          ))
+                      : const SizedBox.shrink()
+                ],
+              )
+            ]));
   }
 
   @override
@@ -185,7 +254,7 @@ class _ProfileState extends State<Profile> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _displayButtons(),
+                    Center(child: _displayButtons()),
                     const SizedBox(
                       height: 10,
                     ),
@@ -195,7 +264,7 @@ class _ProfileState extends State<Profile> {
                             child: Padding(
                               padding: const EdgeInsets.all(10),
                               child: Text(
-                                _profileInfo!.aboutMe!,
+                                "About Me:\n${_profileInfo!.aboutMe!}",
                                 style: const TextStyle(
                                     color: Colors.black, fontSize: 14),
                               ),

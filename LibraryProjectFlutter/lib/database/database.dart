@@ -1,12 +1,10 @@
 import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/book_requests.dart';
-import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
 import '../Social/friends/friends_page.dart';
 import 'dart:async';
@@ -78,7 +76,6 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
   }
 }
 
-
 Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
@@ -126,7 +123,7 @@ void addUser(User user) {
 }
 
 void sendFriendRequest(User user, String friendId) {
-  var id = dbReference.child('requests/$friendId/').push();
+  var id = dbReference.child('requests/$friendId/${user.uid}');
   id.set({'sender': user.uid, 'sendDate': DateTime.now().toUtc().toIso8601String()});
 }
 
@@ -134,14 +131,21 @@ Future<void> removeRef(DatabaseReference id) async {
   await id.remove();
 }
 
-Future<void> addFriend(Request request) async {
-  var id = dbReference.child('friends/${request.senderId}/${request.uid}');
+Future<void> addFriend(String requestID, String uid) async {
+  var id = dbReference.child('friends/$requestID/$uid');
   String time = DateTime.now().toUtc().toIso8601String();
   id.set({"friendsSince": time});
-  id = dbReference.child('friends/${request.uid}/${request.senderId}');
+  id = dbReference.child('friends/$uid/$requestID');
   id.set({"friendsSince": time});
 
-  await request.delete();
+  await removeRef(dbReference.child('requests/$uid/$requestID'));
+}
+
+Future<void> removeFriend(String uid, String friendId) async {
+  DatabaseReference friend = dbReference.child('friends/$uid/$friendId');
+  await friend.remove();
+  friend = dbReference.child('friends/$friendId/$uid');
+  await friend.remove();
 }
 
 Future<Map<String, dynamic>> getChatInfo(String roomID) async {
@@ -185,7 +189,7 @@ Future<String> getUserDisplayName(String id) async {
   return name;
 }
 
-Future<void> updateProfile(String uid, ProfileInfo profile) async {
-  var id = dbReference.child('profileInfo/$uid');
-  id.set(profile.toJson());
-}
+// Future<void> updateProfile(String uid, ProfileInfo profile) async {
+//   var id = dbReference.child('profileInfo/$uid');
+//   id.set(profile.toJson());
+// }

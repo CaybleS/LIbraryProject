@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/create_group_chat_screen.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
@@ -18,7 +19,7 @@ class CreateChatScreen extends StatefulWidget {
 class _CreateChatScreenState extends State<CreateChatScreen> {
   final _database = FirebaseDatabase.instance.ref();
   final controller = TextEditingController();
-  List<UserModel> friendsResult = friends;
+  List<UserModel> friendsResult = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid)).map((entry) => entry.value).toList();
 
   void createChat(UserModel user) async {
     String id = await getChatRoomId(userModel.value!.uid, user.uid);
@@ -91,11 +92,11 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
               controller: controller,
               onChanged: (value) {
                 if (value.isEmpty) {
-                  friendsResult = friends;
+                  friendsResult = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid)).map((entry) => entry.value).toList();
                 } //
                 else {
                   friendsResult =
-                      friends.where((element) => element.name.toLowerCase().contains(value.toLowerCase())).toList();
+                      userIdToUserModel.entries.where((element) => friendIDs.contains(element.value.uid) && element.value.name.toLowerCase().contains(value.toLowerCase())).map((entry) => entry.value).toList();
                 }
                 setState(() {});
               },

@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/edit_chat_info_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
@@ -268,9 +269,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                     if (textEditingValue.text == '') {
                       return const Iterable<UserModel>.empty();
                     } else {
-                      return friends.where((UserModel friend) {
-                        return friend.email.toLowerCase().contains(controller.text.toLowerCase());
-                      });
+                      var filtered = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid) && friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
+                      return Map.fromEntries(filtered).entries.map((entry) => entry.value);
                     }
                   },
                   onSelected: (option) {

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/Social/friends_library/friend_book_page.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/book_page.dart';
@@ -137,9 +138,9 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                         switch (_showing) {
                           case _ListToShow.receivedRequests:
                             senderId = receivedBookRequests[index].senderId;
-                            for (int i = 0; i < friends.length; i++) {
-                              if (friends[i].uid == senderId) {
-                                name = friends[i].name;
+                            for (int i = 0; i < friendIDs.length; i++) {
+                              if (friendIDs[i] == senderId) {
+                                name = userIdToUserModel[friendIDs[i]]!.name;
                                 break;
                               }
                             }
@@ -148,9 +149,9 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                             break;
                           case _ListToShow.sentRequests:
                             receiverId = sentBookRequests[index].receiverId;
-                            for (int i = 0; i < friends.length; i++) {
-                              if (friends[i].uid == receiverId) {
-                                name = friends[i].name;
+                            for (int i = 0; i < friendIDs.length; i++) {
+                              if (friendIDs[i] == receiverId) {
+                                name = userIdToUserModel[friendIDs[i]]!.name;
                                 break;
                               }
                             }

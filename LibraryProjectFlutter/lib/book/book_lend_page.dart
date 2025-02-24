@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/user.dart';
@@ -24,10 +25,10 @@ void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Bo
     }
     String borrowerId = selectedFriendId;
     bool foundFriend = false;
-    for (UserModel friend in friends) {
-      if (friend.uid == borrowerId) {
+    for (String friend in friendIDs) {
+      if (friend == borrowerId) {
         foundFriend = true;
-        book.userLent = friend.name;
+        book.userLent = userIdToUserModel[friend]!.name;
       }
     }
     if (!foundFriend) {
@@ -69,14 +70,14 @@ class _BookLendDialogState extends State<BookLendDialog> {
     super.initState();
     _selectedFriendId = widget.idToLendTo;
     _friendsUpdatedListener = () {
-      if (friends.isEmpty) {
+      if (friendIDs.isEmpty) {
         _noFriends = true;
       }
       else {
         _noFriends = false;
       }
       // if the selected friend got removed from friends list
-      if (_selectedFriendId != null && !(friends.map((item) => item.uid).contains(_selectedFriendId))) {
+      if (_selectedFriendId != null && !(friendIDs.map((item) => item).contains(_selectedFriendId))) {
         _selectedFriendId = null;
       }
       _filter(_filterFriendsTextController.text);
@@ -108,11 +109,11 @@ class _BookLendDialogState extends State<BookLendDialog> {
   void _sortShownList() {
     // Fun fact which I didnt know, you gotta make them lowercase or else uppercase C comes before lowercase b for example. Its some ascii value stuff I think,
     // so ig when sorting just trim and make it lowercase always or else freaky stuff will happen.
-    _shownList.sort((a, b) => (friends[a].name.trim().toLowerCase()).compareTo(friends[b].name.trim().toLowerCase()));
+    _shownList.sort((a, b) => (userIdToUserModel[friendIDs[a]]!.name.trim().toLowerCase()).compareTo(userIdToUserModel[friendIDs[b]]!.name.trim().toLowerCase()));
   }
 
   void _getUnfilteredShownList() {
-    _shownList = Iterable<int>.generate(friends.length).toList();
+    _shownList = Iterable<int>.generate(friendIDs.length).toList();
     _sortShownList();
     if (!_sortingAscending) {
       _flipShownList();
@@ -131,9 +132,9 @@ class _BookLendDialogState extends State<BookLendDialog> {
     } else {
       List<int> newShownList = [];
       List<String> individualWordsToFilter = filterText.split(" ");
-      for (int i = 0; i < friends.length; i++) {
-        if ((friends[i].name.toLowerCase()).contains(filterText)
-        || (friends[i].username.toLowerCase()).contains(filterText)
+      for (int i = 0; i < friendIDs.length; i++) {
+        if ((userIdToUserModel[friendIDs[i]]!.name.toLowerCase()).contains(filterText)
+        || (userIdToUserModel[friendIDs[i]]!.username.toLowerCase()).contains(filterText)
         || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)) {
           newShownList.add(i);
         }
@@ -217,17 +218,17 @@ class _BookLendDialogState extends State<BookLendDialog> {
             onTap: () {
               setState(() {
                 // this logic allows for an "unselecting" if you click on the friend id again
-                if (friends[_shownList[index]].uid == _selectedFriendId) {
+                if (friendIDs[_shownList[index]] == _selectedFriendId) {
                   _selectedFriendId = null;
                 }
                 else {
-                  _selectedFriendId = friends[_shownList[index]].uid;
+                  _selectedFriendId = friendIDs[_shownList[index]];
                 }
               });
             },
             child: Card(
               margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
-              color: (_selectedFriendId == friends[_shownList[index]].uid) ? AppColor.acceptGreen : Colors.grey[300],
+              color: (_selectedFriendId == friendIDs[_shownList[index]]) ? AppColor.acceptGreen : Colors.grey[300],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 child: Row(
@@ -241,13 +242,13 @@ class _BookLendDialogState extends State<BookLendDialog> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            friends[_shownList[index]].name,
+                            userIdToUserModel[friendIDs[_shownList[index]]]!.name,
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // TODO look into this weight stuff. The concern is universality mainly
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            friends[_shownList[index]].username,
+                            userIdToUserModel[friendIDs[_shownList[index]]]!.username,
                             style: const TextStyle(fontSize: 14),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

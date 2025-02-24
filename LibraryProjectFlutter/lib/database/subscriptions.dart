@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:library_project/Social/friends/friends_page.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
@@ -193,7 +194,7 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
 // TODO we should probably adjust this to use the user subscriptions instead of reading from the db each time
 // might be better to use our global variable friend list to track uids and user list for the actual info (?) or not idk
 StreamSubscription<DatabaseEvent> setupFriendsSubscription(
-    List<UserModel> friends, User user, Function friendsUpdated) {
+    List<String> friends, User user, Function friendsUpdated) {
   DatabaseReference friendsReference = FirebaseDatabase.instance.ref('friends/${user.uid}/');
   StreamSubscription<DatabaseEvent> friendsSubscription = friendsReference.onValue.listen((DatabaseEvent event) async {
     friends.clear();
@@ -202,9 +203,9 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
         // Friend friend = Friend('${child.key}');
         // friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
 
-        DatabaseEvent userEvent = await dbReference.child('users/${child.key}').once();
-        if (userEvent.snapshot.value != null) {
-          Map data = userEvent.snapshot.value as Map;
+        // DatabaseEvent userEvent = await dbReference.child('users/${child.key}').once();
+        // if (userEvent.snapshot.value != null) {
+        //   Map data = userEvent.snapshot.value as Map;
           // if (data.containsKey('name')) {
           //   friend.name = data['name'];
           // }
@@ -214,8 +215,14 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
           // if (data.containsKey('photoUrl')) {
           //   friend.photo = data['photoUrl'];
           // }
-          friends.add(UserModel.fromJson(data, userEvent.snapshot.key!));
-        }
+          // friends.add(UserModel.fromJson(data, userEvent.snapshot.key!));
+
+          String id = '${child.key}';
+          if (userIdToSubscription[id] == null) {
+            userIdToSubscription[id] = setupUserSubscription(userIdToUserModel, id, userUpdated);
+          }
+          friends.add(id);
+        // }
       }
     }
     friendsUpdated();
@@ -225,31 +232,36 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
 
 // TODO we should probably adjust this to use the user subscriptions instead of reading from the db each time
 StreamSubscription<DatabaseEvent> setupRequestsSubscription(
-    List<Request> requests, User user, Function requestsUpdated) {
+    List<String> requests, User user, Function requestsUpdated) {
   DatabaseReference requestsReference = FirebaseDatabase.instance.ref('requests/${user.uid}/');
   StreamSubscription<DatabaseEvent> requestsSubscription =
       requestsReference.onValue.listen((DatabaseEvent event) async {
     requests.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        Request request = createRequest(child.value, user.uid);
-        request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
+        // Request request = createRequest(child.value, user.uid);
+        // request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
 
-        DatabaseEvent userEvent = await dbReference.child('users/${request.senderId}').once();
-        if (userEvent.snapshot.value != null) {
-          Map data = userEvent.snapshot.value as Map;
-          if (data.containsKey('name')) {
-            request.name = data['name'];
-          }
-          if (data.containsKey('email')) {
-            request.email = data['email'];
-          }
-          if (data.containsKey('photoUrl')) {
-            request.photo = data['photoUrl'];
-          }
+        // DatabaseEvent userEvent = await dbReference.child('users/${request.senderId}').once();
+        // if (userEvent.snapshot.value != null) {
+        //   Map data = userEvent.snapshot.value as Map;
+        //   if (data.containsKey('name')) {
+        //     request.name = data['name'];
+        //   }
+        //   if (data.containsKey('email')) {
+        //     request.email = data['email'];
+        //   }
+        //   if (data.containsKey('photoUrl')) {
+        //     request.photo = data['photoUrl'];
+        //   }
+        // }
+
+        var map = child.value as Map<dynamic, dynamic>;
+        String id = '${map['sender']}';
+        if (userIdToSubscription[id] == null) {
+          userIdToSubscription[id] = setupUserSubscription(userIdToUserModel, id, userUpdated);
         }
-
-        requests.add(request);
+        requests.add(id);
       }
     }
     requestsUpdated();

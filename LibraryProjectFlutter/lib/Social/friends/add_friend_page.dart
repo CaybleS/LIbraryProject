@@ -35,7 +35,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
     String txt = controller.text;
     String id = await findUser(txt);
     if (id != '' && id != widget.user.uid) {
-      if (!friends.any((friend) => friend.uid == id)) {
+      if (!friendIDs.contains(id)) {
         sendFriendRequest(widget.user, id);
         SharedWidgets.displayPositiveFeedbackDialog(
             context, 'Friend Request Sent!');
@@ -73,7 +73,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
       // await _qrScanInstance.scannerSearchByIsbn(context, scannedID);
       if (await userExists(scannedID)) {
         // var contain = friends.where((element) => element.friendId == scannedID);
-        var contain = friends.where((element) => element.uid == scannedID);
+        var contain = friendIDs.where((element) => element == scannedID);
         if (contain.isEmpty) {
           sendFriendRequest(widget.user, scannedID);
           SharedWidgets.displayPositiveFeedbackDialog(

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:library_project/Social/chats/chat_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/models/chat.dart';
@@ -28,7 +29,7 @@ class CreateGroupChatScreen extends StatefulWidget {
 class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
   final _database = FirebaseDatabase.instance.ref();
   final controller = TextEditingController();
-  List<UserModel> friendsResult = friends;
+  List<UserModel> friendsResult = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid)).map((entry) => entry.value).toList();
   List<UserModel> members = [];
   String? nameErrorText;
   String? imageUrl;

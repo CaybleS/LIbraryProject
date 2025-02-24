@@ -28,8 +28,8 @@ void setupDatabaseSubscriptions(User user) {
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
   _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
-  _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
-  _requestsSubscription = setupRequestsSubscription(requests, user, _friendsUpdated);
+  _friendsSubscription = setupFriendsSubscription(friendIDs, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
