@@ -41,7 +41,8 @@ class Book {
       this.isbn13,
       this.isManualAdded = false,
       this.rating = "-",
-      this.bookCondition = "-"}
+      this.bookCondition = "-"
+      }
   );
 
   // probably couldve written this better but it works so im not touching it

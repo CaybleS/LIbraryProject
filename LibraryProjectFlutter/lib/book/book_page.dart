@@ -467,6 +467,8 @@ class _BookPageState extends State<BookPage> {
               ),
             ),
             
+            Row(
+              children: [
             (widget.book.isManualAdded == true)
                 ? ElevatedButton(
                     onPressed: () async {
@@ -484,7 +486,26 @@ class _BookPageState extends State<BookPage> {
                     child: const Text("Edit manually added book here"),
                   )
                 : const SizedBox.shrink(),
+
+              //ElevatedButton(
+              // do edit notes
+              //)
+              ],
+            ),
+                (widget.book.bookNotes != null)
+                    ? Card(
+                      color: Color.fromARGB(255, 145, 210, 244),
+                      child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        widget.book.bookNotes!,
+                        style: const TextStyle(
+                          color: Colors.black, fontSize: 14),
+                      ),
+                      ))
+                : const SizedBox.shrink(),
           ],
+          
         ),
       ),
     );
