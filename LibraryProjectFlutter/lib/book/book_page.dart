@@ -6,6 +6,7 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
@@ -26,6 +27,8 @@ class _BookPageState extends State<BookPage> {
   Set<_ReadStatus> selection = <_ReadStatus>{_ReadStatus.unknown};
   String? _selectedCondition = "-";
   String? _selectedRating = "-";
+  String _userLent = "";
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +53,15 @@ class _BookPageState extends State<BookPage> {
         selection = {_ReadStatus.unknown};
         break;
     }
+    _setUserLentIfBookIsLent();
     setState(() {});
+  }
+
+  Future<void> _setUserLentIfBookIsLent() async {
+    if (widget.book.borrowerId != null) {
+      _userLent = await getUserDisplayName(widget.book.borrowerId!);
+      setState(() {});
+    }
   }
 
   void processSelectionOption(_ReadStatus selection) {
@@ -360,10 +371,12 @@ class _BookPageState extends State<BookPage> {
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () async {
-                              bool hasRemoved = await SharedWidgets
-                                  .displayConfirmActionDialog(context,
-                                      "Do you want to remove this book from your library?");
-                              if (hasRemoved) {
+                              if (widget.book.lentDbKey != null && widget.book.borrowerId != null) {
+                                SharedWidgets.displayErrorDialog(context, "You can't remove lent books! Please return the book first.");
+                                return;
+                              }
+                              bool shouldRemove = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
+                              if (shouldRemove) {
                                 widget.book.remove(widget.user.uid);
                                 if (context.mounted) {
                                   Navigator.pop(context);
@@ -421,7 +434,7 @@ class _BookPageState extends State<BookPage> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: widget.book.userLent.toString(),
+                                    text: _userLent,
                                     style: TextStyle(
                                       fontSize:
                                           15, // Smaller font for borrowerId

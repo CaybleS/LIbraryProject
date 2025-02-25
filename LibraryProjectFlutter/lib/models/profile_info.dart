@@ -16,7 +16,7 @@ class ProfileInfo {
       List<dynamic> books = json['favBooks'];
       List<Book> favBooks = [];
       for (var record in books) {
-        Book book = createBook(record);
+        Book book = createBookFromJson(record);
         favBooks.add(book);
       }
       profileInfo.favBooks = List.from(favBooks);

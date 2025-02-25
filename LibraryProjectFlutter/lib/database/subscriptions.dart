@@ -19,7 +19,7 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
     userLibrary.clear();
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
-        Book book = createBook(child.value);
+        Book book = createBookFromJson(child.value);
         book.setId(dbReference.child('books/${user.uid}/${child.key}'));
         userLibrary.add(book);
       }
@@ -67,7 +67,7 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
         for (int i = 0; i < 5; i++) {
           DatabaseEvent getBookEvent = await dbReference.child('books/$lenderId/$bookDbKey').once();
           if (getBookEvent.snapshot.value != null) {
-            Book book = createBook(getBookEvent.snapshot.value);
+            Book book = createBookFromJson(getBookEvent.snapshot.value);
             LentBookInfo lentBookInfo = createLentBookInfo(book, record);
             tempBooksLentToMe.add(lentBookInfo);
             break;
@@ -90,7 +90,7 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
     List<Book> listOfFriendsBooks = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
-        Book book = createBook(child.value);
+        Book book = createBookFromJson(child.value);
         book.setId(dbReference.child('books/$friendId/${child.key}'));
         listOfFriendsBooks.add(book);
       }
@@ -146,7 +146,7 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
         String bookDbKey = child.key!;
         DatabaseEvent getBookEvent = await dbReference.child('books/$receiverId/$bookDbKey').once();
         if (getBookEvent.snapshot.value != null) {
-          Book book = createBook(getBookEvent.snapshot.value);
+          Book book = createBookFromJson(getBookEvent.snapshot.value);
           book.setId(dbReference.child('books/$receiverId/${child.key}'));
           SentBookRequest sentBookRequest = createSentBookRequest(child.value, book);
           sentBookRequests.add(sentBookRequest);
@@ -171,7 +171,7 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
         String bookDbKey = child.key!;
         DatabaseEvent getBookEvent = await dbReference.child('books/${user.uid}/$bookDbKey').once();
         if (getBookEvent.snapshot.value != null) {
-          Book book = createBook(getBookEvent.snapshot.value);
+          Book book = createBookFromJson(getBookEvent.snapshot.value);
           book.setId(dbReference.child('books/${user.uid}/${child.key}'));
           dynamic record = child.value;
           Map<String, String> senders = (record['senders'] as Map).map(

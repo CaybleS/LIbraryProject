@@ -33,13 +33,13 @@ class Chat {
   });
 
   factory Chat.fromJson(String id, Map<dynamic, dynamic> json) {
-    List<String> names = (json['info']['name'] as String).split('*');
+    List<String> ids = id.split('*');
     return Chat(
       id: id,
       type: ChatType.values.byName(json['info']['type'] ?? 'private'),
       name: json['info']['type'] == 'group'
           ? json['info']['name']
-          : names.firstWhere((element) => element != userModel.value!.name),
+          : ids.firstWhere((element) => element != userModel.value!.uid),
       chatImage: json['info']['chatImage'],
       createdBy: json['info']['createdBy'],
       avatarColor: Color(json['info']['avatarColor'] ?? Colors.grey.value),

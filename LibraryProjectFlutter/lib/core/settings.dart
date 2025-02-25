@@ -30,14 +30,12 @@ class _SettingsState extends State<Settings> {
   @override
   void initState() {
     super.initState();
+    // the userLibraryListener doesnt execute when we go to this page so this needs to be here
+    numBooksLent = _getNumBooksLent();
+    setState(() {});
     _userLibraryListener = () {
-      numBooksLent = 0;
-      for (int i = 0; i < userLibrary.length; i++) {
-        if (userLibrary[i].lentDbKey != null) {
-          numBooksLent++;
-        }
-        setState(() {});
-      }
+      numBooksLent = _getNumBooksLent();
+      setState(() {});
     };
     _booksLentToMeListener = () {
       setState(() {});
@@ -51,6 +49,16 @@ class _SettingsState extends State<Settings> {
     pageDataUpdatedNotifier.removeListener(_userLibraryListener);
     pageDataUpdatedNotifier.removeListener(_booksLentToMeListener);
     super.dispose();
+  }
+
+  int _getNumBooksLent() {
+    int totalBooksLent = 0;
+    for (int i = 0; i < userLibrary.length; i++) {
+      if (userLibrary[i].lentDbKey != null) {
+        totalBooksLent++;
+      }
+    }
+    return totalBooksLent;
   }
 
   Future<bool> _showTwoConfirmActionDialogs(String msg1, String msg2) async {

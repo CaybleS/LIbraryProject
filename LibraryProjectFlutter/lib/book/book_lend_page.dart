@@ -27,7 +27,6 @@ void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Bo
     for (String friend in friendIDs) {
       if (friend == borrowerId) {
         foundFriend = true;
-        book.userLent = userIdToUserModel[friend]!.name;
       }
     }
     if (!foundFriend) {

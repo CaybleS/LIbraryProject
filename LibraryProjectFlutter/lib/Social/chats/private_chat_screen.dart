@@ -343,7 +343,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
         await _database.child('chats/${widget.chatRoomId}').update(Chat(
               id: widget.chatRoomId,
-              name: '${widget.contact.name}*${userModel.value!.name}',
+              // Previously this was storing names, but that caused problems if the names changed, so it stores uid now
+              name: '${widget.contact.uid}*${userModel.value!.uid}',
               participants: [userModel.value!.uid, widget.contact.uid],
             ).toJson());
         await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
