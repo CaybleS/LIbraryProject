@@ -1,11 +1,12 @@
 import 'dart:math';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/appbar.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
@@ -16,7 +17,8 @@ import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class MessageHome extends StatefulWidget {
-  const MessageHome({super.key});
+  final User user; // only used for rendering the appbar
+  const MessageHome(this.user, {super.key});
 
   @override
   State<MessageHome> createState() => _MessageHomeState();
@@ -25,6 +27,29 @@ class MessageHome extends StatefulWidget {
 class _MessageHomeState extends State<MessageHome> {
   final _database = FirebaseDatabase.instance.ref();
   ValueNotifier<String> searchQuery = ValueNotifier('');
+  // Since this page is loaded into memory via offstage from the bottombar right when the app starts up, it would previously try to setup
+  // streams listening on user's data, but the user is not fetched yet. So this listener simply waits for the user data to be fetched
+  // and just refreshes the page. There is also logic to not render the page at all in the build method until the userModel value is set.
+  late final VoidCallback _userHasBeenSetListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _userHasBeenSetListener = () {
+      if (userModel.value != null) {
+        // user is set here so we can start rendering this page
+        setState(() {});
+        userModel.removeListener(_userHasBeenSetListener);
+      }
+    };
+    userModel.addListener(_userHasBeenSetListener);
+  }
+
+  @override
+  void dispose() {
+    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    super.dispose();
+  }
 
   void goToNewChatScreen() {
     Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateChatScreen()));
@@ -32,25 +57,12 @@ class _MessageHomeState extends State<MessageHome> {
 
   @override
   Widget build(BuildContext context) {
+    if (userModel.value == null) { // This page's logic requires userModel value to be set. This page's initState() handles it.
+      return const SizedBox.shrink();
+    }
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
-        ),
-        title: const Text(
-          'Chats',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            fontFamily: 'Poppins',
-          ),
-        ),
-      ),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user, title: "Chats"),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           goToNewChatScreen();
@@ -58,13 +70,14 @@ class _MessageHomeState extends State<MessageHome> {
         backgroundColor: Colors.green,
         label: const Text(
           'New Chat',
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
+          style: TextStyle(fontSize: 20),
         ),
         icon: const Icon(
           Icons.add,
           size: 30,
         ),
         splashColor: Colors.blue,
+        heroTag: UniqueKey(),
       ),
       body: Column(
         children: [
@@ -92,13 +105,11 @@ class _MessageHomeState extends State<MessageHome> {
                   return Center(
                       child: Text(
                     'Error: ${snapshot.error}',
-                    style: const TextStyle(fontFamily: 'Poppins'),
                   ));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
                       child: Text(
                     'No chats found.',
-                    style: TextStyle(fontFamily: 'Poppins'),
                   ));
                 }
                 List<Chat> chats = snapshot.data!;
@@ -118,7 +129,6 @@ class _MessageHomeState extends State<MessageHome> {
                       return const Center(
                         child: Text(
                           'No chats found.',
-                          style: TextStyle(fontFamily: 'Poppins'),
                         ),
                       );
                     }
@@ -158,7 +168,7 @@ class _MessageHomeState extends State<MessageHome> {
                                           alignment: Alignment.center,
                                           child: const Text(
                                             'L',
-                                            style: TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                                            style: TextStyle(color: Colors.black, fontSize: 20),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -169,11 +179,11 @@ class _MessageHomeState extends State<MessageHome> {
                                             Text(
                                               'Loading...',
                                               style:
-                                                  TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 18),
+                                                  TextStyle(color: Colors.black, fontSize: 18),
                                             ),
                                             Text(
                                               'Loading...',
-                                              style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
+                                              style: TextStyle(color: Colors.black),
                                             ),
                                           ],
                                         ),
@@ -181,7 +191,7 @@ class _MessageHomeState extends State<MessageHome> {
                                     ),
                                   );
                                 } //
-                                contact = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+                                contact = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
                                 return _chatItemBuilder(context, chat, contact);
                               },
                             );
@@ -237,7 +247,7 @@ class _MessageHomeState extends State<MessageHome> {
   }
 
   String _formatTimestamp(DateTime date) {
-    return DateFormat('hh:mm a').format(date);
+    return DateFormat('hh:mm a').format(date.toLocal());
   }
 
   Widget _createAvatarWidget(Chat chat, UserModel? contact) {
@@ -252,6 +262,7 @@ class _MessageHomeState extends State<MessageHome> {
     );
   }
 
+  // TODO this is very cool but its very unintuitive I would never have guessed that you could do this
   Widget _chatItemBuilder(BuildContext context, Chat chat, UserModel? contact) {
     return Dismissible(
       key: Key(chat.id),
@@ -281,7 +292,7 @@ class _MessageHomeState extends State<MessageHome> {
                           const SizedBox(width: 5),
                           Text(
                             chat.type == ChatType.private ? 'Delete chat' : 'Leave group',
-                            style: const TextStyle(fontFamily: 'Poppins', fontSize: 22, fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -289,7 +300,7 @@ class _MessageHomeState extends State<MessageHome> {
                       RichText(
                         text: chat.type == ChatType.private
                             ? TextSpan(
-                                style: const TextStyle(color: Colors.black, fontFamily: 'Poppins', fontSize: 16),
+                                style: const TextStyle(color: Colors.black, fontSize: 16),
                                 children: [
                                   const TextSpan(text: 'Permanently delete the chat with '),
                                   TextSpan(
@@ -300,7 +311,7 @@ class _MessageHomeState extends State<MessageHome> {
                                 ],
                               )
                             : TextSpan(
-                                style: const TextStyle(color: Colors.black, fontFamily: 'Poppins', fontSize: 16),
+                                style: const TextStyle(color: Colors.black, fontSize: 16),
                                 children: [
                                   const TextSpan(text: 'Are you sure you want to delete and leave the group '),
                                   TextSpan(
@@ -321,7 +332,7 @@ class _MessageHomeState extends State<MessageHome> {
                             },
                             child: const Padding(
                               padding: EdgeInsets.all(5),
-                              child: Text('Cancel', style: TextStyle(fontSize: 16, fontFamily: 'Poppins')),
+                              child: Text('Cancel', style: TextStyle(fontSize: 16)),
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -333,7 +344,7 @@ class _MessageHomeState extends State<MessageHome> {
                               padding: EdgeInsets.all(5),
                               child: Text(
                                 'Delete chat',
-                                style: TextStyle(fontSize: 16, fontFamily: 'Poppins', color: Colors.red),
+                                style: TextStyle(fontSize: 16, color: Colors.red),
                               ),
                             ),
                           ),
@@ -361,7 +372,7 @@ class _MessageHomeState extends State<MessageHome> {
             Icon(IconsaxPlusLinear.trash, color: Colors.white),
             Text(
               'Delete',
-              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -421,7 +432,7 @@ class _MessageHomeState extends State<MessageHome> {
                     children: [
                       Text(
                         chat.type == ChatType.private ? contact!.name : chat.name,
-                        style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 18),
+                        style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                         softWrap: true,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -429,7 +440,7 @@ class _MessageHomeState extends State<MessageHome> {
                       Text(
                         (chat.type == ChatType.private && contact!.isTyping) ? 'is typing...' : chat.lastMessage ?? '',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
+                          fontSize: 14,
                           color: (chat.lastMessageSender != userModel.value!.uid ||
                                   chat.type == ChatType.private && contact!.isTyping)
                               ? Colors.blue
@@ -447,7 +458,7 @@ class _MessageHomeState extends State<MessageHome> {
                   children: [
                     Text(
                       _formatTimestamp(chat.lastMessageTime!),
-                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     if (chat.unreadCount > 0)
                       Container(
@@ -459,7 +470,7 @@ class _MessageHomeState extends State<MessageHome> {
                         ),
                         child: Text(
                           '${chat.unreadCount}',
-                          style: const TextStyle(fontFamily: 'Poppins', color: Colors.white, fontSize: 12),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
                   ],
@@ -479,7 +490,7 @@ class _MessageHomeState extends State<MessageHome> {
       await checkAndDeleteGroupIfEmpty(chat);
     }
 
-    int timestamp = DateTime.now().millisecondsSinceEpoch;
+    int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
     await dbReference.child('chats/${chat.id}/cleared/${userModel.value!.uid}').set(timestamp);
   }
 
@@ -495,7 +506,7 @@ class _MessageHomeState extends State<MessageHome> {
         id: id!,
         text: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -505,7 +516,7 @@ class _MessageHomeState extends State<MessageHome> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': ServerValue.increment(1),

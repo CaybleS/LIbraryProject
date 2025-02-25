@@ -6,6 +6,7 @@ import 'package:library_project/app_startup/connectivity_wrapper.dart';
 import 'package:library_project/app_startup/login.dart';
 import 'package:library_project/core/app_life_cycle.dart';
 import 'package:library_project/database/firebase_options.dart';
+import 'package:library_project/ui/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +31,9 @@ class MainApp extends StatelessWidget {
         builder: (context, child) {
           return ConnectivityWrapper(child: child ?? const SizedBox.shrink());
         },
-        theme: ThemeData(scaffoldBackgroundColor: Colors.grey[400]),
+        // this themeData does not override explicitly specified themes, so don't set scaffold background color unless you want to override this
+        // you can make many things universal from here, its prob worth doing, you'd just have to go through every file to make sure its not overriden.
+        theme: ThemeData(scaffoldBackgroundColor: AppColor.appBackgroundColor),
         home: const LoginPage(),
       ),
     );

@@ -6,11 +6,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,25 +50,21 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
         title: const Text(
           'Edit chat info',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 25,
-            color: Colors.white,
-          ),
         ),
+        centerTitle: true,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+          child: const Icon(Icons.arrow_back),
         ),
         actions: [
           GestureDetector(
             onTap: () {
               _saveChatInfo();
             },
-            child: const Icon(Icons.check, color: Colors.white),
+            child: const Icon(Icons.check, size: 30),
           ),
           const SizedBox(width: 10),
         ],
@@ -120,7 +117,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                               alignment: Alignment.center,
                               child: Text(
                                 chat.name[0].toUpperCase(),
-                                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 36),
+                                style: const TextStyle(color: Colors.black, fontSize: 36),
                               ),
                             );
                           },
@@ -150,7 +147,6 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                               nameErrorText = null;
                             });
                           },
-                          style: const TextStyle(fontFamily: 'Poppins'),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
@@ -192,7 +188,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                     const SizedBox(width: 10),
                     Text(
                       chat.chatImage != null ? 'Set New Photo' : 'Set Photo',
-                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent, fontFamily: 'Poppins', height: 1),
+                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent, height: 1),
                     ),
                   ],
                 ),
@@ -251,7 +247,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: textId!,
         text: '${userModel.value!.name} changed group name to «${controller.text}»',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$textId').set(textMessage.toJson());
@@ -264,7 +260,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: textId!,
         text: '${userModel.value!.name} updated group photo',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$textId').set(titleMessage.toJson());
@@ -273,7 +269,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         id: photoId!,
         text: chat.chatImage!,
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$photoId').set(photoMessage.toJson());
@@ -284,7 +280,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       await dbReference.child('userChats/$participantId/${chat.id}').update({
         'lastMessage': {
           'text': messages.last.text,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
           'sender': userModel.value!.uid
         },
         'unreadCount': participantId == userModel.value!.uid ? 0 : ServerValue.increment(messages.length),

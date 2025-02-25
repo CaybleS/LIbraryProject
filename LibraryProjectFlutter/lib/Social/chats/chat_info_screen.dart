@@ -3,12 +3,14 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/edit_chat_info_screen.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class ChatInfoScreen extends StatefulWidget {
@@ -41,7 +43,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColor.appbarColor,
           actions: [
             GestureDetector(
               onTap: () async {
@@ -55,7 +57,6 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               },
               child: const Icon(
                 IconsaxPlusLinear.edit_2,
-                color: Colors.white,
                 size: 30,
               ),
             ),
@@ -63,7 +64,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
           ],
           leading: GestureDetector(
             onTap: () => Navigator.pop(context, chat),
-            child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+            child: const Icon(Icons.arrow_back),
           ),
         ),
         body: Padding(
@@ -96,7 +97,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         chat.name[0].toUpperCase(),
-                        style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 50),
+                        style: const TextStyle(color: Colors.black, fontSize: 50),
                       ),
                     );
                   },
@@ -105,12 +106,12 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               const SizedBox(height: 20),
               Text(
                 chat.name,
-                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                style: const TextStyle(color: Colors.black, fontSize: 20),
               ),
               const SizedBox(height: 5),
               Text(
                 '${chat.participants.length} members',
-                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black),
+                style: const TextStyle(color: Colors.black),
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -145,7 +146,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                   const Text(
                                     'Add Members',
                                     style: TextStyle(
-                                        fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Colors.blue),
+                                      fontWeight: FontWeight.bold, color: Colors.blue,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -158,7 +160,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                             },
                             child: const Text(
                               'Leave Group',
-                              style: TextStyle(fontFamily: 'Poppins', color: Colors.red, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -174,25 +176,33 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                 UserAvatarWidget(
                                     photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
                                 const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                     Text(
                                       members[index].name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       // kGetTime(members[index].lastSignedIn),
-                                      members[index].email,
-                                      style: const TextStyle(fontFamily: 'Poppins'),
+                                      members[index].username,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                ),
-                                const Spacer(),
-                                Text(
-                                  members[index].uid == chat.createdBy ? 'Owner' : '',
-                                  style: const TextStyle(
-                                      fontFamily: 'Poppins', color: Colors.green, fontWeight: FontWeight.w500),
+                                )),
+                                SizedBox(
+                                  width: 60,
+                                  child: Text(
+                                    members[index].uid == chat.createdBy ? 'Owner' : '',
+                                    style: const TextStyle(
+                                      color: Colors.green, fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ],
                             );
@@ -217,7 +227,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
     for (final userId in chat.participants) {
       final userRef = await dbReference.child('users/$userId').once();
       if (userRef.snapshot.value != null) {
-        members.add(UserModel.fromJson(userRef.snapshot.value as Map<dynamic, dynamic>));
+        members.add(UserModel.fromJson(userRef.snapshot.value as Map<dynamic, dynamic>, userRef.snapshot.key!));
       }
     }
     setState(() {});
@@ -241,7 +251,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               children: [
                 const Text(
                   'Add Members',
-                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 20),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
                 const SizedBox(height: 10),
                 Autocomplete<UserModel>(
@@ -251,10 +261,9 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       onSubmitted: (String value) => onFieldSubmitted,
-                      style: const TextStyle(fontFamily: 'Poppins'),
                       decoration: InputDecoration(
                         hintText: 'Add Friend',
-                        hintStyle: const TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+                        hintStyle: const TextStyle(color: Colors.grey),
                         suffixIcon: InkWell(onTap: controller.clear, child: const Icon(Icons.close)),
                         fillColor: Colors.white,
                         filled: true,
@@ -267,9 +276,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                     if (textEditingValue.text == '') {
                       return const Iterable<UserModel>.empty();
                     } else {
-                      return friends.where((UserModel friend) {
-                        return friend.email.toLowerCase().contains(controller.text.toLowerCase());
-                      });
+                      var filtered = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid) && friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
+                      return Map.fromEntries(filtered).entries.map((entry) => entry.value);
                     }
                   },
                   onSelected: (option) {
@@ -290,7 +298,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                   ),
                   child: const Text(
                     'Add',
-                    style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -314,11 +322,10 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                               children: [
                                 Text(
                                   newMembers[index].name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  newMembers[index].email,
-                                  style: const TextStyle(fontFamily: 'Poppins'),
+                                  newMembers[index].username,
                                 ),
                               ],
                             ),
@@ -351,7 +358,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
           id: id!,
           text: '${userModel.value!.name} added ${member.name} to a group',
           senderId: userModel.value!.uid,
-          sentTime: DateTime.now(),
+          sentTime: DateTime.now().toUtc(),
           type: MessageType.event,
         );
         await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -360,7 +367,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} added ${newMembers.last.name} to a group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': participantId == userModel.value!.uid ? 0 : ServerValue.increment(newMembers.length),
@@ -389,7 +396,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
       await dbReference.child('chats/${chat.id}').remove();
     }//
     else{
-      int timestamp = DateTime.now().millisecondsSinceEpoch;
+      int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
       await dbReference.child('chats/${chat.id}/cleared/${userModel.value!.uid}').set(timestamp);
 
       final id = dbReference.child('messages/${chat.id}').push().key;
@@ -397,7 +404,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         id: id!,
         text: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
-        sentTime: DateTime.now(),
+        sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
       );
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
@@ -407,7 +414,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
             'sender': userModel.value!.uid
           },
           'unreadCount': ServerValue.increment(1),

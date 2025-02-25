@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class UserModel {
   final String uid;
   final String name;
+  final String username;
   final String email;
   final String? photoUrl;
   final bool isActive;
@@ -13,6 +14,7 @@ class UserModel {
   UserModel({
     required this.uid,
     required this.name,
+    required this.username,
     required this.email,
     required this.avatarColor,
     this.photoUrl,
@@ -21,10 +23,11 @@ class UserModel {
     required this.lastSignedIn,
   });
 
-  factory UserModel.fromJson(Map<dynamic, dynamic> json) {
+  factory UserModel.fromJson(Map<dynamic, dynamic> json, String uid) {
     return UserModel(
-      uid: json['uid'],
+      uid: uid,
       name: json['name'],
+      username: json['username'],
       email: json['email'],
       photoUrl: json['photoUrl'],
       avatarColor: Color(json['avatarColor'] ?? Colors.grey.value),
@@ -36,20 +39,20 @@ class UserModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'uid': uid,
       'name': name,
+      'username': username,
       'email': email,
       'photoUrl': photoUrl,
       'avatarColor': avatarColor.value,
       'isActive': isActive,
       'isTyping': isTyping,
-      'lastSignedIn': lastSignedIn.toUtc().toIso8601String(),
+      'lastSignedIn': lastSignedIn.toIso8601String(),
     };
   }
 
   @override
   String toString() {
-    return 'UserModel{uid: $uid, name: $name, email: $email, photoUrl: $photoUrl, isActive: $isActive, isTyping: $isTyping, lastSignedIn: $lastSignedIn}';
+    return 'UserModel{uid: $uid, name: $name, username: $username, email: $email, photoUrl: $photoUrl, isActive: $isActive, isTyping: $isTyping, lastSignedIn: $lastSignedIn}';
   }
 
   @override

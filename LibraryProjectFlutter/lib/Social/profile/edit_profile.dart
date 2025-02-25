@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:library_project/Social/profile/add_fav_book.dart';
 import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/database/database.dart';
+import 'package:library_project/database/subscriptions.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
@@ -143,9 +143,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor,
       ),
-      backgroundColor: AppColor.appBackgroundColor,
       body: Padding(
           padding: const EdgeInsets.all(15),
           child: SingleChildScrollView(

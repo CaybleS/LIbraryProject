@@ -4,11 +4,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends_library/friends_library_page.dart';
 import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import '../../database/database.dart';
-import '../../models/user.dart';
 import 'add_friend_page.dart';
 import '../../core/appbar.dart';
 
@@ -22,8 +22,8 @@ class FriendsPage extends StatefulWidget {
 }
 
 class _FriendsPageState extends State<FriendsPage> {
-  List<Request> showRequests = [];
-  List<UserModel> showFriends = [];
+  List<String> showRequests = [];
+  List<String> showFriends = [];
   String _selected = "list";
   late final VoidCallback _friendpageListener;
 
@@ -31,23 +31,24 @@ class _FriendsPageState extends State<FriendsPage> {
   void initState() {
     super.initState();
     _friendpageListener = () {
-      if (refreshNotifier.value == friendsPageIndex) {
+      // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
+      if (selectedIndex == friendsPageIndex) {
         updateLists();
       }
     };
-    refreshNotifier.addListener(_friendpageListener);
+    pageDataUpdatedNotifier.addListener(_friendpageListener);
     updateLists();
   }
 
   @override
   void dispose() {
-    refreshNotifier.removeListener(_friendpageListener);
+    pageDataUpdatedNotifier.removeListener(_friendpageListener);
     super.dispose();
   }
 
   void updateLists() async {
-    showFriends = friends;
-    showRequests = requests;
+    showFriends = friendIDs;
+    showRequests = requestIDs;
     setState(() {});
   }
 
@@ -66,14 +67,15 @@ class _FriendsPageState extends State<FriendsPage> {
   void _acceptClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Accepted");
-    await addFriend(requests[index]);
+    await addFriend(requestIDs[index], widget.user.uid);
     updateLists();
   }
 
   void _denyClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Deleted");
-    await requests[index].delete();
+    // await requests[index].delete();
+    await removeRef(FirebaseDatabase.instance.ref('requests/${widget.user.uid}/${requestIDs[index]}'));
     updateLists();
   }
 
@@ -110,7 +112,7 @@ class _FriendsPageState extends State<FriendsPage> {
           },
           child: const Text(
             "Friends List",
-            style: TextStyle(color: Colors.black, fontSize: 20),
+            style: TextStyle(color: Colors.black, fontSize: 16),
           ),
         ),
         const SizedBox(width: 10),
@@ -127,7 +129,7 @@ class _FriendsPageState extends State<FriendsPage> {
           },
           child: const Text(
             "Friend Requests",
-            style: TextStyle(color: Colors.black, fontSize: 20),
+            style: TextStyle(color: Colors.black, fontSize: 16),
           ),
         ),
       ],
@@ -153,9 +155,9 @@ class _FriendsPageState extends State<FriendsPage> {
                                 child: ClipOval(
                                     child: SizedBox(
                                         width: 50,
-                                        child: showRequests[index].photo != ""
+                                        child: userIdToUserModel[showRequests[index]]?.photoUrl != null
                                             ? Image.network(
-                                                showRequests[index].photo)
+                                                userIdToUserModel[showRequests[index]]!.photoUrl!)
                                             : Image.asset(
                                                 'assets/profile_pic.jpg')))),
                             Expanded(
@@ -168,7 +170,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    showRequests[index].name,
+                                    userIdToUserModel[showRequests[index]]!.name,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 16),
                                     softWrap: true,
@@ -178,7 +180,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    showRequests[index].email,
+                                    userIdToUserModel[showRequests[index]]!.email,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -251,7 +253,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            Profile(widget.user, showFriends[index].uid)));
+                            Profile(widget.user, showFriends[index])));
               }, // TODO link to user profile
               child: SizedBox(
                   height: 100,
@@ -266,9 +268,9 @@ class _FriendsPageState extends State<FriendsPage> {
                                 child: ClipOval(
                                     child: SizedBox(
                                   width: 50,
-                                  child: showFriends[index].photoUrl != null
+                                  child: userIdToUserModel[showFriends[index]]?.photoUrl != null
                                       ? Image.network(
-                                          showFriends[index].photoUrl!)
+                                          userIdToUserModel[showFriends[index]]!.photoUrl!)
                                       : Image.asset('assets/profile_pic.jpg'),
                                 ))),
                             Expanded(
@@ -281,7 +283,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    showFriends[index].name,
+                                    userIdToUserModel[showFriends[index]]!.name,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 16),
                                     softWrap: true,
@@ -291,7 +293,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    showFriends[index].email,
+                                    userIdToUserModel[showFriends[index]]!.email,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -312,7 +314,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                               builder: (context) =>
                                                   FriendsLibraryPage(
                                                       widget.user,
-                                                      friends[index])));
+                                                      userIdToUserModel[friendIDs[index]]!)));
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColor.pink),
@@ -330,13 +332,13 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(curPage: "friends"),
-      backgroundColor: Colors.grey[400],
+      appBar: CustomAppBar(widget.user),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
           onPressed: () {
             addFriendClicked();
           },
+          heroTag: UniqueKey(),
           child: const Icon(
             Icons.add,
             size: 30,

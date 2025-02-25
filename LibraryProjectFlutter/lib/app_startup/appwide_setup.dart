@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/database/subscriptions.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/database/database.dart';
 import 'package:library_project/models/profile_info.dart';
 import 'dart:async';
 import 'package:library_project/models/user.dart';
@@ -28,8 +28,8 @@ void setupDatabaseSubscriptions(User user) {
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
   _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
-  _friendsSubscription = setupFriendsSubscription(friends, user, _friendsUpdated);
-  _requestsSubscription = setupRequestsSubscription(requests, user, _friendsUpdated);
+  _friendsSubscription = setupFriendsSubscription(friendIDs, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
@@ -47,76 +47,77 @@ void cancelDatabaseSubscriptions() {
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed
 void resetBottombarValues() {
-  refreshBottombar = ValueNotifier<bool>(false);
-  refreshNotifier = ValueNotifier<int>(-1);
+  refreshBottombar.value = false;
+  pageDataUpdatedNotifier.value = 0;
+  bottombarIndexChangedNotifier.value = 0;
   selectedIndex = 0;
   prevIndex = 0;
+}
+
+void updatePageDataRefreshNotifier() {
+  // incrementing this signals an update to everyone whos listening to it. Ensure this function call is
+  // protected by logic in the form of checking selectedIndex to make sure we only refresh pages which are selected
+  // on the bottombar, since the offstage bottombar loads the 5 pages into memory. Note that this is only a concern
+  // with the main pages (homepage, add books page, profile), not the nested pages since those are disposed when user
+  // clicks off them (prevIndex logic) and thus are never in memory when the user's selectedIndex isn't the one for that page.
+  pageDataUpdatedNotifier.value = (pageDataUpdatedNotifier.value + 1) % 100; // the mod just to ensure the value cant overflow since theoretically it can without it
 }
 
 // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
 // for them, which will call setState and refresh the page with the updated userLibrary.
 void _ownedBooksUpdated() {
-  if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex || selectedIndex == settingsIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+  if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex || selectedIndex == profileIndex) {
+    updatePageDataRefreshNotifier();
   }
 }
 
 void _lentToMeBooksUpdated() {
   // if we are on the pages which care about books lent to the user we refresh it
   // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it 
-  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex || selectedIndex == settingsIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex || selectedIndex == profileIndex) {
+    updatePageDataRefreshNotifier();
   }
 }
 
 void _sentBookRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void _receivedBookRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void _friendsUpdated() {
   if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void friendsBooksUpdated() {
   if (selectedIndex == friendsPageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void lentToMeRequestsUpdated() {
   if (selectedIndex == homepageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void userUpdated() {
   if (selectedIndex == profileIndex || selectedIndex == friendsPageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
 void profileUpdated() {
   if (selectedIndex == profileIndex || selectedIndex == friendsPageIndex) {
-    refreshNotifier.value = -1;
-    refreshNotifier.value = selectedIndex;
+    updatePageDataRefreshNotifier();
   }
 }
 
@@ -135,12 +136,16 @@ void bottombarItemTapped(int index) {
     // If the user taps the current tab, pop to the root route of that tab
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
   } else {
+    bottombarIndexChangedNotifier.value = -1;
+    bottombarIndexChangedNotifier.value = prevIndex; // signaling the page we switched off so it can refresh itself now if it wants to
     // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
     // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
     navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
   }
-  refreshNotifier.value = index;
+  // The refresh notifier has logic to only refresh the 5 bottombar pages in memory when we have selected them so we to refresh
+  // these pages when we go to them. No need to refresh them when changes occur when we aren't on them, but then this needs to occur.
+  updatePageDataRefreshNotifier();
   prevIndex = index;
 }

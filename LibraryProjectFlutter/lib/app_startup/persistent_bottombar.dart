@@ -1,13 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:library_project/Social/chats/message_home.dart';
 import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/add_book/add_book_homepage.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/homepage.dart';
 import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/core/settings.dart';
+import 'package:library_project/database/database.dart';
+import 'package:library_project/ui/colors.dart';
 
 class PersistentBottomBar extends StatefulWidget {
   final User user;
@@ -28,8 +30,8 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     _pagesList[homepageIndex] = HomePage(widget.user);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);
+    _pagesList[messagesIndex] = MessageHome(widget.user);
     _pagesList[profileIndex] = Profile(widget.user, widget.user.uid);
-    _pagesList[settingsIndex] = Settings(widget.user);
     _refreshBottombarListener = () {
       if (refreshBottombar.value == true) {
         setState(() {});
@@ -107,16 +109,16 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
                 label: "Friends",
               ),
               BottomNavigationBarItem(
+                icon: DynamicMessagesIcon(),
+                label: "Messages",
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(Icons.account_circle_rounded),
                 label: "Profile",
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
-                label: "Settings",
-              ),
             ],
             currentIndex: selectedIndex,
-            selectedItemColor: Colors.blue,
+            selectedItemColor: AppColor.appbarColor,
             unselectedItemColor: Colors.grey,
             backgroundColor: Colors.white,
             onTap: bottombarItemTapped,
@@ -124,5 +126,100 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
           : const SizedBox.shrink(),
       )
     );
+  }
+}
+
+class DynamicMessagesIcon extends StatefulWidget {
+  const DynamicMessagesIcon({super.key});
+
+  @override
+  State<DynamicMessagesIcon> createState() => _DynamicMessagesIconState();
+}
+
+class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
+  late Stream<int> _chatListStream;
+  late final VoidCallback _userHasBeenSetListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _userHasBeenSetListener = () {
+      if (userModel.value != null) {
+        // user definitely exists so we get the chat list now
+        _chatListStream = _getChatList();
+        setState(() {});
+        userModel.removeListener(_userHasBeenSetListener);
+      }
+    };
+    userModel.addListener(_userHasBeenSetListener);
+    _chatListStream = _getChatList(); // initially this will fail since user will be set to null but when user is set it will fetch the correct info
+  }
+
+  @override
+  void dispose() {
+    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(
+          Icons.message_rounded,
+        ),
+        StreamBuilder(
+          stream: _chatListStream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.hasError) {
+              return const SizedBox.shrink();
+            }
+            int unreadMessages = snapshot.data!;
+            if (unreadMessages == 0) {
+              return const SizedBox.shrink();
+            }
+            return Positioned(
+              bottom: 14, // putting it on top right of the icon
+              left: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unreadMessages.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Stream<int> _getChatList() {
+    if (userModel.value == null) {
+      return Stream.value(0);
+    }
+    return dbReference.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) {
+      final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (chatsMap == null) {
+        return 0;
+      }
+      int unreadMessages = 0;
+      for (var entry in chatsMap.entries) {
+        final unreadCount = entry.value['unreadCount'] as int;
+        if (unreadCount > 0) unreadMessages += unreadCount;
+      }
+      return unreadMessages;
+    });
   }
 }

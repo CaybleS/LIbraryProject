@@ -18,7 +18,11 @@ class SearchDriver {
   bool _otherSearchError = false;
   bool _noBooksFoundError = false;
   bool _noResponseError = false; // this detects lack of internet connection (or api being down maybe)
-  bool _usingGoogleAPI = true;
+  bool _usingGoogleApi = true; // if you modify this modify googleApiFailTime also
+  // basically if google api fails this stores the timestamp of when this occurs and so subsequent api calls dont try calling it again
+  // but I store this timestamp so that if 30 mins pass we try again. It's that, or just try google books api every time, but storing the timestamp
+  // is obviously better so I just did that
+  DateTime? _googleApiFailTime;
   SearchQueryOption _searchQueryOption = SearchQueryOption.normal;
   SearchQueryOption _prevSearchQueryOption = SearchQueryOption.normal; // used to allow for a search where all you change is search query option (w/same query)
   late final User _user;
@@ -65,20 +69,52 @@ class SearchDriver {
     }
   }
 
-  String _getApiSearchOption() {
+  String _getApiSearchOption({required bool usingGoogleSearch}) {
     switch (_searchQueryOption) {
       case SearchQueryOption.normal:
-        return "";
+        return usingGoogleSearch ? "" : "q=";
       case SearchQueryOption.title:
-        return "intitle:";
+        return usingGoogleSearch ? "intitle:" : "title=";
       case SearchQueryOption.author:
-        return "inauthor:";
+        return usingGoogleSearch ? "inauthor:" : "author=";
     }
   }
 
+  // 
+  String _getSearchQueryWithFilters(String searchQuery, {required bool usingGoogleSearch}) {
+    String searchQueryOption = _getApiSearchOption(usingGoogleSearch: usingGoogleSearch);
+    String searchQueryWithFilters = "$searchQueryOption$searchQuery";
+    if (!usingGoogleSearch) {
+      return searchQueryWithFilters;
+    }
+    if (_searchQueryOption != SearchQueryOption.normal && searchQuery.contains(RegExp(r'[ ]'))) {
+      searchQueryWithFilters = "";
+      String currWord = "";
+      for (int i = 0; i < searchQuery.length; i++) {
+        if (searchQuery[i] != " ") {
+          currWord += searchQuery[i];
+        }
+        // so if we're on a space in the search query and the currWord isnt just a bunch of spaces
+        // (this will cause unnecessary spaces to just be removed for this filtering stuff)
+        else if (currWord.isNotEmpty) {
+          if (searchQueryWithFilters.isNotEmpty) {
+            searchQueryWithFilters += " ";
+          }
+          searchQueryWithFilters += searchQueryOption + currWord;
+          currWord = "";
+        }
+      }
+      // in this case we're done indexing through the search query (this can handle the case of no spaces also but whatever, I think its fine)
+      if (currWord.isNotEmpty) {
+        searchQueryWithFilters += " $searchQueryOption$currWord";
+      }
+    }
+    return searchQueryWithFilters;
+  }
+
   Future<void> _searchWithOpenLibrary(String searchQuery) async {
-    String searchQueryOption = _getApiSearchOption();
-    final String endpoint = "https://openlibrary.org/search.json?q=$searchQueryOption$searchQuery&limit=$maxApiResponseSize";
+    String searchQueryWithPossibleFilters = _getSearchQueryWithFilters(searchQuery, usingGoogleSearch: false);
+    final String endpoint = "https://openlibrary.org/search.json?$searchQueryWithPossibleFilters&limit=$maxApiResponseSize";
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(
@@ -101,8 +137,8 @@ class SearchDriver {
   }
 
   Future<void> _searchWithGoogle(String searchQuery) async {
-    String searchQueryOption = _getApiSearchOption();
-    final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQueryOption$searchQuery&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
+    String searchQueryWithPossibleFilters = _getSearchQueryWithFilters(searchQuery, usingGoogleSearch: true);
+    final String endpoint = "https://www.googleapis.com/books/v1/volumes?q=$searchQueryWithPossibleFilters&key=$apiKey&startIndex=0&maxResults=$maxApiResponseSize";
     http.Response? response;
     try {
       response = await http.get(Uri.parse(endpoint)).timeout(
@@ -115,7 +151,8 @@ class SearchDriver {
         _searchQueryBooks = json.decode(response.body)['items'] ?? [];
       } // with a bad response we just fallback to openlibrary api
       else {
-        _usingGoogleAPI = false;
+        _usingGoogleApi = false;
+        _googleApiFailTime = DateTime.now().toUtc();
         await _searchWithOpenLibrary(searchQuery);
       }
     } catch (e) {
@@ -128,9 +165,20 @@ class SearchDriver {
   }
 
   Future<void> _searchForBooks(String searchQuery) async {
-    _usingGoogleAPI
-      ? await _searchWithGoogle(searchQuery)
-      : await _searchWithOpenLibrary(searchQuery);
+    if (_usingGoogleApi) {
+      await _searchWithGoogle(searchQuery);
+    }
+    else {
+      // if its been 30 minutes since google books api fails we just try again
+      if (_googleApiFailTime!.isBefore(DateTime.now().toUtc().subtract(const Duration(minutes: 30)))) {
+        _usingGoogleApi = true;
+        _googleApiFailTime = null;
+        await _searchWithGoogle(searchQuery);
+      }
+      else {
+        await _searchWithOpenLibrary(searchQuery);
+      }
+    }
     if (_searchQueryBooks.isEmpty) {
       _noBooksFoundError = true;
     }
@@ -175,7 +223,7 @@ class SearchDriver {
   // this should display a general info - NOT AN ERROR, just general input regarding whatever user is doing, helper text basically
   Widget getSearchInfoWidget() {
     String? feedbackMsg;
-    if (!_usingGoogleAPI) {
+    if (!_usingGoogleApi) {
       feedbackMsg = "Google Books API unavailable, fallback results are limited.";
     }
     if (feedbackMsg == null) {
@@ -210,7 +258,7 @@ class SearchDriver {
           String? title, author, coverUrl, description, googleBooksId;
           int? isbn13; // note that openlibrary stores isbn13 sometimes, but their response body is a mess, its really not easy or good to extract
           bool isBookAlreadyAdded = false;
-          if (_usingGoogleAPI) {
+          if (_usingGoogleApi) {
             title = _searchQueryBooks[index]?['volumeInfo']?['title'];
             author = _searchQueryBooks[index]?['volumeInfo']?['authors']?[0];
             coverUrl = _searchQueryBooks[index]?['volumeInfo']?['imageLinks']?['thumbnail'];

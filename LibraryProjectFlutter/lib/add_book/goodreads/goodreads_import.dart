@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart'; // literally only needed to convert exported goodreads csv to a list, but thats kinda helpful ya know
 import 'package:library_project/add_book/shared_helper_util.dart';
-import 'package:library_project/app_startup/global_variables.dart';
+import 'package:library_project/core/global_variables.dart';
 import 'dart:convert';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/shared_widgets.dart';
@@ -64,7 +64,7 @@ Future<bool> _doesOpenLibraryHaveThisCover(String coverUrl) async {
       return false;
     }
   } catch (e) {
-    return false; // idk what would cause this but just to be safe its here
+    return false; // caused by timeout and maybe other stuff too idk
   }
   return true;
 }

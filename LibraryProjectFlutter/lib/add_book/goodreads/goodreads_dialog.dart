@@ -32,16 +32,9 @@ class GoodreadsDialog extends StatelessWidget {
               // basically i cant use url_launcher package to auto redirect users to this page, since goodreads force redirects users
               // to their app if they have it installed, and the import/export does not work on their app, only in web browsers.
               // So I believe this is the best way to do it, just having users copy the link and manually paste in their web browser.
-              try {
-                await Clipboard.setData(const ClipboardData(text: "https://www.goodreads.com/review/import"));
-                if (contextFromPageUserIsOn.mounted) {
-                  SharedWidgets.displayPositiveFeedbackDialog(contextFromPageUserIsOn, "Goodreads link copied");
-                }
-              }
-              catch (e) {
-                if (contextFromPageUserIsOn.mounted) {
-                  SharedWidgets.displayErrorDialog(contextFromPageUserIsOn, "Error copying goodreads link to clipboard"); // idk if this can even happen
-                }
+              await Clipboard.setData(const ClipboardData(text: "https://www.goodreads.com/review/import"));
+              if (contextFromPageUserIsOn.mounted) {
+                SharedWidgets.displayPositiveFeedbackDialog(contextFromPageUserIsOn, "Goodreads link copied");
               }
             },
             style: ElevatedButton.styleFrom(
