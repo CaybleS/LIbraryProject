@@ -76,7 +76,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+                      child: const Icon(Icons.arrow_back),
                     ),
                   ),
                 ),
@@ -84,11 +84,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   children: [
                     Text(
                       user.name,
-                      style: const TextStyle(fontFamily: 'Poppins', color: Colors.white),
                     ),
                     Text(
                       user.isTyping ? 'is typing...' : kGetTime(user.lastSignedIn),
-                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.white),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -136,7 +135,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               ),
                               child: Text(
                                 _formatDate(messages[index].sentTime),
-                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
                               ),
                             ),
                           ),
@@ -169,7 +168,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                   Text(
                                     message.text,
                                     style: TextStyle(
-                                        fontFamily: 'Poppins', fontSize: 16, color: isMe ? Colors.black : Colors.white),
+                                      fontSize: 16, color: isMe ? Colors.black : Colors.white
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
@@ -178,7 +178,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                       Text(
                                         _createTimeTextWidget(message.sentTime),
                                         style: TextStyle(
-                                            fontFamily: 'Poppins',
                                             fontSize: 14,
                                             color: isMe ? Colors.black : Colors.white),
                                       ),
@@ -218,7 +217,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                         child: Text(
                                           _createTimeTextWidget(message.sentTime),
                                           style: const TextStyle(
-                                            fontFamily: 'Poppins',
                                             fontSize: 14,
                                             color: Colors.white,
                                           ),
@@ -253,7 +251,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   },
                 );
               },
-              style: const TextStyle(fontFamily: 'Poppins'),
               decoration: InputDecoration(
                 hintText: 'Message',
                 hintStyle: const TextStyle(color: Colors.grey),

@@ -177,6 +177,7 @@ class _FriendScannerScreenState extends State<FriendScannerScreen> {
           size: 30,
         ),
         splashColor: Colors.blue,
+        heroTag: UniqueKey(),
       ),
       body: (_cameraIsInitialized)
         ? Stack(

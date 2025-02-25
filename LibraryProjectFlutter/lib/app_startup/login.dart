@@ -49,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       showLoading = true;
     });
-    final user = await signInWithGoogle();
+    final user = await signInWithGoogle(context);
     setState(() {
       showLoading = false;
     });

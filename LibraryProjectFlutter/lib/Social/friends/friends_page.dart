@@ -338,6 +338,7 @@ class _FriendsPageState extends State<FriendsPage> {
           onPressed: () {
             addFriendClicked();
           },
+          heroTag: UniqueKey(),
           child: const Icon(
             Icons.add,
             size: 30,

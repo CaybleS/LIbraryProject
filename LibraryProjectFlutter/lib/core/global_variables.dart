@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:library_project/Social/friends/friends_page.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/models/book_requests.dart';

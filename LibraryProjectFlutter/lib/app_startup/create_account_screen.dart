@@ -51,7 +51,7 @@ class _CreateAccountState extends State<CreateAccount> {
       setState(() {
         showLoading = true;
       });
-      User? user = await createAccount(name, email, pswd);
+      User? user = await createAccount(name, email, pswd, context);
 
       if (user == null) {
         loginErr = 'Problem with Login';

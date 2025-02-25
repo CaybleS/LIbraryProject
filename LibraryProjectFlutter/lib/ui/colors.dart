@@ -13,7 +13,7 @@ class AppColor {
   static const Color acceptGreen = Color(0xFF43A047);
   static const Color appBackgroundColor = Color(0xFFBDBDBD); // grey[400], also dont set this in Scaffold widgets you create; its set in main.dart for all scaffolds
   static const Color lightGray = Color(0xFFEEEEEE); // grey[200]
-  static const Color appbarColor = Colors.blue;
+  static const Color appbarColor = Color(0xFF00AFFA); // i dont even know just go to this website and try stuff https://webaim.org/resources/contrastchecker/
   // static const Color purple = Color(0xFF3F3381);
   // static const Color darkPurple = Color(0xFF1D1F5A);
 }

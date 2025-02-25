@@ -43,23 +43,19 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
         backgroundColor: AppColor.appbarColor,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+          child: const Icon(Icons.arrow_back),
         ),
         title: const Text(
           'Create Group Chat',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            fontFamily: 'Poppins',
-          ),
         ),
+        centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           createChat();
         },
         backgroundColor: Colors.green,
+        heroTag: UniqueKey(),
         child: const Icon(Icons.check, color: Colors.white),
       ),
       body: Stack(
@@ -68,7 +64,8 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                SizedBox(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   height: 83,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +129,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Column(
                           children: [
@@ -144,7 +141,6 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
                                   nameErrorText = null;
                                 });
                               },
-                              style: const TextStyle(fontFamily: 'Poppins'),
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: Colors.white,
@@ -178,7 +174,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
                     itemBuilder: (BuildContext context, int index) {
                       final user = friendsResult[index];
                       bool isSelected = members.contains(user);
-                      return GestureDetector(
+                      return InkWell(
                         onTap: () {
                           if (members.contains(user)) {
                             members.remove(user);
@@ -195,8 +191,10 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
                             padding: const EdgeInsets.all(10),
                             child: Row(
                               children: [
-                                UserAvatarWidget(
-                                    photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(1, 0, 5, 0),
+                                  child: UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
@@ -204,14 +202,14 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
                                     children: [
                                       Text(
                                         user.name,
-                                        style: const TextStyle(color: Colors.black, fontSize: 20),
+                                        style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                                         softWrap: true,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       Text(
-                                        user.email,
-                                        style: const TextStyle(color: Colors.black, fontSize: 16),
+                                        user.username,
+                                        style: const TextStyle(color: Colors.black, fontSize: 14),
                                         softWrap: true,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -260,7 +258,10 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
       });
       return;
     }
-    if (members.isEmpty)return;
+    if (members.isEmpty) {
+      SharedWidgets.displayErrorDialog(context, "Group cannot be empty");
+      return;
+    }
     setState(() {
       showLoading = true;
     });

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 // note that we dont check the receiver's library to see if they already own the book before lending it to them; we could do this

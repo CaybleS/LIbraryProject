@@ -70,13 +70,14 @@ class _MessageHomeState extends State<MessageHome> {
         backgroundColor: Colors.green,
         label: const Text(
           'New Chat',
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 20),
+          style: TextStyle(fontSize: 20),
         ),
         icon: const Icon(
           Icons.add,
           size: 30,
         ),
         splashColor: Colors.blue,
+        heroTag: UniqueKey(),
       ),
       body: Column(
         children: [
@@ -104,13 +105,11 @@ class _MessageHomeState extends State<MessageHome> {
                   return Center(
                       child: Text(
                     'Error: ${snapshot.error}',
-                    style: const TextStyle(fontFamily: 'Poppins'),
                   ));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
                       child: Text(
                     'No chats found.',
-                    style: TextStyle(fontFamily: 'Poppins'),
                   ));
                 }
                 List<Chat> chats = snapshot.data!;
@@ -130,7 +129,6 @@ class _MessageHomeState extends State<MessageHome> {
                       return const Center(
                         child: Text(
                           'No chats found.',
-                          style: TextStyle(fontFamily: 'Poppins'),
                         ),
                       );
                     }
@@ -170,7 +168,7 @@ class _MessageHomeState extends State<MessageHome> {
                                           alignment: Alignment.center,
                                           child: const Text(
                                             'L',
-                                            style: TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                                            style: TextStyle(color: Colors.black, fontSize: 20),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -181,11 +179,11 @@ class _MessageHomeState extends State<MessageHome> {
                                             Text(
                                               'Loading...',
                                               style:
-                                                  TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 18),
+                                                  TextStyle(color: Colors.black, fontSize: 18),
                                             ),
                                             Text(
                                               'Loading...',
-                                              style: TextStyle(fontFamily: 'Poppins', color: Colors.black),
+                                              style: TextStyle(color: Colors.black),
                                             ),
                                           ],
                                         ),
@@ -264,6 +262,7 @@ class _MessageHomeState extends State<MessageHome> {
     );
   }
 
+  // TODO this is very cool but its very unintuitive I would never have guessed that you could do this
   Widget _chatItemBuilder(BuildContext context, Chat chat, UserModel? contact) {
     return Dismissible(
       key: Key(chat.id),
@@ -293,7 +292,7 @@ class _MessageHomeState extends State<MessageHome> {
                           const SizedBox(width: 5),
                           Text(
                             chat.type == ChatType.private ? 'Delete chat' : 'Leave group',
-                            style: const TextStyle(fontFamily: 'Poppins', fontSize: 22, fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -301,7 +300,7 @@ class _MessageHomeState extends State<MessageHome> {
                       RichText(
                         text: chat.type == ChatType.private
                             ? TextSpan(
-                                style: const TextStyle(color: Colors.black, fontFamily: 'Poppins', fontSize: 16),
+                                style: const TextStyle(color: Colors.black, fontSize: 16),
                                 children: [
                                   const TextSpan(text: 'Permanently delete the chat with '),
                                   TextSpan(
@@ -312,7 +311,7 @@ class _MessageHomeState extends State<MessageHome> {
                                 ],
                               )
                             : TextSpan(
-                                style: const TextStyle(color: Colors.black, fontFamily: 'Poppins', fontSize: 16),
+                                style: const TextStyle(color: Colors.black, fontSize: 16),
                                 children: [
                                   const TextSpan(text: 'Are you sure you want to delete and leave the group '),
                                   TextSpan(
@@ -333,7 +332,7 @@ class _MessageHomeState extends State<MessageHome> {
                             },
                             child: const Padding(
                               padding: EdgeInsets.all(5),
-                              child: Text('Cancel', style: TextStyle(fontSize: 16, fontFamily: 'Poppins')),
+                              child: Text('Cancel', style: TextStyle(fontSize: 16)),
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -345,7 +344,7 @@ class _MessageHomeState extends State<MessageHome> {
                               padding: EdgeInsets.all(5),
                               child: Text(
                                 'Delete chat',
-                                style: TextStyle(fontSize: 16, fontFamily: 'Poppins', color: Colors.red),
+                                style: TextStyle(fontSize: 16, color: Colors.red),
                               ),
                             ),
                           ),
@@ -373,7 +372,7 @@ class _MessageHomeState extends State<MessageHome> {
             Icon(IconsaxPlusLinear.trash, color: Colors.white),
             Text(
               'Delete',
-              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+              style: TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -433,7 +432,7 @@ class _MessageHomeState extends State<MessageHome> {
                     children: [
                       Text(
                         chat.type == ChatType.private ? contact!.name : chat.name,
-                        style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 18),
+                        style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                         softWrap: true,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -441,7 +440,7 @@ class _MessageHomeState extends State<MessageHome> {
                       Text(
                         (chat.type == ChatType.private && contact!.isTyping) ? 'is typing...' : chat.lastMessage ?? '',
                         style: TextStyle(
-                          fontFamily: 'Poppins',
+                          fontSize: 14,
                           color: (chat.lastMessageSender != userModel.value!.uid ||
                                   chat.type == ChatType.private && contact!.isTyping)
                               ? Colors.blue
@@ -459,7 +458,7 @@ class _MessageHomeState extends State<MessageHome> {
                   children: [
                     Text(
                       _formatTimestamp(chat.lastMessageTime!),
-                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.grey),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     if (chat.unreadCount > 0)
                       Container(
@@ -471,7 +470,7 @@ class _MessageHomeState extends State<MessageHome> {
                         ),
                         child: Text(
                           '${chat.unreadCount}',
-                          style: const TextStyle(fontFamily: 'Poppins', color: Colors.white, fontSize: 12),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
                   ],

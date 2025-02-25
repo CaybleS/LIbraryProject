@@ -326,7 +326,7 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar( // TODO in my view a messenger link should be somewhere. Could be on appbar, idk, but decide if it should be somewhere here or not.
-        title: Text("${widget.friend.uid.substring(0, 10)}'s books"), // TODO change this to be username or somethng idk
+        title: Text("${widget.friend.name}'s books"),
         centerTitle: true,
         backgroundColor: AppColor.appbarColor,
       ),
