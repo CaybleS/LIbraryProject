@@ -14,12 +14,15 @@ late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
+late StreamSubscription<DatabaseEvent> _sentFriendRequestsSubscription;
 Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
 Map<String, UserModel> userIdToUserModel = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToProfileSubscription = {};
 Map<String, ProfileInfo> userIdToProfile = {};
+Map<String, StreamSubscription<DatabaseEvent>> idToFriendSubscription = {};
+Map<String, List<String>> idsToFriendList = {};
 
 void setupDatabaseSubscriptions(User user) {
   userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
@@ -29,7 +32,8 @@ void setupDatabaseSubscriptions(User user) {
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
   _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
   _friendsSubscription = setupFriendsSubscription(friendIDs, user, _friendsUpdated);
-  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendRequestsUpdated);
+  _sentFriendRequestsSubscription = setupSentFriendRequestSubscription(sentFriendRequests, user.uid, _sentFriendRequestsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
@@ -39,9 +43,11 @@ void cancelDatabaseSubscriptions() {
   _requestsSubscription.cancel();
   _sentBookRequestsSubscription.cancel();
   _receivedBookRequestsSubscription.cancel();
+  _sentFriendRequestsSubscription.cancel();
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
   userIdToSubscription.forEach((k, v) => v.cancel());
   userIdToProfileSubscription.forEach((k, v) => v.cancel());
+  idToFriendSubscription.forEach((k, v) => v.cancel());
   resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 
@@ -97,6 +103,18 @@ void _friendsUpdated() {
   }
 }
 
+void _sentFriendRequestsUpdated() {
+  if (selectedIndex == friendsPageIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
+void _friendRequestsUpdated() {
+  if (selectedIndex == friendsPageIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
 void friendsBooksUpdated() {
   if (selectedIndex == friendsPageIndex) {
     updatePageDataRefreshNotifier();
@@ -117,6 +135,12 @@ void userUpdated() {
 
 void profileUpdated() {
   if (selectedIndex == profileIndex || selectedIndex == friendsPageIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
+void friendOfFriendUpdated() {
+  if (selectedIndex == profileIndex) {
     updatePageDataRefreshNotifier();
   }
 }

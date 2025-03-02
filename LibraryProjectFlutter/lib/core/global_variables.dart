@@ -11,7 +11,8 @@ List<LentBookInfo> booksLentToMe = [];
 List<SentBookRequest> sentBookRequests = [];
 List<ReceivedBookRequest> receivedBookRequests = [];
 List<String> friendIDs = [];
-List<String> requestIDs = [];
+ValueNotifier<List<String>> requestIDs = ValueNotifier<List<String>>(List<String>.empty(growable: true));
+List<String> sentFriendRequests = [];
 ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 
 // bottombar indicies, used for 1.) pages listening to the refreshNotifier to know if they are selected on the bottombar and thus should refresh and 2.)
@@ -48,7 +49,8 @@ void resetGlobalData() {
   sentBookRequests.clear();
   receivedBookRequests.clear();
   friendIDs.clear();
-  requestIDs.clear();
+  requestIDs.value.clear();
+  sentFriendRequests.clear();
   // these track or are built up from subscriptions so they should be cleared as well
   friendIdToBooks.clear();
   friendIdToLibrarySubscription.clear();
@@ -56,4 +58,6 @@ void resetGlobalData() {
   userIdToUserModel.clear();
   userIdToProfileSubscription.clear();
   userIdToProfile.clear();
+  idsToFriendList.clear();
+  idToFriendSubscription.clear();
 }

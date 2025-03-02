@@ -79,8 +79,8 @@ Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
   }
-  DatabaseEvent event = await dbReference.child('users/$id').once();
-  return (event.snapshot.value != null);
+  DataSnapshot snapshot = await dbReference.child('users/$id').get();
+  return (snapshot.value != null);
 }
 
 // TODO this should only find users based off input name or username I'd say, which should change this a bit and make userExists only relevant for auth I think
@@ -91,9 +91,9 @@ Future<String> findUser(String txt) async {
     return txt;
   }
 
-  DatabaseEvent event = await dbReference.child('users/').once();
-  if (event.snapshot.value != null) {
-    Map<dynamic, dynamic> allUsers = event.snapshot.value as Map<dynamic, dynamic>;
+  DataSnapshot snapshot = await dbReference.child('users/').get();
+  if (snapshot.value != null) {
+    Map<dynamic, dynamic> allUsers = snapshot.value as Map<dynamic, dynamic>;
     for (var entry in allUsers.entries) {
       dynamic child = entry.value;
       if (child['email'] == txt) {
@@ -153,10 +153,19 @@ void removeUsername(String oldUsername) {
   dbReference.child('usernames/$oldUsername').remove();
 }
 
-
 void sendFriendRequest(User user, String friendId) {
   var id = dbReference.child('requests/$friendId/${user.uid}');
-  id.set({'sender': user.uid, 'sendDate': DateTime.now().toUtc().toIso8601String()});
+  id.set({'sendDate': DateTime.now().toUtc().toIso8601String()});
+  id = dbReference.child('sentFriendRequests/${user.uid}');
+  Map<String, dynamic> map = {friendId : true};
+  id.update(map);
+}
+
+Future<void> removeFriendRequest(String senderID, String receiverID) async {
+  var ref = dbReference.child('sentFriendRequests/$senderID/$receiverID');
+  await ref.remove();
+  ref = dbReference.child('requests/$receiverID/$senderID');
+  ref.remove();
 }
 
 Future<void> removeRef(DatabaseReference id) async {
@@ -170,7 +179,7 @@ Future<void> addFriend(String requestID, String uid) async {
   id = dbReference.child('friends/$uid/$requestID');
   id.set({"friendsSince": time});
 
-  await removeRef(dbReference.child('requests/$uid/$requestID'));
+  await removeFriendRequest(requestID, uid);
 }
 
 Future<void> removeFriend(String uid, String friendId) async {
@@ -221,8 +230,3 @@ Future<String> getUserDisplayName(String id) async {
 
   return name;
 }
-
-// Future<void> updateProfile(String uid, ProfileInfo profile) async {
-//   var id = dbReference.child('profileInfo/$uid');
-//   id.set(profile.toJson());
-// }

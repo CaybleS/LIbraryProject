@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/profile/edit_profile.dart';
+import 'package:library_project/Social/profile/friends_of_friends.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
@@ -39,6 +40,12 @@ class _ProfileState extends State<Profile> {
           setupProfileSubscription(
               userIdToProfile, widget.profileUserId, profileUpdated);
     }
+    if (widget.user.uid != widget.profileUserId &&
+        idToFriendSubscription[widget.profileUserId] == null) {
+      idToFriendSubscription[widget.profileUserId] =
+          setupFriendsOfFriendsSubscription(
+              idsToFriendList, widget.profileUserId, friendOfFriendUpdated);
+    }
     _userProfileUpdatedListener = () {
       // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
       if (selectedIndex == profileIndex) {
@@ -67,27 +74,36 @@ class _ProfileState extends State<Profile> {
     setState(() {});
   }
 
-  void _addFriend() {
+  Future<void> _addFriend() async {
     String id = widget.profileUserId;
-    if (id != '' && id != widget.user.uid) {
-      if (!friendIDs.contains(id)) {
-        sendFriendRequest(widget.user, id);
-        SharedWidgets.displayPositiveFeedbackDialog(
-            context, 'Friend Request Sent!');
-        Navigator.pop(context);
-      } else {
-        SharedWidgets.displayErrorDialog(
-            context, "You are already friends with this user");
-      }
+    bool requestToMe = requestIDs.value.contains(
+        id); // if there is already a request sent from this user, add as friend
+    if (requestToMe) {
+      await addFriend(id, widget.user.uid);
+      SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
     } else {
-      SharedWidgets.displayErrorDialog(context, "User not found");
+      if (id != '' && id != widget.user.uid) {
+        if (!friendIDs.contains(id)) {
+          sendFriendRequest(widget.user, id);
+          SharedWidgets.displayPositiveFeedbackDialog(
+              context, 'Friend Request Sent!');
+          Navigator.pop(context);
+        } else {
+          SharedWidgets.displayErrorDialog(
+              context, "You are already friends with this user");
+        }
+      } else {
+        SharedWidgets.displayErrorDialog(context, "User not found");
+      }
     }
   }
 
   Widget _displayButtons() {
-    bool isFriend = friendIDs.contains(widget.profileUserId);
-    int friendCount =
-        widget.user.uid == widget.profileUserId ? friendIDs.length : 0;
+    int friendCount = widget.user.uid == widget.profileUserId
+        ? friendIDs.length
+        : (idsToFriendList[widget.profileUserId] != null
+            ? idsToFriendList[widget.profileUserId]!.length
+            : 0);
     return SizedBox(
         height: 50,
         child: ListView(
@@ -148,13 +164,17 @@ class _ProfileState extends State<Profile> {
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.pink),
-                      onPressed: () {
+                      onPressed: () async {
                         if (widget.user.uid == widget.profileUserId) {
                           bottombarItemTapped(friendsPageIndex);
                         } else {
-                          // friend list of other user
+                          await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => FriendsOfFriendsPage(
+                                      widget.user, widget.profileUserId)));
                         }
-                      }, // TODO friend count/list on profile
+                      },
                       child: Text(
                         "Friends: $friendCount",
                         style:
@@ -166,40 +186,70 @@ class _ProfileState extends State<Profile> {
                         )
                       : const SizedBox.shrink(),
                   widget.user.uid != widget.profileUserId
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.pink),
-                          onPressed: () async {
-                            if (!isFriend) {
-                              _addFriend();
-                            } else {
-                              // TODO unfriend button - we probably need the books lent check here too right?
-                              if (booksLentToMe.any((book) =>
-                                  book.lenderId == widget.profileUserId)) {
-                                SharedWidgets.displayErrorDialog(context,
-                                    "Cannot unfriend: User has books lent to you");
-                              } else if (userLibrary.any((book) =>
-                                  book.borrowerId == widget.profileUserId)) {
-                                SharedWidgets.displayErrorDialog(context,
-                                    "Cannot unfriend: You have books lent to this user");
-                              } else {
-                                await removeFriend(
-                                    widget.user.uid, widget.profileUserId);
-                                SharedWidgets.displayPositiveFeedbackDialog(
-                                    context, "Removed Friend");
-                              }
-                            }
-                            setState(() {});
-                          },
-                          child: Text(
-                            isFriend ? "Unfriend" : "Add Friend",
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 16),
-                          ))
+                      ? _friendUnfriendButton()
                       : const SizedBox.shrink()
                 ],
               )
             ]));
+  }
+
+  Widget _friendUnfriendButton() {
+    bool isFriend = friendIDs.contains(widget.profileUserId);
+    bool sentRequest = sentFriendRequests.contains(widget.profileUserId);
+    return isFriend
+        ? ElevatedButton(
+            // Already friends
+            style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
+            onPressed: () async {
+              // Unfriend button - we probably need the books lent check here too right?
+              if (booksLentToMe
+                  .any((book) => book.lenderId == widget.profileUserId)) {
+                SharedWidgets.displayErrorDialog(
+                    context, "Cannot unfriend: User has books lent to you");
+              } else if (userLibrary
+                  .any((book) => book.borrowerId == widget.profileUserId)) {
+                SharedWidgets.displayErrorDialog(context,
+                    "Cannot unfriend: You have books lent to this user");
+              } else {
+                await removeFriend(widget.user.uid, widget.profileUserId);
+                SharedWidgets.displayPositiveFeedbackDialog(
+                    context, "Removed Friend");
+              }
+
+              setState(() {});
+            },
+            child: const Text(
+              "Unfriend",
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            ))
+        : (sentRequest
+            ? ElevatedButton(
+                // Request sent, but not friends
+                style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
+                onPressed: () async {
+                  await removeFriendRequest(
+                      widget.user.uid, widget.profileUserId);
+                  SharedWidgets.displayPositiveFeedbackDialog(
+                      context, "Request Removed");
+                  setState(() {});
+                },
+                child: const Text(
+                  "Unsend Request",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ))
+            : ElevatedButton(
+                // Not friended, no request sent
+                style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
+                onPressed: () async {
+                  await _addFriend();
+                  SharedWidgets.displayPositiveFeedbackDialog(
+                      context, "Friend Request Sent");
+                  setState(() {});
+                },
+                child: const Text(
+                  "Add Friend",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                )));
   }
 
   @override
@@ -246,7 +296,7 @@ class _ProfileState extends State<Profile> {
                               style: const TextStyle(fontSize: 25),
                             ),
                             Text(
-                              _userInfo!.email,
+                              _userInfo!.username,
                               style: const TextStyle(fontSize: 16),
                             )
                           ],

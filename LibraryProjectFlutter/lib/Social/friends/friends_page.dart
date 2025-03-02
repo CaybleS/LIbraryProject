@@ -48,7 +48,7 @@ class _FriendsPageState extends State<FriendsPage> {
 
   void updateLists() async {
     showFriends = friendIDs;
-    showRequests = requestIDs;
+    showRequests = requestIDs.value;
     setState(() {});
   }
 
@@ -67,15 +67,14 @@ class _FriendsPageState extends State<FriendsPage> {
   void _acceptClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Accepted");
-    await addFriend(requestIDs[index], widget.user.uid);
+    await addFriend(showRequests[index], widget.user.uid);
     updateLists();
   }
 
   void _denyClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Deleted");
-    // await requests[index].delete();
-    await removeRef(FirebaseDatabase.instance.ref('requests/${widget.user.uid}/${requestIDs[index]}'));
+    await removeFriendRequest(showRequests[index], widget.user.uid);
     updateLists();
   }
 
@@ -141,7 +140,13 @@ class _FriendsPageState extends State<FriendsPage> {
         itemCount: showRequests.length,
         itemBuilder: (BuildContext context, int index) {
           return InkWell(
-              onTap: () {}, // TODO link to user profile
+              onTap: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            Profile(widget.user, showRequests[index])));
+              },
               child: SizedBox(
                   height: 100,
                   child: Card(
@@ -180,7 +185,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    userIdToUserModel[showRequests[index]]!.email,
+                                    userIdToUserModel[showRequests[index]]!.username,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -254,7 +259,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     MaterialPageRoute(
                         builder: (context) =>
                             Profile(widget.user, showFriends[index])));
-              }, // TODO link to user profile
+              },
               child: SizedBox(
                   height: 100,
                   child: Card(
@@ -293,7 +298,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    userIdToUserModel[showFriends[index]]!.email,
+                                    userIdToUserModel[showFriends[index]]!.username,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -314,7 +319,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                               builder: (context) =>
                                                   FriendsLibraryPage(
                                                       widget.user,
-                                                      userIdToUserModel[friendIDs[index]]!)));
+                                                      userIdToUserModel[showFriends[index]]!)));
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColor.pink),

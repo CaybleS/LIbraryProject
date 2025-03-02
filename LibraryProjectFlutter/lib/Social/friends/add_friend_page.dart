@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/Social/friends/friend_scanner_driver.dart';
+import 'package:library_project/Social/profile/profile.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
@@ -20,6 +22,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
   String _msg = "";
   bool showErrorTxt = false;
   String _selected = "enter";
+  late final VoidCallback _friendpageListener;
 
   late FriendScannerDriver _qrScanInstance;
   bool _displayProgressIndicator =
@@ -28,29 +31,49 @@ class _AddFriendPageState extends State<AddFriendPage> {
   @override
   void initState() {
     super.initState();
+    _friendpageListener = () {
+      if (selectedIndex == friendsPageIndex) {
+        setState(() {});
+        ();
+      }
+    };
+    pageDataUpdatedNotifier.addListener(_friendpageListener);
     _qrScanInstance = FriendScannerDriver();
+  }
+
+  @override
+  void dispose() {
+    pageDataUpdatedNotifier.removeListener(_friendpageListener);
+    super.dispose();
   }
 
   void onSubmit(BuildContext context) async {
     String txt = controller.text;
     String id = await findUser(txt);
-    if (id != '' && id != widget.user.uid) {
-      if (!friendIDs.contains(id)) {
-        sendFriendRequest(widget.user, id);
-        SharedWidgets.displayPositiveFeedbackDialog(
-            context, 'Friend Request Sent!');
-        Navigator.pop(context);
+    bool requestToMe = requestIDs.value.contains(id); // if there is already a request sent from this user, add as friend
+    if (requestToMe) {
+      await addFriend(id, widget.user.uid);
+      SharedWidgets.displayPositiveFeedbackDialog(
+        context, "Friend Added");
+    } else {
+      if (id != '' && id != widget.user.uid) {
+        if (!friendIDs.contains(id)) {
+          sendFriendRequest(widget.user, id);
+          SharedWidgets.displayPositiveFeedbackDialog(
+              context, 'Friend Request Sent!');
+          Navigator.pop(context);
+        } else {
+          setState(() {
+            _msg = "You are already friends with this user";
+            showErrorTxt = true;
+          });
+        }
       } else {
         setState(() {
-          _msg = "You are already friends with this user";
+          _msg = "User not found";
           showErrorTxt = true;
         });
       }
-    } else {
-      setState(() {
-        _msg = "User not found";
-        showErrorTxt = true;
-      });
     }
   }
 
@@ -95,6 +118,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
     List<Color> buttonColor = [
       AppColor.skyBlue,
       AppColor.skyBlue,
+      AppColor.skyBlue,
     ];
 
     switch (_selected) {
@@ -104,11 +128,14 @@ class _AddFriendPageState extends State<AddFriendPage> {
       case "info":
         buttonColor[1] = const Color.fromARGB(255, 117, 117, 117);
         break;
+      case "sent":
+        buttonColor[2] = const Color.fromARGB(255, 117, 117, 117);
+        break;
       default:
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       mainAxisSize: MainAxisSize.max,
       children: [
         ElevatedButton(
@@ -145,6 +172,24 @@ class _AddFriendPageState extends State<AddFriendPage> {
           },
           child: const Text(
             "Your Friend Code",
+            style: TextStyle(color: Colors.black, fontSize: 20),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor[2],
+              padding: const EdgeInsets.all(8)),
+          onPressed: () {
+            if (_selected == "sent") {
+              return;
+            } else {
+              setState(() {
+                _selected = "sent";
+              });
+            }
+          },
+          child: const Text(
+            "View Sent Requests",
             style: TextStyle(color: Colors.black, fontSize: 20),
           ),
         ),
@@ -197,8 +242,109 @@ class _AddFriendPageState extends State<AddFriendPage> {
           style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromRGBO(129, 199, 132, 1)),
           child: const Text('Scan Code',
-              style: TextStyle(fontSize: 16, color: Colors.black)))
+              style: TextStyle(fontSize: 16, color: Colors.black))),
     ]);
+  }
+
+  Widget displaySentRequests() {
+    return sentFriendRequests.isNotEmpty
+        ? Expanded(
+            child: ListView.builder(
+                itemCount: sentFriendRequests.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return InkWell(
+                      onTap: () async {
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => Profile(
+                                    widget.user, sentFriendRequests[index])));
+                      },
+                      child: SizedBox(
+                          height: 100,
+                          child: Card(
+                              margin: const EdgeInsets.all(5),
+                              child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: ClipOval(
+                                            child: SizedBox(
+                                                width: 50,
+                                                child: userIdToUserModel[
+                                                                sentFriendRequests[
+                                                                    index]]
+                                                            ?.photoUrl !=
+                                                        null
+                                                    ? Image.network(
+                                                        userIdToUserModel[
+                                                                sentFriendRequests[
+                                                                    index]]!
+                                                            .photoUrl!)
+                                                    : Image.asset(
+                                                        'assets/profile_pic.jpg')))),
+                                    Expanded(
+                                        child: Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Column(children: [
+                                        const SizedBox(
+                                          height: 22.5,
+                                        ),
+                                        Align(
+                                          alignment: Alignment.topLeft,
+                                          child: Text(
+                                            userIdToUserModel[
+                                                    sentFriendRequests[index]]!
+                                                .name,
+                                            style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                            softWrap: true,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Align(
+                                          alignment: Alignment.topLeft,
+                                          child: Text(
+                                            userIdToUserModel[
+                                                    sentFriendRequests[index]]!
+                                                .username,
+                                            style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14),
+                                            softWrap: true,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        )
+                                      ]),
+                                    )),
+                                    ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 150),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: ElevatedButton(
+                                            onPressed: () async {
+                                              await removeFriendRequest(
+                                                  widget.user.uid,
+                                                  sentFriendRequests[index]);
+                                              setState(() {});
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red),
+                                            child: const Text('Unsend Request',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.black))),
+                                      ),
+                                    )
+                                  ]))));
+                }))
+        : const SizedBox.shrink();
   }
 
   @override
@@ -215,7 +361,11 @@ class _AddFriendPageState extends State<AddFriendPage> {
                 const SizedBox(
                   height: 10,
                 ),
-                _selected == "enter" ? addFriendDisplay() : friendCodeDisplay(),
+                _selected == "enter"
+                    ? addFriendDisplay()
+                    : (_selected == "info"
+                        ? friendCodeDisplay()
+                        : displaySentRequests()),
                 _displayProgressIndicator
                     ? SharedWidgets.displayCircularProgressIndicator()
                     : const SizedBox.shrink()
