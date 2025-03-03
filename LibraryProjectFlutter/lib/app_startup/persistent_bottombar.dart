@@ -73,58 +73,97 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope( // this allows the android back button to work properly
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) {
-          return;
-        }
-        bool shouldPop = !await navigatorKeys[selectedIndex].currentState!.maybePop();
-        if (shouldPop) {
-          // ensuring the app closes, since in this case this only runs to close the app I believe
-          SystemNavigator.pop();
-        }
-      },
-      child: Scaffold(
-        body: Stack(
-          children: List.generate(
-            navigatorKeys.length,
-            (index) => _buildOffstageNavigator(index),
+    return PopScope(
+        // this allows the android back button to work properly
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, Object? result) async {
+          if (didPop) {
+            return;
+          }
+          bool shouldPop =
+              !await navigatorKeys[selectedIndex].currentState!.maybePop();
+          if (shouldPop) {
+            // ensuring the app closes, since in this case this only runs to close the app I believe
+            SystemNavigator.pop();
+          }
+        },
+        child: Scaffold(
+          body: Stack(
+            children: List.generate(
+              navigatorKeys.length,
+              (index) => _buildOffstageNavigator(index),
+            ),
           ),
-        ),
-        bottomNavigationBar: (showBottombar)
-          ? BottomNavigationBar(
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: "Homepage",
-              ),
-              BottomNavigationBarItem(
-                // can be search, my_library_add, add, add_circle, bookmark_add. I just think the search is intuitive enough, others dont look amazing
-                icon: Icon(Icons.search),
-                label: "Add book",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.people_alt_rounded),
-                label: "Friends",
-              ),
-              BottomNavigationBarItem(
-                icon: DynamicMessagesIcon(),
-                label: "Messages",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.account_circle_rounded),
-                label: "Profile",
-              ),
-            ],
-            currentIndex: selectedIndex,
-            selectedItemColor: AppColor.appbarColor,
-            unselectedItemColor: Colors.grey,
-            backgroundColor: Colors.white,
-            onTap: bottombarItemTapped,
-          )
-          : const SizedBox.shrink(),
-      )
+          bottomNavigationBar: (showBottombar)
+              ? BottomNavigationBar(
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: "Homepage",
+                    ),
+                    BottomNavigationBarItem(
+                      // can be search, my_library_add, add, add_circle, bookmark_add. I just think the search is intuitive enough, others dont look amazing
+                      icon: Icon(Icons.search),
+                      label: "Add book",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: FriendsIcon(),
+                      label: "Friends",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: DynamicMessagesIcon(),
+                      label: "Messages",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.account_circle_rounded),
+                      label: "Profile",
+                    ),
+                  ],
+                  currentIndex: selectedIndex,
+                  selectedItemColor: AppColor.appbarColor,
+                  unselectedItemColor: Colors.grey,
+                  backgroundColor: Colors.white,
+                  onTap: bottombarItemTapped,
+                )
+              : const SizedBox.shrink(),
+        ));
+  }
+}
+
+class FriendsIcon extends StatefulWidget {
+  const FriendsIcon({super.key});
+
+  @override
+  State<FriendsIcon> createState() => _FriendsIconState();
+}
+
+class _FriendsIconState extends State<FriendsIcon> {
+  late final VoidCallback _requestListener;
+  int requests = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestListener = () {
+      if (requests != requestIDs.value.length) {
+        requests = requestIDs.value.length;
+        setState(() {});
+      }
+    };
+    requestIDs.addListener(_requestListener);
+  }
+
+  @override
+  void dispose() {
+    requestIDs.removeListener(_requestListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return requests == 0 ? const Icon(Icons.people_alt_rounded) : Badge.count(
+      count: requests,
+      child: const Icon(Icons.people_alt_rounded),
     );
   }
 }
@@ -152,12 +191,14 @@ class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
       }
     };
     userModel.addListener(_userHasBeenSetListener);
-    _chatListStream = _getChatList(); // initially this will fail since user will be set to null but when user is set it will fetch the correct info
+    _chatListStream =
+        _getChatList(); // initially this will fail since user will be set to null but when user is set it will fetch the correct info
   }
 
   @override
   void dispose() {
-    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    userModel.removeListener(
+        _userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
     super.dispose();
   }
 
@@ -209,7 +250,10 @@ class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
     if (userModel.value == null) {
       return Stream.value(0);
     }
-    return dbReference.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) {
+    return dbReference
+        .child('userChats/${userModel.value!.uid}')
+        .onValue
+        .asyncMap((event) {
       final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
       if (chatsMap == null) {
         return 0;

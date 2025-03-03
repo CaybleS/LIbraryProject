@@ -1,11 +1,15 @@
 // TODO stuff which can be here. Just ideas to be clear, not requirements. Delete this eventually.
-// logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats, goodreads stuff, rate button which links to google play store,
-// feedback form which links to an anonymous feedback google form or something
+// logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats (its extra feature so not really good to have at this point),
+// goodreads stuff, rate button which links to google play store, feedback form which links to an anonymous feedback google form or something
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/goodreads/goodreads_dialog.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/auth.dart';
 import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/database/database.dart';
+import 'package:library_project/models/book_requests_model.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,7 +25,7 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   // at least for the logout its definitely needed, idk about the others, it might not be needed but its meant to prevent spam pressing
   // a button to try to do something many times, for example if we are trying to logout and its not done and user clicks it again,
-  // it shouldnt try do the logout stuff again. I'm just being safe since this page does some big things TODO appbar needs that also since spam pressing logout will cause error
+  // it shouldnt try do the logout stuff again. I'm just being safe since this page does some big things
   bool _pressedAButton = false;
   late final VoidCallback _userLibraryListener;
   late final VoidCallback _booksLentToMeListener;
@@ -30,27 +34,35 @@ class _SettingsState extends State<Settings> {
   @override
   void initState() {
     super.initState();
+    // the userLibraryListener doesnt execute when we go to this page so this needs to be here
+    numBooksLent = _getNumBooksLent();
+    setState(() {});
     _userLibraryListener = () {
-      numBooksLent = 0;
-      for (int i = 0; i < userLibrary.length; i++) {
-        if (userLibrary[i].lentDbKey != null) {
-          numBooksLent++;
-        }
-        setState(() {});
-      }
+      numBooksLent = _getNumBooksLent();
+      setState(() {});
     };
     _booksLentToMeListener = () {
       setState(() {});
     };
-    pageRefreshNotifier.addListener(_userLibraryListener);
-    pageRefreshNotifier.addListener(_booksLentToMeListener);
+    pageDataUpdatedNotifier.addListener(_userLibraryListener);
+    pageDataUpdatedNotifier.addListener(_booksLentToMeListener);
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_userLibraryListener);
-    pageRefreshNotifier.removeListener(_booksLentToMeListener);
+    pageDataUpdatedNotifier.removeListener(_userLibraryListener);
+    pageDataUpdatedNotifier.removeListener(_booksLentToMeListener);
     super.dispose();
+  }
+
+  int _getNumBooksLent() {
+    int totalBooksLent = 0;
+    for (int i = 0; i < userLibrary.length; i++) {
+      if (userLibrary[i].lentDbKey != null) {
+        totalBooksLent++;
+      }
+    }
+    return totalBooksLent;
   }
 
   Future<bool> _showTwoConfirmActionDialogs(String msg1, String msg2) async {
@@ -90,7 +102,6 @@ class _SettingsState extends State<Settings> {
     if (!shouldProceed) {
       return;
     }
-    // TODO ensure that the removing here also deals with scheduled notifications since currently it doesn't
     for (int i = 0; i < userLibrary.length; i++) {
       await userLibrary[i].remove(widget.user.uid);
     }
@@ -99,7 +110,6 @@ class _SettingsState extends State<Settings> {
     }
   }
   
-  // TODO this. Honestly seems hard to implement.
   Future<void> _deleteAccountButtonClicked() async {
     bool hasBookLentOut = false;
     for (int i = 0; i < userLibrary.length; i++) {
@@ -129,8 +139,31 @@ class _SettingsState extends State<Settings> {
     if (!shouldProceed) {
       return;
     }
+    // 1.) removing all book requests involving this user
+    await removeAllBookRequestsInvolvingThisUser(widget.user.uid, widget.user.uid, deletingThisAccount: true);
+    // 2.) removing users books
+    DatabaseReference usersBooks = dbReference.child('books/${widget.user.uid}');
+    await removeRef(usersBooks);
+    // note that "lent to me" books dont need to removed since we checked to make sure they dont have any books lent to them before letting them delete account.
+    // (assumming everything works correctly. I wonder if its actually optimal to try to remove them anyways just to be safe. No right?)
+    // 3.) removing user's username
+    DatabaseReference usersUsername = dbReference.child('usernames/${userIdToUserModel[widget.user.uid]!.username}');
+    await removeRef(usersUsername);
+    // 4.) removing user's user properties
+    DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
+    await removeRef(usersProperties);
+    // TODO do we also need to signOutGoogle() if they used it to sign in or no?
+    userModel.value = null;
+    cancelDatabaseSubscriptions(); // honestly no clue when this should be called but it should be eventually probably at the very end right?
+    await FirebaseAuth.instance.currentUser?.delete(); // idk if this works havent tested
+    // TODO below stuff.
+    // remove the friends (this becomes more difficult)
+    // and friend requests
+    // and chats
+    // and userTokens (for notification stuff, its easy to do but its not implemented completely yet so)
+    // and scheduledNotifications stuff (would this even exist in this case with no books lent? Pretty sure no)
     if (mounted) {
-      SharedWidgets.displayPositiveFeedbackDialog(context, "This does not work yet");
+      SharedWidgets.displayPositiveFeedbackDialog(context, "Account Deleted");
     }
   }
 
@@ -143,112 +176,123 @@ class _SettingsState extends State<Settings> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 25),
+        padding: const EdgeInsets.fromLTRB(10, 25, 10, 25),
         child: Column(
           children: [
-            ElevatedButton(
-              onPressed: () async {
-                if (_pressedAButton) {
-                  return;
-                }
-                _pressedAButton = true;
-                await displayGoodreadsDialog(context, widget.user);
-                _pressedAButton = false;
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue,
-                padding: const EdgeInsets.all(8),
-              ),
-              child: const Text(
-                "Import/Export Goodreads books",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_pressedAButton) {
-                  return;
-                }
-                _pressedAButton = true;
-                logout(context);
-                _pressedAButton = false;
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue,
-                padding: const EdgeInsets.all(8),
-              ),
-              child: const Text(
-                "Logout",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Flexible(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_pressedAButton) {
-                        return;
-                      }
-                      _pressedAButton = true;
-                      await _removeAllBooksButtonClicked();
-                      _pressedAButton = false;
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
-                      padding: const EdgeInsets.all(8),
-                    ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Remove all books",
+            const Row(), // idk how else to make the columns children be in the center of the screen if you know how just do it cuz this cant be optimal ..
+            IntrinsicWidth( // making all 4 buttons the size of the biggest one, this and CrossAxisAlignment.stretch achieve this
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await displayGoodreadsDialog(context, widget.user);
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.skyBlue,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const Text(
+                        "Import/Export Goodreads books",
                         style: TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                   ),
-                ),
-                Flexible(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_pressedAButton) {
-                        return;
-                      }
-                      _pressedAButton = true;
-                      await _deleteAccountButtonClicked();
-                      _pressedAButton = false;
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
-                      padding: const EdgeInsets.all(8),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await _removeAllBooksButtonClicked();
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 165, 0),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "Remove all books",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                      ),
                     ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Delete account",
+                  ),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await logout(context);
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 147, 164, 180),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const Text(
+                        "Logout",
                         style: TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await _deleteAccountButtonClicked();
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 72, 72),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "Delete account",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),              
+                ],
+              ),
             ),
             const Spacer(), // I want the stats on the bottom and this is just the perfect use case for Spacer thats crazy
             const Text(
               "Your Stats",
-              style: TextStyle(fontSize: 20, color: Colors.black),
+              style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
             ),
             Text(
               "Added books: ${userLibrary.length}",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
             Text(
               "Books lent out: $numBooksLent",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
             Text(
               "Books lent to you: ${booksLentToMe.length}",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
           ],
         ),

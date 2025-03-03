@@ -43,13 +43,13 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
         setState(() {});
       }
     };
-    pageRefreshNotifier.addListener(_addBookListener);
+    pageDataUpdatedNotifier.addListener(_addBookListener);
   }
 
   @override
   void dispose() {
     _searchQueryController.dispose();
-    pageRefreshNotifier.removeListener(_addBookListener);
+    pageDataUpdatedNotifier.removeListener(_addBookListener);
     super.dispose();
   }
 
@@ -61,8 +61,13 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   }
 
   Future<void> _searchButtonClicked() async {
-    String searchQuery = _searchQueryController.text;
+     // I forgot to trim the text input :/ kind of important. I also convert to lowercase since as of now I think google books and openlibrary api
+     // both search case-insensitively so now if user searches f and then F for example it won't try to search again unnecessarily, it knows they are same
+    String searchQuery = _searchQueryController.text.trim().toLowerCase();
     if (searchQuery.isEmpty) {
+      // since I trim the searchQuery, I just clear the controller in the case where user enters only
+      // spaces. I don't know if this is optimal but I think its fine.
+      _searchQueryController.clear();
       if (!_noInput) {
         _noInput = true;
         setState(() {});

@@ -28,26 +28,22 @@ class BookDetailsScreen extends StatelessWidget {
                     child: _bookToView.getCoverImage(),
                   ),
                   const SizedBox(width: 5),
-                  Flexible( 
+                  Flexible(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Flexible(
-                          child: Text(
-                            _bookToView.title ?? "No title found",
-                            style: const TextStyle(fontSize: 20),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          _bookToView.title ?? "No title found",
+                          style: const TextStyle(fontSize: 20),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 5),
-                        Flexible(
-                          child: Text(
-                            _bookToView.author ?? "No author found",
-                            style: const TextStyle(fontSize: 16),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          _bookToView.author ?? "No author found",
+                          style: const TextStyle(fontSize: 16),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

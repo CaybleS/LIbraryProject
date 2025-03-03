@@ -1,8 +1,8 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/create_group_chat_screen.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
@@ -18,7 +18,24 @@ class CreateChatScreen extends StatefulWidget {
 class _CreateChatScreenState extends State<CreateChatScreen> {
   final _database = FirebaseDatabase.instance.ref();
   final controller = TextEditingController();
-  List<UserModel> friendsResult = friends;
+  List<UserModel> friendsResult = [];
+
+  @override
+  void initState() {
+    super.initState();
+    resetFriendsResult();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void resetFriendsResult() {
+    friendsResult = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid)).map((entry) => entry.value).toList();
+    setState(() {});
+  }
 
   void createChat(UserModel user) async {
     String id = await getChatRoomId(userModel.value!.uid, user.uid);
@@ -60,17 +77,12 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         backgroundColor: AppColor.appbarColor,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+          child: const Icon(Icons.arrow_back),
         ),
         title: const Text(
           'Create Chat',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            fontFamily: 'Poppins',
-          ),
         ),
+        centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -79,27 +91,30 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         backgroundColor: Colors.green,
         label: const Text(
           'Create Group',
-          style: TextStyle(fontSize: 18, fontFamily: 'Poppins'),
+          style: TextStyle(fontSize: 18),
         ),
         splashColor: Colors.blue,
+        heroTag: UniqueKey(),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child:
+              TextField(
               controller: controller,
               onChanged: (value) {
                 if (value.isEmpty) {
-                  friendsResult = friends;
+                  resetFriendsResult();
                 } //
                 else {
                   friendsResult =
-                      friends.where((element) => element.name.toLowerCase().contains(value.toLowerCase())).toList();
+                      userIdToUserModel.entries.where((element) => friendIDs.contains(element.value.uid) && element.value.name.toLowerCase().contains(value.toLowerCase())).map((entry) => entry.value).toList();
                 }
                 setState(() {});
               },
-              style: const TextStyle(fontFamily: 'Poppins'),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -110,6 +125,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                 ),
                 suffixIcon: IconButton(
                   onPressed: () {
+                    resetFriendsResult();
                     controller.clear();
                   },
                   icon: const Icon(Icons.clear),
@@ -118,14 +134,14 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
               onTapOutside: (event) {
                 FocusManager.instance.primaryFocus?.unfocus();
               },
-            ),
+            )),
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
                 itemCount: friendsResult.length,
                 itemBuilder: (BuildContext context, int index) {
                   final user = friendsResult[index];
-                  return GestureDetector(
+                  return InkWell(
                     onTap: () {
                       createChat(user);
                     },
@@ -136,7 +152,10 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                         padding: const EdgeInsets.all(10),
                         child: Row(
                           children: [
-                            UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(1, 0, 5, 0),
+                              child: UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -144,14 +163,14 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                                 children: [
                                   Text(
                                     user.name,
-                                    style: const TextStyle(color: Colors.black, fontSize: 20),
+                                    style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                                     softWrap: true,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    user.email,
-                                    style: const TextStyle(color: Colors.black, fontSize: 16),
+                                    user.username,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
                                     softWrap: true,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

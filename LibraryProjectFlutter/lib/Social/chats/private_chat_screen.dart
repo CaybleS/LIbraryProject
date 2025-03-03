@@ -76,7 +76,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+                      child: const Icon(Icons.arrow_back),
                     ),
                   ),
                 ),
@@ -84,11 +84,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   children: [
                     Text(
                       user.name,
-                      style: const TextStyle(fontFamily: 'Poppins', color: Colors.white),
                     ),
                     Text(
                       user.isTyping ? 'is typing...' : kGetTime(user.lastSignedIn),
-                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.white),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -110,7 +109,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               stream: getChatMessages(widget.chatRoomId),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Container();
+                  return const SizedBox.shrink();
                 }
                 List<MessageModel> messages = snapshot.data!;
                 return ListView.builder(
@@ -136,7 +135,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               ),
                               child: Text(
                                 _formatDate(messages[index].sentTime),
-                                style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
                               ),
                             ),
                           ),
@@ -169,7 +168,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                   Text(
                                     message.text,
                                     style: TextStyle(
-                                        fontFamily: 'Poppins', fontSize: 16, color: isMe ? Colors.black : Colors.white),
+                                      fontSize: 16, color: isMe ? Colors.black : Colors.white
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
@@ -178,7 +178,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                       Text(
                                         _createTimeTextWidget(message.sentTime),
                                         style: TextStyle(
-                                            fontFamily: 'Poppins',
                                             fontSize: 14,
                                             color: isMe ? Colors.black : Colors.white),
                                       ),
@@ -218,7 +217,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                         child: Text(
                                           _createTimeTextWidget(message.sentTime),
                                           style: const TextStyle(
-                                            fontFamily: 'Poppins',
                                             fontSize: 14,
                                             color: Colors.white,
                                           ),
@@ -253,7 +251,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   },
                 );
               },
-              style: const TextStyle(fontFamily: 'Poppins'),
               decoration: InputDecoration(
                 hintText: 'Message',
                 hintStyle: const TextStyle(color: Colors.grey),
@@ -346,7 +343,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
         await _database.child('chats/${widget.chatRoomId}').update(Chat(
               id: widget.chatRoomId,
-              name: '${widget.contact.name}*${userModel.value!.name}',
+              // Previously this was storing names, but that caused problems if the names changed, so it stores uid now
+              name: '${widget.contact.uid}*${userModel.value!.uid}',
               participants: [userModel.value!.uid, widget.contact.uid],
             ).toJson());
         await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({

@@ -96,7 +96,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           child: Text(
                             _formatDate(messages[index].sentTime),
-                            style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                            style: const TextStyle(fontSize: 16, color: Colors.white),
                           ),
                         ),
                       ),
@@ -116,7 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           widgetBuilder: (context) {
                             return Text(
                               message.text,
-                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                              style: const TextStyle(fontSize: 16, color: Colors.white),
                             );
                           },
                           fallbackBuilder: (context) {
@@ -157,7 +157,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                             child: Text(
                               _formatDate(messages[index].sentTime),
-                              style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
+                              style: const TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
                         ),
@@ -199,7 +199,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                       child: Text(
                                         user.name,
                                         style: const TextStyle(
-                                            fontFamily: 'Poppins',
                                             fontSize: 18,
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold),
@@ -211,7 +210,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                     Text(
                                       message.text,
                                       style: TextStyle(
-                                          fontFamily: 'Poppins',
                                           fontSize: 16,
                                           color: isMe ? Colors.black : Colors.white),
                                     ),
@@ -222,7 +220,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                         Text(
                                           _createTimeTextWidget(message.sentTime),
                                           style: TextStyle(
-                                              fontFamily: 'Poppins',
                                               fontSize: 14,
                                               color: isMe ? Colors.black : Colors.white),
                                         ),
@@ -262,7 +259,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                           child: Text(
                                             _createTimeTextWidget(message.sentTime),
                                             style: const TextStyle(
-                                              fontFamily: 'Poppins',
                                               fontSize: 14,
                                               color: Colors.white,
                                             ),
@@ -300,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 alignment: Alignment.centerLeft,
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+                  child: const Icon(Icons.arrow_back),
                 ),
               ),
             ),
@@ -318,11 +314,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     chat.name,
-                    style: const TextStyle(fontFamily: 'Poppins', color: Colors.white),
                   ),
                   Text(
                     '${chat.participants.length} members',
-                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.white),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
@@ -355,7 +350,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               chat.name[0].toUpperCase(),
-                              style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                              style: const TextStyle(color: Colors.black, fontSize: 20),
                             ),
                           ),
                   ),
@@ -374,7 +369,6 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
             child: TextField(
               controller: messageController,
-              style: const TextStyle(fontFamily: 'Poppins'),
               decoration: InputDecoration(
                 hintText: 'Message',
                 hintStyle: const TextStyle(color: Colors.grey),

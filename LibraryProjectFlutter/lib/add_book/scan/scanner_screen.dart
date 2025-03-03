@@ -180,6 +180,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           size: 30,
         ),
         splashColor: Colors.blue,
+        heroTag: UniqueKey(),
       ),
       body: (_cameraIsInitialized)
         ? Stack(

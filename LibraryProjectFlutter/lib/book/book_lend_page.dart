@@ -1,27 +1,52 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 // note that we dont check the receiver's library to see if they already own the book before lending it to them; we could do this
 // but it could use up database reads and add a slight delay between the "lend book" button click and the actual lending
 // so overall I decided its not worth.
 
-Future<void> displayLendDialog(BuildContext context, Book book, User user, {String? idToLendTo}) async {
+Future<void> displayLendDialog(BuildContext context, Book book, User user) async {
   await showDialog(
     context: context,
-    builder: (context) => BookLendDialog(book, user, idToLendTo: idToLendTo),
+    builder: (context) => BookLendDialog(book, user),
   );
 }
+
+void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Book book, {int daysToReturn = 30}) {
+    if (selectedFriendId == null) {
+      SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
+      return;
+    }
+    String borrowerId = selectedFriendId;
+    bool foundFriend = false;
+    for (String friendId in friendIDs) {
+      if (friendId == borrowerId) {
+        foundFriend = true;
+      }
+    }
+    if (!foundFriend) {
+      // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
+      SharedWidgets.displayErrorDialog(context, "This user does not exist");
+      return;
+    }
+    DateTime dateLent = DateTime.now().toUtc();
+    DateTime dateToReturn = dateLent.add(Duration(days: daysToReturn));
+    // could add a SharedWidgets.displayConfirmActionDialog() to confirm the lend action right here, but I decided its not
+    // necessary, its just 1 extra button press. If the user screws up they can just unlend right after.
+    book.lendBook(dateLent, dateToReturn, borrowerId, user.uid);
+    Navigator.pop(context);
+    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Lent");
+  }
 
 class BookLendDialog extends StatefulWidget {
   final Book book;
   final User user;
-  final String? idToLendTo;
-  const BookLendDialog(this.book, this.user, {this.idToLendTo, super.key});
+  const BookLendDialog(this.book, this.user, {super.key});
 
   @override
   State<BookLendDialog> createState() => _BookLendDialogState();
@@ -29,7 +54,6 @@ class BookLendDialog extends StatefulWidget {
 
 class _BookLendDialogState extends State<BookLendDialog> {
   Set<int> _daysToReturn = {30};
-  // for requests, if you "accept" a request, it just takes you to this page with the request sender's friend id auto selected
   String? _selectedFriendId; // fyi, if its filtered off, it doesnt get deselected, i just think its better that way
   late final VoidCallback _friendsUpdatedListener;
   final TextEditingController _filterFriendsTextController = TextEditingController();
@@ -40,56 +64,28 @@ class _BookLendDialogState extends State<BookLendDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedFriendId = widget.idToLendTo;
     _friendsUpdatedListener = () {
-      if (friends.isEmpty) {
+      if (friendIDs.isEmpty) {
         _noFriends = true;
       }
       else {
         _noFriends = false;
       }
       // if the selected friend got removed from friends list
-      if (_selectedFriendId != null && !(friends.map((item) => item.uid).contains(_selectedFriendId))) {
+      if (_selectedFriendId != null && !(friendIDs.map((item) => item).contains(_selectedFriendId))) {
         _selectedFriendId = null;
       }
       _filter(_filterFriendsTextController.text);
     };
-    pageRefreshNotifier.addListener(_friendsUpdatedListener);
+    pageDataUpdatedNotifier.addListener(_friendsUpdatedListener);
     _getUnfilteredShownList();
   }
 
   @override
   void dispose() {
-    pageRefreshNotifier.removeListener(_friendsUpdatedListener);
+    pageDataUpdatedNotifier.removeListener(_friendsUpdatedListener);
     _filterFriendsTextController.dispose();
     super.dispose();
-  }
-
-  void _tryToLendBook() async {
-    if (_selectedFriendId == null) {
-      SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
-      return;
-    }
-    String borrowerId = _selectedFriendId!;
-    bool foundFriend = false;
-    for (UserModel friend in friends) {
-      if (friend.uid == borrowerId) {
-        foundFriend = true;
-        widget.book.userLent = friend.name;
-      }
-    }
-    if (!foundFriend) {
-      // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
-      SharedWidgets.displayErrorDialog(context, "This user does not exist");
-      return;
-    }
-    DateTime dateLent = DateTime.now().toUtc();
-    DateTime dateToReturn = dateLent.add(Duration(days: _daysToReturn.single));
-    // could add a SharedWidgets.displayConfirmActionDialog() to confirm the lend action right here, but I decided its not
-    // necessary, its just 1 extra button press. If the user screws up they can just unlend right after.
-    widget.book.lendBook(dateLent, dateToReturn, borrowerId, widget.user.uid);
-    Navigator.pop(context);
-    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Lent");
   }
 
   bool _isFilterTextOneOfTheIndividualWords(List<String> individualWordsToFilter, String filterText) {
@@ -108,11 +104,11 @@ class _BookLendDialogState extends State<BookLendDialog> {
   void _sortShownList() {
     // Fun fact which I didnt know, you gotta make them lowercase or else uppercase C comes before lowercase b for example. Its some ascii value stuff I think,
     // so ig when sorting just trim and make it lowercase always or else freaky stuff will happen.
-    _shownList.sort((a, b) => (friends[a].name.trim().toLowerCase()).compareTo(friends[b].name.trim().toLowerCase()));
+    _shownList.sort((a, b) => (userIdToUserModel[friendIDs[a]]!.name.trim().toLowerCase()).compareTo(userIdToUserModel[friendIDs[b]]!.name.trim().toLowerCase()));
   }
 
   void _getUnfilteredShownList() {
-    _shownList = Iterable<int>.generate(friends.length).toList();
+    _shownList = Iterable<int>.generate(friendIDs.length).toList();
     _sortShownList();
     if (!_sortingAscending) {
       _flipShownList();
@@ -123,7 +119,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
     _shownList = _shownList.reversed.toList();
   }
 
-  void _filter(String filterText) { // TODO update the filtering whenever user attributes are finalized
+  void _filter(String filterText) {
     filterText = filterText.toLowerCase().trim();
     if (filterText.isEmpty) {
       // setting shown list with no filters here
@@ -131,9 +127,9 @@ class _BookLendDialogState extends State<BookLendDialog> {
     } else {
       List<int> newShownList = [];
       List<String> individualWordsToFilter = filterText.split(" ");
-      for (int i = 0; i < friends.length; i++) {
-        if ((friends[i].name.toLowerCase()).contains(filterText)
-        || (friends[i].email.toLowerCase()).contains(filterText)
+      for (int i = 0; i < friendIDs.length; i++) {
+        if ((userIdToUserModel[friendIDs[i]]!.name.toLowerCase()).contains(filterText)
+        || (userIdToUserModel[friendIDs[i]]!.username.toLowerCase()).contains(filterText)
         || _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText)) {
           newShownList.add(i);
         }
@@ -217,17 +213,17 @@ class _BookLendDialogState extends State<BookLendDialog> {
             onTap: () {
               setState(() {
                 // this logic allows for an "unselecting" if you click on the friend id again
-                if (friends[_shownList[index]].uid == _selectedFriendId) {
+                if (friendIDs[_shownList[index]] == _selectedFriendId) {
                   _selectedFriendId = null;
                 }
                 else {
-                  _selectedFriendId = friends[_shownList[index]].uid;
+                  _selectedFriendId = friendIDs[_shownList[index]];
                 }
               });
             },
             child: Card(
               margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
-              color: (_selectedFriendId == friends[_shownList[index]].uid) ? AppColor.acceptGreen : Colors.grey[300],
+              color: (_selectedFriendId == friendIDs[_shownList[index]]) ? AppColor.acceptGreen : Colors.grey[300],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 child: Row(
@@ -241,13 +237,13 @@ class _BookLendDialogState extends State<BookLendDialog> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            friends[_shownList[index]].name,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // TODO look into this weight stuff. The concern is universality mainly
+                            userIdToUserModel[friendIDs[_shownList[index]]]!.name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            friends[_shownList[index]].email,
+                            userIdToUserModel[friendIDs[_shownList[index]]]!.username,
                             style: const TextStyle(fontSize: 14),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -329,8 +325,8 @@ class _BookLendDialogState extends State<BookLendDialog> {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
-                onPressed: () async {
-                  _tryToLendBook();
+                onPressed: () {
+                  tryToLendBook(_selectedFriendId, context, widget.user, widget.book, daysToReturn: _daysToReturn.single);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColor.acceptGreen,

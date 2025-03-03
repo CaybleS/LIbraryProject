@@ -29,7 +29,7 @@ class MessageModel {
 
   factory MessageModel.fromJson(String messageId, Map<dynamic, dynamic> json) {
     return MessageModel(
-      id: json['id'],
+      id: messageId,
       text: json['text'],
       senderId: json['sender'],
       sentTime: DateTime.fromMillisecondsSinceEpoch(json['sentTime']),
@@ -44,7 +44,6 @@ class MessageModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'text': text,
       'sender': senderId,
       'replyTo': replyTo,

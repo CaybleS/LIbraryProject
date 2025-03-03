@@ -1,25 +1,25 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
-// import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
+import 'package:library_project/app_startup/first_profile_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/user.dart';
-
-// import 'package:library_project/database/firebase_options.dart';
 import 'login.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
-final GoogleSignIn googleSignIn = GoogleSignIn();
+final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-Future<User?> signInWithGoogle() async {
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+Future<void> _setupProfileAndAddUser(User user, BuildContext context, {String? usernameFromEmail}) async {
+  String username = await Navigator.push(context, MaterialPageRoute(builder: (context) => FirstProfileSetup(user, usernameFromEmail: usernameFromEmail)));
+  addUser(user, username);
+}
 
+Future<User?> signInWithGoogle(BuildContext context) async {
   try {
-    final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
+    final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
     final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
     if(googleSignInAuthentication == null) return null;
 
@@ -31,9 +31,22 @@ Future<User?> signInWithGoogle() async {
 
     if (user != null) {
 
-      // TODO: should probably send to some kind of profile set up instead of this, but for now this is fine
       if (!(await userExists(user.uid))) {
-        addUser(user);
+        if (context.mounted) {
+          // this feteches the part of the email before the @ to use as placeholder default username input
+          // so test@gmail.com, this will fetch the test part of the email, this logic also works if there are multiple @s in the email
+          String? userEmail = user.email;
+          if (userEmail != null) {
+            int indexOfLastAtcharacter = 0;
+            for (int i = 0; i < userEmail.length; i++) {
+              if (userEmail[i] == "@") {
+                indexOfLastAtcharacter = i;
+              }
+            }
+            userEmail = userEmail.substring(0, indexOfLastAtcharacter);
+          }
+          await _setupProfileAndAddUser(user, context, usernameFromEmail: userEmail);
+        }
       }
 
       final userRef = await dbReference.child('users/${user.uid}').once();
@@ -55,10 +68,10 @@ Future<User?> signInWithGoogle() async {
 }
 
 Future<void> signOutGoogle() async {
-  await googleSignIn.signOut();
+  await _googleSignIn.signOut();
 }
 
-void logout(context) async {
+Future<void> logout(context) async {
   await changeStatus(false);
   cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
@@ -109,7 +122,7 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
   }
 }
 
-Future<User?> createAccount(String name, String email, String password) async {
+Future<User?> createAccount(String name, String email, String password, BuildContext context) async {
   try {
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
 
@@ -132,7 +145,9 @@ Future<User?> createAccount(String name, String email, String password) async {
     }
 
     if (user != null) {
-      addUser(user);
+      if (context.mounted) {
+        await _setupProfileAndAddUser(user, context);
+      }
       await changeStatus(true);
     }
 

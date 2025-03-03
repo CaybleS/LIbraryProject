@@ -1,14 +1,11 @@
 import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests.dart';
-import 'package:library_project/models/profile_info.dart';
+import 'package:library_project/models/book_requests_model.dart';
 import 'package:library_project/models/user.dart';
-import '../Social/friends/friends_page.dart';
 import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
@@ -54,8 +51,7 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
   id.set({'senders': senders});
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey,
-    {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
   // for the number of request senders in this case to remove all the sender requests separately though).
@@ -72,19 +68,18 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
     } else {
-      // there are no senders so we just remove everything
+      // there are no senders so we just remove everything (assuming the once() call doesn't return null when there is in fact data there...)
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
   }
 }
 
-
 Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
   }
-  DatabaseEvent event = await dbReference.child('users/$id').once();
-  return (event.snapshot.value != null);
+  DataSnapshot snapshot = await dbReference.child('users/$id').get();
+  return (snapshot.value != null);
 }
 
 // TODO this should only find users based off input name or username I'd say, which should change this a bit and make userExists only relevant for auth I think
@@ -95,9 +90,9 @@ Future<String> findUser(String txt) async {
     return txt;
   }
 
-  DatabaseEvent event = await dbReference.child('users/').once();
-  if (event.snapshot.value != null) {
-    Map<dynamic, dynamic> allUsers = event.snapshot.value as Map<dynamic, dynamic>;
+  DataSnapshot snapshot = await dbReference.child('users/').get();
+  if (snapshot.value != null) {
+    Map<dynamic, dynamic> allUsers = snapshot.value as Map<dynamic, dynamic>;
     for (var entry in allUsers.entries) {
       dynamic child = entry.value;
       if (child['email'] == txt) {
@@ -108,11 +103,12 @@ Future<String> findUser(String txt) async {
   return '';
 }
 
-void addUser(User user) {
+void addUser(User user, String username) {
   final id = dbReference.child('users/${user.uid}');
   UserModel currentUser = UserModel(
     uid: user.uid,
     name: user.displayName!,
+    username: username,
     email: user.email!,
     photoUrl: user.photoURL,
     avatarColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
@@ -120,27 +116,79 @@ void addUser(User user) {
     isTyping: false,
     lastSignedIn: DateTime.now().toUtc(),
   );
+  addUsername(username);
   id.set(currentUser.toJson());
   userModel.value = currentUser;
 }
 
+
+Future<bool> usernameExists(String username) async {
+  if (username.contains(RegExp('[.#\$\\[\\]]'))) {
+    return false;
+  }
+  DatabaseEvent event = await dbReference.child('usernames/$username').once();
+  return (event.snapshot.value != null);
+}
+
+// call this only from the add user function
+void addUsername(String username) async {
+  DatabaseReference  id = dbReference.child('usernames/');
+  id.update({username: true});
+}
+
+// call this everytime username gets updated
+// TODO this function isnt tested. Also there really should be some update user interface function, its just bad design not to have it really.
+// I shouldnt have to go thru code to update the user model I should just call a nice abstraction ya feel me
+Future<void> updateUsername(String oldUsername, String newUsername, User user) async {
+  removeUsername(oldUsername);
+  DatabaseReference  id = dbReference.child('usernames/');
+  id.update({newUsername: true});
+  Map<String, dynamic> userJson = {'username': newUsername};
+  DatabaseReference userRef = FirebaseDatabase.instance.ref('users/${user.uid}');
+  await userRef.update(userJson);
+}
+
+void removeUsername(String oldUsername) {
+  dbReference.child('usernames/$oldUsername').remove();
+}
+
 void sendFriendRequest(User user, String friendId) {
-  var id = dbReference.child('requests/$friendId/').push();
-  id.set({'sender': user.uid, 'sendDate': DateTime.now().toUtc().toIso8601String()});
+  var id = dbReference.child('requests/$friendId/${user.uid}');
+  id.set({'sendDate': DateTime.now().toUtc().toIso8601String()});
+  id = dbReference.child('sentFriendRequests/${user.uid}');
+  Map<String, dynamic> map = {friendId : true};
+  id.update(map);
+}
+
+Future<void> removeFriendRequest(String senderID, String receiverID) async {
+  var ref = dbReference.child('sentFriendRequests/$senderID/$receiverID');
+  await ref.remove();
+  ref = dbReference.child('requests/$receiverID/$senderID');
+  ref.remove();
 }
 
 Future<void> removeRef(DatabaseReference id) async {
   await id.remove();
 }
 
-Future<void> addFriend(Request request) async {
-  var id = dbReference.child('friends/${request.senderId}/${request.uid}');
+Future<void> addFriend(String requestID, String uid) async {
+  var id = dbReference.child('friends/$requestID/$uid');
   String time = DateTime.now().toUtc().toIso8601String();
   id.set({"friendsSince": time});
-  id = dbReference.child('friends/${request.uid}/${request.senderId}');
+  id = dbReference.child('friends/$uid/$requestID');
   id.set({"friendsSince": time});
 
-  await request.delete();
+  await removeFriendRequest(requestID, uid);
+}
+
+Future<void> removeFriend(String uid, String friendId) async {
+  DatabaseReference friend = dbReference.child('friends/$uid/$friendId');
+  await friend.remove();
+  friend = dbReference.child('friends/$friendId/$uid');
+  await friend.remove();
+  // removing friends silently also removes all book requests involving the 2 users
+  await removeAllBookRequestsInvolvingThisUser(uid, friendId);
+  await removeAllBookRequestsInvolvingThisUser(friendId, uid);
 }
 
 Future<Map<String, dynamic>> getChatInfo(String roomID) async {
@@ -169,6 +217,7 @@ Future<Map<String, dynamic>> getChatInfo(String roomID) async {
   return map;
 }
 
+// TODO this is one of the things which should be removed in favor of the userIdToUserModel right?
 Future<String> getUserDisplayName(String id) async {
   String name = "";
   DatabaseEvent userInfo = await dbReference.child('users/$id').once();
@@ -182,9 +231,4 @@ Future<String> getUserDisplayName(String id) async {
   }
 
   return name;
-}
-
-Future<void> updateProfile(String uid, ProfileInfo profile) async {
-  var id = dbReference.child('profileInfo/$uid');
-  id.set(profile.toJson());
 }

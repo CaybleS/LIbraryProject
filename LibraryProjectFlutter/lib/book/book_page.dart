@@ -6,9 +6,11 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/custom_added_book_edit.dart';
+import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
 enum _ReadStatus { notRead, currentlyReading, unknown, read }
@@ -26,6 +28,8 @@ class _BookPageState extends State<BookPage> {
   Set<_ReadStatus> selection = <_ReadStatus>{_ReadStatus.unknown};
   String? _selectedCondition = "-";
   String? _selectedRating = "-";
+  String _userLent = "";
+
   @override
   void initState() {
     super.initState();
@@ -50,9 +54,11 @@ class _BookPageState extends State<BookPage> {
         selection = {_ReadStatus.unknown};
         break;
     }
+    if (widget.book.borrowerId != null) {
+      _userLent = userIdToUserModel[widget.book.borrowerId]!.name;
+    }
     setState(() {});
   }
-
   void processSelectionOption(_ReadStatus selection) {
     switch (selection) {
       case _ReadStatus.notRead:
@@ -189,7 +195,7 @@ class _BookPageState extends State<BookPage> {
       appBar: AppBar(
         title: const Text("Book Info"),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor
       ),
       backgroundColor: Colors.grey[400],
       body: Padding(
@@ -361,10 +367,12 @@ class _BookPageState extends State<BookPage> {
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () async {
-                              bool hasRemoved = await SharedWidgets
-                                  .displayConfirmActionDialog(context,
-                                      "Do you want to remove this book from your library?");
-                              if (hasRemoved) {
+                              if (widget.book.lentDbKey != null && widget.book.borrowerId != null) {
+                                SharedWidgets.displayErrorDialog(context, "You can't remove lent books! Please return the book first.");
+                                return;
+                              }
+                              bool shouldRemove = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
+                              if (shouldRemove) {
                                 widget.book.remove(widget.user.uid);
                                 if (context.mounted) {
                                   Navigator.pop(context);
@@ -423,7 +431,7 @@ class _BookPageState extends State<BookPage> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: widget.book.userLent.toString(),
+                                    text: _userLent,
                                     style: TextStyle(
                                       fontSize:
                                           15, // Smaller font for borrowerId

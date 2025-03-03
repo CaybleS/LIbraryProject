@@ -53,22 +53,18 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
         backgroundColor: AppColor.appbarColor,
         title: const Text(
           'Edit chat info',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 25,
-            color: Colors.white,
-          ),
         ),
+        centerTitle: true,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+          child: const Icon(Icons.arrow_back),
         ),
         actions: [
           GestureDetector(
             onTap: () {
               _saveChatInfo();
             },
-            child: const Icon(Icons.check, color: Colors.white),
+            child: const Icon(Icons.check, size: 30),
           ),
           const SizedBox(width: 10),
         ],
@@ -121,7 +117,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                               alignment: Alignment.center,
                               child: Text(
                                 chat.name[0].toUpperCase(),
-                                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 36),
+                                style: const TextStyle(color: Colors.black, fontSize: 36),
                               ),
                             );
                           },
@@ -151,7 +147,6 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                               nameErrorText = null;
                             });
                           },
-                          style: const TextStyle(fontFamily: 'Poppins'),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
@@ -193,7 +188,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
                     const SizedBox(width: 10),
                     Text(
                       chat.chatImage != null ? 'Set New Photo' : 'Set Photo',
-                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent, fontFamily: 'Poppins', height: 1),
+                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent, height: 1),
                     ),
                   ],
                 ),

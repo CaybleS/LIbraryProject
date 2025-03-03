@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:library_project/app_startup/connectivity_wrapper.dart';
 import 'package:library_project/app_startup/login.dart';
 import 'package:library_project/core/app_life_cycle.dart';
@@ -9,7 +10,8 @@ import 'package:library_project/database/firebase_options.dart';
 import 'package:library_project/ui/colors.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseDatabase.instance.setPersistenceEnabled(true);
 

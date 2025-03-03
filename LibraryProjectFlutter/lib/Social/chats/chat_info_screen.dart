@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/Social/chats/edit_chat_info_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
@@ -56,7 +57,6 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               },
               child: const Icon(
                 IconsaxPlusLinear.edit_2,
-                color: Colors.white,
                 size: 30,
               ),
             ),
@@ -64,7 +64,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
           ],
           leading: GestureDetector(
             onTap: () => Navigator.pop(context, chat),
-            child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+            child: const Icon(Icons.arrow_back),
           ),
         ),
         body: Padding(
@@ -97,7 +97,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         chat.name[0].toUpperCase(),
-                        style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 50),
+                        style: const TextStyle(color: Colors.black, fontSize: 50),
                       ),
                     );
                   },
@@ -106,12 +106,12 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               const SizedBox(height: 20),
               Text(
                 chat.name,
-                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: 20),
+                style: const TextStyle(color: Colors.black, fontSize: 20),
               ),
               const SizedBox(height: 5),
               Text(
                 '${chat.participants.length} members',
-                style: const TextStyle(fontFamily: 'Poppins', color: Colors.black),
+                style: const TextStyle(color: Colors.black),
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -146,7 +146,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                   const Text(
                                     'Add Members',
                                     style: TextStyle(
-                                        fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Colors.blue),
+                                      fontWeight: FontWeight.bold, color: Colors.blue,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -159,7 +160,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                             },
                             child: const Text(
                               'Leave Group',
-                              style: TextStyle(fontFamily: 'Poppins', color: Colors.red, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -175,25 +176,33 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                 UserAvatarWidget(
                                     photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
                                 const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                     Text(
                                       members[index].name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       // kGetTime(members[index].lastSignedIn),
-                                      members[index].email,
-                                      style: const TextStyle(fontFamily: 'Poppins'),
+                                      members[index].username,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                ),
-                                const Spacer(),
-                                Text(
-                                  members[index].uid == chat.createdBy ? 'Owner' : '',
-                                  style: const TextStyle(
-                                      fontFamily: 'Poppins', color: Colors.green, fontWeight: FontWeight.w500),
+                                )),
+                                SizedBox(
+                                  width: 60,
+                                  child: Text(
+                                    members[index].uid == chat.createdBy ? 'Owner' : '',
+                                    style: const TextStyle(
+                                      color: Colors.green, fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ],
                             );
@@ -242,7 +251,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               children: [
                 const Text(
                   'Add Members',
-                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 20),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
                 const SizedBox(height: 10),
                 Autocomplete<UserModel>(
@@ -252,10 +261,9 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       onSubmitted: (String value) => onFieldSubmitted,
-                      style: const TextStyle(fontFamily: 'Poppins'),
                       decoration: InputDecoration(
                         hintText: 'Add Friend',
-                        hintStyle: const TextStyle(color: Colors.grey, fontFamily: 'Poppins'),
+                        hintStyle: const TextStyle(color: Colors.grey),
                         suffixIcon: InkWell(onTap: controller.clear, child: const Icon(Icons.close)),
                         fillColor: Colors.white,
                         filled: true,
@@ -268,9 +276,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                     if (textEditingValue.text == '') {
                       return const Iterable<UserModel>.empty();
                     } else {
-                      return friends.where((UserModel friend) {
-                        return friend.email.toLowerCase().contains(controller.text.toLowerCase());
-                      });
+                      var filtered = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid) && friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
+                      return Map.fromEntries(filtered).entries.map((entry) => entry.value);
                     }
                   },
                   onSelected: (option) {
@@ -291,7 +298,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                   ),
                   child: const Text(
                     'Add',
-                    style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -315,11 +322,10 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                               children: [
                                 Text(
                                   newMembers[index].name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  newMembers[index].email,
-                                  style: const TextStyle(fontFamily: 'Poppins'),
+                                  newMembers[index].username,
                                 ),
                               ],
                             ),
