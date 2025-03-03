@@ -4,6 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
+// TODO this needs goodreads import sokmewhere also idk how exactly to design it but yeh. (remove all these comments when done)
+// and when selecting a username there maybe should be something which automatically determines if the username is good
+// so that they can import with goodreads on this page. In my head its intuitive to have it that way. You enter the uesrname, it says its
+// valid with a nice checkmark and you're good to go and you also can import from goodreads at that point or something
+// ehh idk its weird because once you import it assumes your accoutn is created but technically its not right or is it?
+// so maybe you enter a username and as soon as it says its valid it writes it ot the db and you are in? Idk if thats good necesarily
 
 class FirstProfileSetup extends StatefulWidget {
   final User user;
@@ -72,6 +78,7 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
   }
 
   // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric
+  // TODO should it allow underscores or sumthing? It technically can I just didn't think of it initially.
   bool _checkIfUsernameContainsValidCharacters(String usernameInput) {
     if (RegExp(r'^[a-z0-9]+$').hasMatch(usernameInput)) {
       return true;
@@ -95,7 +102,7 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 25),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 21),
         child: Column(
           children: [
             Flexible(

@@ -4,7 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests.dart';
+import 'package:library_project/models/book_requests_model.dart';
 import 'package:library_project/models/user.dart';
 import 'dart:async';
 
@@ -51,8 +51,7 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
   id.set({'senders': senders});
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey,
-    {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
   // for the number of request senders in this case to remove all the sender requests separately though).
@@ -69,7 +68,7 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
     } else {
-      // there are no senders so we just remove everything
+      // there are no senders so we just remove everything (assuming the once() call doesn't return null when there is in fact data there...)
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
   }
@@ -187,6 +186,9 @@ Future<void> removeFriend(String uid, String friendId) async {
   await friend.remove();
   friend = dbReference.child('friends/$friendId/$uid');
   await friend.remove();
+  // removing friends silently also removes all book requests involving the 2 users
+  await removeAllBookRequestsInvolvingThisUser(uid, friendId);
+  await removeAllBookRequestsInvolvingThisUser(friendId, uid);
 }
 
 Future<Map<String, dynamic>> getChatInfo(String roomID) async {

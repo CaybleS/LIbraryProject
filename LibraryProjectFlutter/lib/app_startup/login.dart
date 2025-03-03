@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:library_project/app_startup/create_account_screen.dart';
 import 'package:library_project/app_startup/persistent_bottombar.dart';
@@ -41,6 +42,9 @@ class _LoginPageState extends State<LoginPage> {
         user = auth.currentUser;
         changeStatus(true);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
+      }
+      else {
+        FlutterNativeSplash.remove();
       }
     });
   }
@@ -144,9 +148,15 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           centerTitle: true,
-          // actions: [
-          //  TODO: add app logo
-          // ],
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(5),
+              child: Image.asset(
+                "assets/logo/app_logo.png",
+                fit: BoxFit.fill,
+              ),
+            ),
+          ],
         ),
         body: Stack(
           children: [

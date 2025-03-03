@@ -71,7 +71,7 @@ Future<void> signOutGoogle() async {
   await _googleSignIn.signOut();
 }
 
-void logout(context) async {
+Future<void> logout(context) async {
   await changeStatus(false);
   cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {

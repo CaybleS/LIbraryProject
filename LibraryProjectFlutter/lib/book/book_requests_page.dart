@@ -7,6 +7,7 @@ import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/book/book_lend_page.dart';
 import 'package:library_project/book/book_page.dart';
 import 'package:library_project/models/book.dart';
+import 'package:library_project/models/book_requests_model.dart';
 import 'package:library_project/ui/colors.dart';
 import 'package:library_project/ui/shared_widgets.dart';
 
@@ -23,11 +24,14 @@ class BookRequestsPage extends StatefulWidget {
 class _BookRequestsPageState extends State<BookRequestsPage> {
   late final VoidCallback _requestsChangedListener;
   _ListToShow _showing = _ListToShow.receivedRequests;
+  final List<SentBookRequest> _sentBookRequests = [];
 
   @override
   void initState() {
     super.initState();
+    _fillBookRequestLists();
     _requestsChangedListener = () {
+      _fillBookRequestLists();
       _updateList();
     };
     pageDataUpdatedNotifier.addListener(_requestsChangedListener);
@@ -37,6 +41,13 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
   void dispose() {
     pageDataUpdatedNotifier.removeListener(_requestsChangedListener);
     super.dispose();
+  }
+
+  void _fillBookRequestLists() {
+    _sentBookRequests.clear();
+    sentBookRequests.forEach((k, v) {
+      _sentBookRequests.add(v);
+    });
   }
 
   void _swapDisplay() {
@@ -128,143 +139,145 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                     child: ListView.builder(
                       itemCount: _showing == _ListToShow.receivedRequests ? receivedBookRequests.length : sentBookRequests.length,
                       itemBuilder: (BuildContext context, int index) {
-                        // this is not the safest way to do this; be careful with using senderId or receiverId here, one will always be uninitialized I believe
+                        // this is not the safest way to do this; be careful with using senderId or receiverId here, one will always be uninitialized
                         late String senderId;
                         late String receiverId;
                         late DateTime dateSent;
-                        String name = "<Not Your Friend>"; // TODO how to do this fr
+                        String name = "<Not Your Friend>";
                         Book book;
+                        bool thisBookIsLent = false; // only used for received requests so that you cant accept a request for a lent book
                         
                         switch (_showing) {
                           case _ListToShow.receivedRequests:
-                            senderId = receivedBookRequests[index].senderId;
-                            for (int i = 0; i < friendIDs.length; i++) {
-                              if (friendIDs[i] == senderId) {
-                                name = userIdToUserModel[friendIDs[i]]!.name;
-                                break;
-                              }
+                            ReceivedBookRequest receivedBookRequest = receivedBookRequests[index];
+                            dateSent = receivedBookRequest.sendDate;
+                            book = receivedBookRequest.book;
+                            senderId = receivedBookRequest.senderId;
+                            name = userIdToUserModel[senderId]!.name;
+                            if (book.lentDbKey != null) {
+                              thisBookIsLent = true;
                             }
-                            dateSent = receivedBookRequests[index].sendDate;
-                            book = receivedBookRequests[index].book;
                             break;
                           case _ListToShow.sentRequests:
-                            receiverId = sentBookRequests[index].receiverId;
-                            for (int i = 0; i < friendIDs.length; i++) {
-                              if (friendIDs[i] == receiverId) {
-                                name = userIdToUserModel[friendIDs[i]]!.name;
-                                break;
-                              }
-                            }
-                            dateSent = sentBookRequests[index].sendDate;
-                            book = sentBookRequests[index].book;
+                            SentBookRequest sentBookRequest = _sentBookRequests[index];
+                            dateSent = sentBookRequest.sendDate;
+                            book = sentBookRequest.book;
+                            receiverId = sentBookRequest.receiverId;
+                            name = userIdToUserModel[receiverId]!.name;
                             break;
                         }
                         Image coverImage = book.getCoverImage();
                         return InkWell(
                           onTap: () async {
-                            // note that this book here, that we are going to, has the same DatabaseReference id, as the version of
-                            // this book in the user library. Thus, it can be treated the same as any normal userLibrary book.
+                            // The book here that we go should be guaranteed to be the exact same as the book in the userLibrary,
+                            // due to the or in the friend's library
                             _showing == _ListToShow.receivedRequests
                             ? await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(book, widget.user)))
                             : await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, book, receiverId)));
                           },
-                          child: SizedBox(
-                            height: 150,
-                            child: Card(
-                              margin: const EdgeInsets.all(5),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(10, 1, 10, 1),
-                                    child: AspectRatio(
-                                      aspectRatio: 0.7,
-                                      child: coverImage,
-                                    ),
+                          child: Stack(
+                            alignment: AlignmentDirectional.center,
+                            children: [
+                              SizedBox(
+                                height: 150,
+                                // TODO need to prevent accepting received requests for already lent out books. My vision is graying it out with some red LENT text over it or something but idk how to do it yet
+                                child: Card(
+                                  margin: const EdgeInsets.all(5),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(10, 1, 10, 1),
+                                        child: AspectRatio(
+                                          aspectRatio: 0.7,
+                                          child: coverImage,
+                                        ),
+                                      ),
+                                      (_showing == _ListToShow.receivedRequests)
+                                        ? Flexible( 
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  "Requested by $name",
+                                                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: (thisBookIsLent) ? null : () async {
+                                                    tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.green,
+                                                    padding: const EdgeInsets.all(8),
+                                                  ),
+                                                  child: const FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      "Lend requested book",
+                                                      style: TextStyle(fontSize: 16, color: Colors.black),
+                                                    ),
+                                                  ),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    book.unsendBookRequest(senderId, widget.user.uid);
+                                                    SharedWidgets.displayPositiveFeedbackDialog(context, "Request Denied");
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    padding: const EdgeInsets.all(8),
+                                                  ),
+                                                  child: const FittedBox(
+                                                    child: Text(
+                                                      "Deny request",
+                                                      style: TextStyle(fontSize: 16, color: Colors.black),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  "Requested on ${DateFormat.yMd().format(dateSent.toLocal())}",
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Flexible(
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  "Sent to $name",
+                                                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    book.unsendBookRequest(widget.user.uid, receiverId);
+                                                    SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    padding: const EdgeInsets.all(8),
+                                                  ),
+                                                  child: const FittedBox(
+                                                    child: Text(
+                                                      "Unsend Request",
+                                                      style: TextStyle(fontSize: 16, color: Colors.black),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  "Sent on ${DateFormat.yMd().format(dateSent.toLocal())}",
+                                                ),
+                                              ],
+                                            ),
+                                        ),
+                                      ],
                                   ),
-                                  (_showing == _ListToShow.receivedRequests)
-                                    ? Flexible( 
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              "Requested by $name",
-                                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () async {
-                                                tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                padding: const EdgeInsets.all(8),
-                                              ),
-                                              child: const FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                  "Lend requested book",
-                                                  style: TextStyle(fontSize: 16, color: Colors.black),
-                                                ),
-                                              ),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                book.unsendBookRequest(senderId, widget.user.uid);
-                                                SharedWidgets.displayPositiveFeedbackDialog(context, "Request Denied");
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                padding: const EdgeInsets.all(8),
-                                              ),
-                                              child: const FittedBox(
-                                                child: Text(
-                                                  "Deny request",
-                                                  style: TextStyle(fontSize: 16, color: Colors.black),
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              "Requested on ${DateFormat.yMd().format(dateSent.toLocal())}",
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : Flexible(
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              "Sent to $name",
-                                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                book.unsendBookRequest(widget.user.uid, receiverId);
-                                                SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                padding: const EdgeInsets.all(8),
-                                              ),
-                                              child: const FittedBox(
-                                                child: Text(
-                                                  "Unsend Request",
-                                                  style: TextStyle(fontSize: 16, color: Colors.black),
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              "Sent on ${DateFormat.yMd().format(dateSent.toLocal())}",
-                                            ),
-                                          ],
-                                        ),
-                                    ),
-                                ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         );
                       },

@@ -6,14 +6,21 @@ import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/core/settings.dart';
 import 'package:library_project/ui/colors.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
+class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final User user;
+  final String title;
   const CustomAppBar(this.user, {this.title = "", super.key});
 
   @override
   // this is the default appbar "toolbar" height I believe, kToolbarHeight is usually 56px but it seems it can vary
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  State<CustomAppBar> createState() => _CustomAppBarState();
+}
+
+class _CustomAppBarState extends State<CustomAppBar> {
+  bool _pressedAButton = false; // meant to prevent spam logout presses from executing it multiple times
   
   void goToHome() {
     bottombarItemTapped(homepageIndex);
@@ -26,7 +33,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   void goToSettings(BuildContext context) {
     // dont need to check if current page is settings here since settings isnt a "root" page so it doesnt use the custom appbar, 
     // so you cant get to settings from settings anyways
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Settings(user)));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Settings(widget.user)));
   }
 
   void goToFriends() {
@@ -47,10 +54,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             goToSettings(context)
           }, child: const Icon(Icons.settings)),
           const Divider(),
-          MenuItemButton(onPressed: () => {
-            logout(context)
-            
-          }, child: const Icon(Icons.logout)),
+          MenuItemButton(
+            onPressed: () async {
+              if (_pressedAButton) {
+                return;
+              }
+              _pressedAButton = true;
+              await logout(context);
+              _pressedAButton = false;
+            },
+            child: const Icon(Icons.logout),
+          ),
         ],
         builder: (context, controller, child) {
           return IconButton(
@@ -68,7 +82,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           );
         },
       ),
-      title: Text(title),
+      title: Text(widget.title),
       centerTitle: true,
     );
   }

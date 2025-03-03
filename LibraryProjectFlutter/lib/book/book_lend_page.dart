@@ -10,10 +10,10 @@ import 'package:library_project/ui/shared_widgets.dart';
 // but it could use up database reads and add a slight delay between the "lend book" button click and the actual lending
 // so overall I decided its not worth.
 
-Future<void> displayLendDialog(BuildContext context, Book book, User user, {String? idToLendTo}) async {
+Future<void> displayLendDialog(BuildContext context, Book book, User user) async {
   await showDialog(
     context: context,
-    builder: (context) => BookLendDialog(book, user, idToLendTo: idToLendTo),
+    builder: (context) => BookLendDialog(book, user),
   );
 }
 
@@ -24,8 +24,8 @@ void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Bo
     }
     String borrowerId = selectedFriendId;
     bool foundFriend = false;
-    for (String friend in friendIDs) {
-      if (friend == borrowerId) {
+    for (String friendId in friendIDs) {
+      if (friendId == borrowerId) {
         foundFriend = true;
       }
     }
@@ -46,8 +46,7 @@ void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Bo
 class BookLendDialog extends StatefulWidget {
   final Book book;
   final User user;
-  final String? idToLendTo;
-  const BookLendDialog(this.book, this.user, {this.idToLendTo, super.key});
+  const BookLendDialog(this.book, this.user, {super.key});
 
   @override
   State<BookLendDialog> createState() => _BookLendDialogState();
@@ -55,7 +54,6 @@ class BookLendDialog extends StatefulWidget {
 
 class _BookLendDialogState extends State<BookLendDialog> {
   Set<int> _daysToReturn = {30};
-  // for requests, if you "accept" a request, it just takes you to this page with the request sender's friend id auto selected
   String? _selectedFriendId; // fyi, if its filtered off, it doesnt get deselected, i just think its better that way
   late final VoidCallback _friendsUpdatedListener;
   final TextEditingController _filterFriendsTextController = TextEditingController();
@@ -66,7 +64,6 @@ class _BookLendDialogState extends State<BookLendDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedFriendId = widget.idToLendTo;
     _friendsUpdatedListener = () {
       if (friendIDs.isEmpty) {
         _noFriends = true;
@@ -241,7 +238,7 @@ class _BookLendDialogState extends State<BookLendDialog> {
                         children: [
                           Text(
                             userIdToUserModel[friendIDs[_shownList[index]]]!.name,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // TODO look into this weight stuff. The concern is universality mainly
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -10,6 +10,11 @@ import 'package:library_project/models/user.dart';
 
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
+// all 3 of these, the lent book info, sent, and received book requests, all store in their data structure a book of some kind
+// so we need subscriptions to ensure this book is up to date with the database. For example, a received book request on a non-lent book
+// would be tied to a non-lent book even if that book later gets lent out, which is why this is definitely needed.
+Map<String, StreamSubscription> lentBookDbKeyToSubscriptionForIt = {};
+Map<String, StreamSubscription> sentBookRequestBookDbKeyToSubscriptionForIt = {};
 late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
@@ -21,8 +26,12 @@ Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
 Map<String, UserModel> userIdToUserModel = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToProfileSubscription = {};
 Map<String, ProfileInfo> userIdToProfile = {};
+<<<<<<< Updated upstream
 Map<String, StreamSubscription<DatabaseEvent>> idToFriendSubscription = {};
 Map<String, List<String>> idsToFriendList = {};
+=======
+Completer<void> userLibraryLoaded = Completer<void>();
+>>>>>>> Stashed changes
 
 void setupDatabaseSubscriptions(User user) {
   userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
@@ -47,7 +56,12 @@ void cancelDatabaseSubscriptions() {
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
   userIdToSubscription.forEach((k, v) => v.cancel());
   userIdToProfileSubscription.forEach((k, v) => v.cancel());
+<<<<<<< Updated upstream
   idToFriendSubscription.forEach((k, v) => v.cancel());
+=======
+  lentBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
+  sentBookRequestBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
+>>>>>>> Stashed changes
   resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 

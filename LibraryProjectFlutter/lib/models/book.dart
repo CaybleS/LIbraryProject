@@ -3,7 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
 import 'package:library_project/database/database.dart';
-import 'package:library_project/models/book_requests.dart';
+import 'package:library_project/models/book_requests_model.dart';
 
 //putting this definition here allows us to not use bools for read state.
 enum ReadingState { notRead, currentlyReading, read }
@@ -26,6 +26,7 @@ class Book {
   bool? isManualAdded; // needed because manually added books should be changable by users
   DateTime? dateLent;
   DateTime? dateToReturn;
+  bool? readyToReturn;
   // basically this 1.) stores how many requests this book has and 2.) stores who exactly is requesting it. We need to know who, to delete the
   // request themselves from the database as needed.
   List<String>? usersWhoRequested;
@@ -43,6 +44,10 @@ class Book {
       this.bookCondition = "-"}
   );
 
+  DatabaseReference get id {
+    return _id;
+  }
+
   // probably couldve written this better but it works so im not touching it
   // note this isnt a "strictly equal" object checker, its moreso just to check
   // if books are logically same (like same title and author means its the same book)
@@ -55,6 +60,9 @@ class Book {
       return false;
     }
     if (googleBooksId != null && (googleBooksId == other.googleBooksId)) {
+      return true;
+    }
+    if (isbn13 != null && (isbn13 == other.isbn13)) {
       return true;
     }
     // I want to compare titles and authors as lowercase but I need to make sure nothing is null first
@@ -123,6 +131,7 @@ class Book {
       borrowerId = null;
       dateLent = null;
       dateToReturn = null;
+      readyToReturn = null;
       update();
     }
   }
@@ -138,7 +147,7 @@ class Book {
         usersWhoRequested!.add(senderId);
       }
       update();
-    }
+    } 
   }
 
   void unsendBookRequest(String senderId, String receiverId) {
@@ -171,6 +180,7 @@ class Book {
       'hasRead' : hasRead,
       'dateLent': dateLent?.toIso8601String(),
       'dateToReturn': dateToReturn?.toIso8601String(),
+      'readyToReturn': readyToReturn == null ? null : true,
       'usersWhoRequested': usersWhoRequested,
     };
   }
@@ -215,6 +225,7 @@ Book createBookFromJson(record) {
   book.hasRead = record['hasRead'];
   book.dateLent = record['dateLent'] != null ? DateTime.parse(record['dateLent']) : null;
   book.dateToReturn = record['dateToReturn'] != null ? DateTime.parse(record['dateToReturn']) : null;
+  book.readyToReturn = record['readyToReturn'];
   // now fetching users who requested, stored as a list kinda but with indicies in the database (it seems everything is stored as map so the keys are 0, 1, etc.)
   if (record['usersWhoRequested'] != null) {
     book.usersWhoRequested ??= [];

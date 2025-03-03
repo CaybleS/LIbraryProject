@@ -5,7 +5,7 @@ import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests.dart';
+import 'package:library_project/models/book_requests_model.dart';
 import 'package:library_project/models/profile_info.dart';
 import 'package:library_project/models/user.dart';
 import 'dart:async';
@@ -15,32 +15,56 @@ import 'dart:async';
 // and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
 StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
     List<Book> userLibrary, User user, Function ownedBooksUpdated) {
+<<<<<<< Updated upstream
   DatabaseReference ownedBooksReference =
       FirebaseDatabase.instance.ref('books/${user.uid}/');
   StreamSubscription<DatabaseEvent> ownedSubscription =
       ownedBooksReference.onValue.listen((DatabaseEvent event) {
     userLibrary.clear();
+=======
+  DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
+  bool incrementedRequestsAndBooksLoaded = false;
+  StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+    List<Book> tempUserLibrary = [];
+>>>>>>> Stashed changes
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
         Book book = createBookFromJson(child.value);
         book.setId(dbReference.child('books/${user.uid}/${child.key}'));
-        userLibrary.add(book);
+        tempUserLibrary.add(book);
       }
     }
+    if (!userLibraryLoaded.isCompleted) {
+      userLibraryLoaded.complete();
+    }
+    // did it this way rather than userLibrary.clear() before the event.snapshot.value null check and then updating it directly in the
+    // loop because this is safer, updating userLibrary directly like was done previously should cause a race condition if books
+    // are added or removed at the same time since we'd clear userLibrary and add more while some are still being added in the
+    // previous event.snapshot.children iterations. This way is just better anyway.
+    userLibrary.clear();
+    userLibrary.addAll(tempUserLibrary);
     ownedBooksUpdated();
+    if (!incrementedRequestsAndBooksLoaded) {
+      requestsAndBooksLoaded.value++;
+      incrementedRequestsAndBooksLoaded = true;
+    }
   });
   return ownedSubscription; // returning this only to be able to properly dispose of it
 }
 
 StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
+<<<<<<< Updated upstream
     List<LentBookInfo> booksLentToMe,
     User user,
     Function lentToMeBooksUpdated) {
   DatabaseReference lentToMeBooksReference =
       FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
+=======
+  Map<String, LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
+  DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
+>>>>>>> Stashed changes
   // so only the books lent data changes are tracked, so even if lent books themselves are updated, this doesnt get fired
-  StreamSubscription<DatabaseEvent> lentToMeSubscription =
-      lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
+  StreamSubscription<DatabaseEvent> lentToMeSubscription = lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
     List<dynamic> listOfRecords = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
@@ -48,12 +72,31 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
         listOfRecords.add(record);
       }
     }
-    List<LentBookInfo> tempBooksLentToMe = [];
-    bool bookFound = false;
+    // using temp books lent to me since this logic is what detects if books are no longer lent to the user
+    // and thus it removes things from the maps which store the data as needed
+    Map<String, LentBookInfo> tempBooksLentToMe = Map<String, LentBookInfo>.from(booksLentToMe);
+    tempBooksLentToMe.forEach((k, v) {
+      bool bookIsStillLentToUser = false;
+      for (int i = 0; i < listOfRecords.length; i++) {
+        dynamic record = listOfRecords[i];
+        String lenderId = record['lenderId'];
+        String bookDbKey = record['bookDbKey'];
+        if (v.lenderId == lenderId && v.bookDbKey == bookDbKey) {
+          bookIsStillLentToUser = true;
+          break;
+        }
+      }
+      if (!bookIsStillLentToUser) {
+        booksLentToMe.remove(k);
+        lentBookDbKeyToSubscriptionForIt[k]!.cancel();
+        lentBookDbKeyToSubscriptionForIt.remove(k);
+      }
+    });
     for (int i = 0; i < listOfRecords.length; i++) {
       dynamic record = listOfRecords[i];
       String lenderId = record['lenderId'];
       String bookDbKey = record['bookDbKey'];
+<<<<<<< Updated upstream
       bookFound = false;
       // so if the book lent to the user is already in memory we don't read it from the database again. This technically causes "un-lending"
       // to not use any database reads, as it should.
@@ -76,26 +119,51 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
               await dbReference.child('books/$lenderId/$bookDbKey').once();
           if (getBookEvent.snapshot.value != null) {
             Book book = createBookFromJson(getBookEvent.snapshot.value);
+=======
+      if (lentBookDbKeyToSubscriptionForIt[bookDbKey] == null) {
+        // setup a subscription for this book if one does not already exist
+        DatabaseReference bookReference = dbReference.child('books/$lenderId/$bookDbKey');
+        Completer<void> completer = Completer<void>();
+        lentBookDbKeyToSubscriptionForIt[bookDbKey] = bookReference.onValue.listen((DatabaseEvent event) {
+          if (event.snapshot.value != null) {
+            Book book = createBookFromJson(event.snapshot.value);
+            book.setId(dbReference.child('books/$lenderId/${event.snapshot.key}'));
+>>>>>>> Stashed changes
             LentBookInfo lentBookInfo = createLentBookInfo(book, record);
-            tempBooksLentToMe.add(lentBookInfo);
-            break;
+            booksLentToMe[bookDbKey] = lentBookInfo;
+            // since the onValue takes about a second to work, and we can't await it, this achieves the same logic,
+            // it kind of just acts as an await for the onValue (and also allows for logic to refresh lent to me
+            // book info on every onValue event except the first). It's just waiting for the book to be fetched
+            // before signaling whatever refresh logic.
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            else {
+              lentToMeBooksUpdated();
+            }
           }
-        }
+        });
+        await completer.future;
       }
     }
-    booksLentToMe.clear();
-    booksLentToMe.addAll(tempBooksLentToMe);
+    // when this is called we can guarantee that all database lent to me books have been iterated through and are added to the
+    // booksLentToMe map (since there will be a delay due to the onValue to fetch the book, it needs to signal when its done)
     lentToMeBooksUpdated();
   });
   return lentToMeSubscription;
 }
 
 StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
+<<<<<<< Updated upstream
     Map<String, List<Book>> friendIdToBooks,
     String friendId,
     Function friendsBooksUpdated) {
   DatabaseReference friendsBooksReference =
       FirebaseDatabase.instance.ref('books/$friendId/');
+=======
+    Map<String, List<Book>> friendIdToBooks, String friendId, Function friendsBooksUpdated, {Completer<void>? signalFriendsBooksLoaded}) {
+  DatabaseReference friendsBooksReference = FirebaseDatabase.instance.ref('books/$friendId/');
+>>>>>>> Stashed changes
   StreamSubscription<DatabaseEvent> friendsBooksSubscription =
       friendsBooksReference.onValue.listen((DatabaseEvent event) {
     List<Book> listOfFriendsBooks = [];
@@ -108,6 +176,11 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
     }
     friendIdToBooks[friendId] = List.from(listOfFriendsBooks);
     friendsBooksUpdated();
+    // if we remove book requests for friends (like if they unfriend you), we need that friends books, so the function which removes the requests
+    // needs that friend's books and this is the signaling mechanism which blocks that function until the friends books are fetched.
+    if (signalFriendsBooksLoaded != null && !signalFriendsBooksLoaded.isCompleted) {
+      signalFriendsBooksLoaded.complete();
+    }
   });
   return friendsBooksSubscription;
 }
@@ -153,7 +226,10 @@ StreamSubscription<DatabaseEvent> setupProfileSubscription(
   return profileSubscription;
 }
 
+// another way to do this is to fetch the friend's library who has this book and just use its bookDbKey to map it to this book
+// but that method has problems, I think this way is fine. It's complicated but it works.
 StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
+<<<<<<< Updated upstream
     List<SentBookRequest> sentBookRequests,
     User user,
     Function sentBookRequestsUpdated) {
@@ -163,10 +239,31 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
       sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     sentBookRequests.clear();
     if (event.snapshot.value != null) {
+=======
+  Map<String, SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
+  DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
+  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+    if (event.snapshot.value == null) {
+      // in this case there are no more sent book requests for this user in the database so we just cancel everything without
+      // this logic, the last sent book request would not be removed since we always need to clear() if event.snapshot.value is null
+      sentBookRequestBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
+      sentBookRequestBookDbKeyToSubscriptionForIt.clear();
+      sentBookRequests.clear();
+      sentBookRequestsUpdated();
+      return;
+    }
+    // since this map stores each book we have requested, we check each database record's key to make sure that book
+    // is still in the sent book requests part of the database. If not we remove it from the sent book requests and
+    // cancel its subscription. So this entire logic is just to deal with unsent requests.
+    Map<String, SentBookRequest> tempSentBookRequests = Map<String, SentBookRequest>.from(sentBookRequests);
+    tempSentBookRequests.forEach((k, v) {
+      bool requestIsStillSent = false;
+>>>>>>> Stashed changes
       for (DataSnapshot child in event.snapshot.children) {
         dynamic record = child.value;
         String receiverId = record['receiverId'];
         String bookDbKey = child.key!;
+<<<<<<< Updated upstream
         DatabaseEvent getBookEvent =
             await dbReference.child('books/$receiverId/$bookDbKey').once();
         if (getBookEvent.snapshot.value != null) {
@@ -175,7 +272,46 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
           SentBookRequest sentBookRequest =
               createSentBookRequest(child.value, book);
           sentBookRequests.add(sentBookRequest);
+=======
+        if (k == bookDbKey && v.receiverId == receiverId) {
+          requestIsStillSent = true;
+          break;
+>>>>>>> Stashed changes
         }
+      }
+      if (!requestIsStillSent) {
+        sentBookRequests.remove(k);
+        sentBookRequestBookDbKeyToSubscriptionForIt[k]!.cancel();
+        sentBookRequestBookDbKeyToSubscriptionForIt.remove(k);
+      }
+    });
+    // now fetching all sent requests and tying the book to them
+    for (DataSnapshot child in event.snapshot.children) {
+      dynamic record = child.value;
+      String receiverId = record['receiverId'];
+      String bookDbKey = child.key!;
+      if (sentBookRequestBookDbKeyToSubscriptionForIt[bookDbKey] == null) {
+        // setup a subscription for this book if one does not already exist
+        DatabaseReference bookReference = dbReference.child('books/$receiverId/$bookDbKey');
+        Completer<void> completer = Completer<void>();
+        sentBookRequestBookDbKeyToSubscriptionForIt[bookDbKey] = bookReference.onValue.listen((DatabaseEvent event) {
+          if (event.snapshot.value != null) {
+            Book book = createBookFromJson(event.snapshot.value);
+            book.setId(dbReference.child('books/$receiverId/${event.snapshot.key}'));
+            SentBookRequest sentBookRequest = createSentBookRequest(record, book);
+            sentBookRequests[bookDbKey] = sentBookRequest;
+            // since the onValue takes about a second to work, and we can't await it, this achieves the same logic, it kind of
+            // just acts as an await for the onValue (and also allows for logic to refresh lent to me book info on every
+            // onValue event except the first). It's just waiting for the book to be fetched before signaling whatever refresh logic.
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            else {
+              sentBookRequestsUpdated();
+            }
+          }
+        });
+        await completer.future;
       }
     }
     sentBookRequestsUpdated();
@@ -183,20 +319,33 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
   return sentBookRequestsSubscription;
 }
 
-// it needs to listen for both new books being requested, and current requests being updated (as in another user requesting this book)
-// this is why the map stuff is happening
 StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
+<<<<<<< Updated upstream
     List<ReceivedBookRequest> receivedBookRequests,
     User user,
     Function receivedBookRequestsUpdated) {
   DatabaseReference receivedBookRequestsReference =
       FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
+=======
+  List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
+  DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
+  bool incrementedRequestsAndBooksLoaded = false;
+>>>>>>> Stashed changes
   StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription =
-      receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
-    receivedBookRequests.clear();
+   receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
+    // This is in the onValue to not stop the execution of the main thread (since onValue is its own thread).
+    // It's purpose is to fetch received book requests only after the user library is first fetched since the
+    // list of requests has the user's book in it.
+    await userLibraryLoaded.future;
+    // I didn't know this before/forgot but yeah you need this outside the event.snapshot.value check to clear
+    // the list in the case where there is nothing at receivedBookRequests/userId but there was before, or else
+    // the list wouldn't get cleared in that situation.
+    List<ReceivedBookRequest> tempRequestsList = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
+        dynamic record = child.value;
         String bookDbKey = child.key!;
+<<<<<<< Updated upstream
         DatabaseEvent getBookEvent =
             await dbReference.child('books/${user.uid}/$bookDbKey').once();
         if (getBookEvent.snapshot.value != null) {
@@ -212,10 +361,36 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
                 createReceivedBookRequest(k, sendDate, book);
             receivedBookRequests.add(receivedBookRequest);
           });
+=======
+        Map<String, String> senders = (record['senders'] as Map).map(
+          (key, value) => MapEntry(key.toString(), value.toString()),
+        );
+        Book? book;
+        for (int i = 0; i < userLibrary.length; i++) {
+          if (userLibrary[i].id.key == bookDbKey) {
+            book = userLibrary[i];
+            break;
+          }
+>>>>>>> Stashed changes
         }
+        if (book == null) {
+          // this really should never happen btw, just being safe
+          continue;
+        }
+        senders.forEach((senderId, dbDateSent) {
+          DateTime dateSent = DateTime.parse(dbDateSent);
+          ReceivedBookRequest receivedBookRequest = createReceivedBookRequest(senderId, dateSent, book!);
+          tempRequestsList.add(receivedBookRequest);
+        });
       }
     }
+    receivedBookRequests.clear();
+    receivedBookRequests.addAll(tempRequestsList);
     receivedBookRequestsUpdated();
+    if (!incrementedRequestsAndBooksLoaded) {
+      requestsAndBooksLoaded.value++;
+      incrementedRequestsAndBooksLoaded = true;
+    }
   });
   return receivedBookRequestsSubscription;
 }

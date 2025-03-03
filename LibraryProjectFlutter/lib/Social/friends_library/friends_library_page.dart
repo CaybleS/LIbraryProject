@@ -24,7 +24,7 @@ class FriendsLibraryPage extends StatefulWidget {
 class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   List<Book> _friendsLibrary = [];
   List<int> _shownList = []; // this is the "driver" list which dictates what books in friendsLibrary are visible, and in what order, by storing indicies of books in friendsLibrary
-  List<int> _unsortedShownList = []; // needed to always be able to sort by 'date added" even when shownList changes to sort by title
+  List<int> _unsortedShownList = []; // needed to always be able to sort by "date added" even when shownList changes to sort by title
   final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   bool _sortingAscending = true;
@@ -325,9 +325,40 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar( // TODO in my view a messenger link should be somewhere. Could be on appbar, idk, but decide if it should be somewhere here or not.
-        title: Text("${widget.friend.name}'s books"),
+      appBar: AppBar(
+        title: Row(
+          // the point of this row is to make a title "user's" books but make it not overflow while still showing "'s books" guaranteed
+          mainAxisSize: MainAxisSize.min, // for some reason this is needed for centerTitle to work, dont ask me why I have no idea
+          children: [
+            Flexible(
+              flex: 2,
+              child: Text(
+                widget.friend.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Flexible(
+              child: Text("'s books"),
+            ),
+          ],
+        ),
         centerTitle: true,
+        actions: [
+          InkWell(
+            onTap: () {
+              // something to send the user to the specific private chat of this friend id say TODO should it be on friend book page also or no?
+              // im not even convinced that this should exist, its something to think about / discuss I'd say.
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(
+                Icons.message_rounded,
+                size: 30,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         backgroundColor: AppColor.appbarColor,
       ),
       body: Column(
