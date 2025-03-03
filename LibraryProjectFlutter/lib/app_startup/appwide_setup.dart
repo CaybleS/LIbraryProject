@@ -26,12 +26,9 @@ Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
 Map<String, UserModel> userIdToUserModel = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToProfileSubscription = {};
 Map<String, ProfileInfo> userIdToProfile = {};
-<<<<<<< Updated upstream
 Map<String, StreamSubscription<DatabaseEvent>> idToFriendSubscription = {};
 Map<String, List<String>> idsToFriendList = {};
-=======
 Completer<void> userLibraryLoaded = Completer<void>();
->>>>>>> Stashed changes
 
 void setupDatabaseSubscriptions(User user) {
   userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
@@ -56,12 +53,9 @@ void cancelDatabaseSubscriptions() {
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
   userIdToSubscription.forEach((k, v) => v.cancel());
   userIdToProfileSubscription.forEach((k, v) => v.cancel());
-<<<<<<< Updated upstream
   idToFriendSubscription.forEach((k, v) => v.cancel());
-=======
   lentBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
   sentBookRequestBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
->>>>>>> Stashed changes
   resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 

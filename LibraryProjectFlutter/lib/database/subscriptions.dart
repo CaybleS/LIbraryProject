@@ -15,18 +15,10 @@ import 'dart:async';
 // and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
 StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
     List<Book> userLibrary, User user, Function ownedBooksUpdated) {
-<<<<<<< Updated upstream
-  DatabaseReference ownedBooksReference =
-      FirebaseDatabase.instance.ref('books/${user.uid}/');
-  StreamSubscription<DatabaseEvent> ownedSubscription =
-      ownedBooksReference.onValue.listen((DatabaseEvent event) {
-    userLibrary.clear();
-=======
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
   bool incrementedRequestsAndBooksLoaded = false;
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
     List<Book> tempUserLibrary = [];
->>>>>>> Stashed changes
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
         Book book = createBookFromJson(child.value);
@@ -53,16 +45,8 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
 }
 
 StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
-<<<<<<< Updated upstream
-    List<LentBookInfo> booksLentToMe,
-    User user,
-    Function lentToMeBooksUpdated) {
-  DatabaseReference lentToMeBooksReference =
-      FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
-=======
   Map<String, LentBookInfo> booksLentToMe, User user, Function lentToMeBooksUpdated) {
   DatabaseReference lentToMeBooksReference = FirebaseDatabase.instance.ref('booksLent/${user.uid}/');
->>>>>>> Stashed changes
   // so only the books lent data changes are tracked, so even if lent books themselves are updated, this doesnt get fired
   StreamSubscription<DatabaseEvent> lentToMeSubscription = lentToMeBooksReference.onValue.listen((DatabaseEvent event) async {
     List<dynamic> listOfRecords = [];
@@ -96,30 +80,6 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
       dynamic record = listOfRecords[i];
       String lenderId = record['lenderId'];
       String bookDbKey = record['bookDbKey'];
-<<<<<<< Updated upstream
-      bookFound = false;
-      // so if the book lent to the user is already in memory we don't read it from the database again. This technically causes "un-lending"
-      // to not use any database reads, as it should.
-      for (int j = 0; j < booksLentToMe.length; j++) {
-        if (booksLentToMe[j].lenderId == lenderId &&
-            booksLentToMe[j].bookDbKey == bookDbKey) {
-          tempBooksLentToMe.add(booksLentToMe[j]);
-          bookFound = true;
-          break;
-        }
-      }
-      if (!bookFound) {
-        // currently I've noticed this fails to work sometimes, nondeterministically. I'd love to know why. I believe its due to database
-        // stress or something since I've had phases where it works perfectly and others where multiple ppl are using the app and it fails.
-        // This occured even with the previous un-optimized version of this function, although that one could gracefully handle this failing
-        // better since it just tries to read all books from the database everytime. This is my untested solution (currently nobody is
-        // using the database so its working everytime) but this should in theory mitigate the problem. Still needs testing tho.
-        for (int i = 0; i < 5; i++) {
-          DatabaseEvent getBookEvent =
-              await dbReference.child('books/$lenderId/$bookDbKey').once();
-          if (getBookEvent.snapshot.value != null) {
-            Book book = createBookFromJson(getBookEvent.snapshot.value);
-=======
       if (lentBookDbKeyToSubscriptionForIt[bookDbKey] == null) {
         // setup a subscription for this book if one does not already exist
         DatabaseReference bookReference = dbReference.child('books/$lenderId/$bookDbKey');
@@ -128,7 +88,6 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
           if (event.snapshot.value != null) {
             Book book = createBookFromJson(event.snapshot.value);
             book.setId(dbReference.child('books/$lenderId/${event.snapshot.key}'));
->>>>>>> Stashed changes
             LentBookInfo lentBookInfo = createLentBookInfo(book, record);
             booksLentToMe[bookDbKey] = lentBookInfo;
             // since the onValue takes about a second to work, and we can't await it, this achieves the same logic,
@@ -154,16 +113,8 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
 }
 
 StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
-<<<<<<< Updated upstream
-    Map<String, List<Book>> friendIdToBooks,
-    String friendId,
-    Function friendsBooksUpdated) {
-  DatabaseReference friendsBooksReference =
-      FirebaseDatabase.instance.ref('books/$friendId/');
-=======
     Map<String, List<Book>> friendIdToBooks, String friendId, Function friendsBooksUpdated, {Completer<void>? signalFriendsBooksLoaded}) {
   DatabaseReference friendsBooksReference = FirebaseDatabase.instance.ref('books/$friendId/');
->>>>>>> Stashed changes
   StreamSubscription<DatabaseEvent> friendsBooksSubscription =
       friendsBooksReference.onValue.listen((DatabaseEvent event) {
     List<Book> listOfFriendsBooks = [];
@@ -229,17 +180,6 @@ StreamSubscription<DatabaseEvent> setupProfileSubscription(
 // another way to do this is to fetch the friend's library who has this book and just use its bookDbKey to map it to this book
 // but that method has problems, I think this way is fine. It's complicated but it works.
 StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
-<<<<<<< Updated upstream
-    List<SentBookRequest> sentBookRequests,
-    User user,
-    Function sentBookRequestsUpdated) {
-  DatabaseReference sentBookRequestsReference =
-      FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
-  StreamSubscription<DatabaseEvent> sentBookRequestsSubscription =
-      sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
-    sentBookRequests.clear();
-    if (event.snapshot.value != null) {
-=======
   Map<String, SentBookRequest> sentBookRequests, User user, Function sentBookRequestsUpdated) {
   DatabaseReference sentBookRequestsReference = FirebaseDatabase.instance.ref('sentBookRequests/${user.uid}/');
   StreamSubscription<DatabaseEvent> sentBookRequestsSubscription = sentBookRequestsReference.onValue.listen((DatabaseEvent event) async {
@@ -258,25 +198,13 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
     Map<String, SentBookRequest> tempSentBookRequests = Map<String, SentBookRequest>.from(sentBookRequests);
     tempSentBookRequests.forEach((k, v) {
       bool requestIsStillSent = false;
->>>>>>> Stashed changes
       for (DataSnapshot child in event.snapshot.children) {
         dynamic record = child.value;
         String receiverId = record['receiverId'];
         String bookDbKey = child.key!;
-<<<<<<< Updated upstream
-        DatabaseEvent getBookEvent =
-            await dbReference.child('books/$receiverId/$bookDbKey').once();
-        if (getBookEvent.snapshot.value != null) {
-          Book book = createBookFromJson(getBookEvent.snapshot.value);
-          book.setId(dbReference.child('books/$receiverId/${child.key}'));
-          SentBookRequest sentBookRequest =
-              createSentBookRequest(child.value, book);
-          sentBookRequests.add(sentBookRequest);
-=======
         if (k == bookDbKey && v.receiverId == receiverId) {
           requestIsStillSent = true;
           break;
->>>>>>> Stashed changes
         }
       }
       if (!requestIsStillSent) {
@@ -320,17 +248,9 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
 }
 
 StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
-<<<<<<< Updated upstream
-    List<ReceivedBookRequest> receivedBookRequests,
-    User user,
-    Function receivedBookRequestsUpdated) {
-  DatabaseReference receivedBookRequestsReference =
-      FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
-=======
   List<ReceivedBookRequest> receivedBookRequests, User user, Function receivedBookRequestsUpdated) {
   DatabaseReference receivedBookRequestsReference = FirebaseDatabase.instance.ref('receivedBookRequests/${user.uid}/');
   bool incrementedRequestsAndBooksLoaded = false;
->>>>>>> Stashed changes
   StreamSubscription<DatabaseEvent> receivedBookRequestsSubscription =
    receivedBookRequestsReference.onValue.listen((DatabaseEvent event) async {
     // This is in the onValue to not stop the execution of the main thread (since onValue is its own thread).
@@ -345,23 +265,6 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
       for (DataSnapshot child in event.snapshot.children) {
         dynamic record = child.value;
         String bookDbKey = child.key!;
-<<<<<<< Updated upstream
-        DatabaseEvent getBookEvent =
-            await dbReference.child('books/${user.uid}/$bookDbKey').once();
-        if (getBookEvent.snapshot.value != null) {
-          Book book = createBookFromJson(getBookEvent.snapshot.value);
-          book.setId(dbReference.child('books/${user.uid}/${child.key}'));
-          dynamic record = child.value;
-          Map<String, String> senders = (record['senders'] as Map).map(
-            (key, value) => MapEntry(key.toString(), value.toString()),
-          );
-          senders.forEach((k, v) {
-            DateTime sendDate = DateTime.parse(v);
-            ReceivedBookRequest receivedBookRequest =
-                createReceivedBookRequest(k, sendDate, book);
-            receivedBookRequests.add(receivedBookRequest);
-          });
-=======
         Map<String, String> senders = (record['senders'] as Map).map(
           (key, value) => MapEntry(key.toString(), value.toString()),
         );
@@ -371,7 +274,6 @@ StreamSubscription<DatabaseEvent> setupReceivedBookRequestsSubscription(
             book = userLibrary[i];
             break;
           }
->>>>>>> Stashed changes
         }
         if (book == null) {
           // this really should never happen btw, just being safe

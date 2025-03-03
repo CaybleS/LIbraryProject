@@ -186,40 +186,7 @@ class _ProfileState extends State<Profile> {
                         )
                       : const SizedBox.shrink(),
                   widget.user.uid != widget.profileUserId
-<<<<<<< Updated upstream
                       ? _friendUnfriendButton()
-=======
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.pink),
-                          onPressed: () async {
-                            if (!isFriend) {
-                              _addFriend();
-                            } else {
-                              // TODO unfriend button - we probably need the books lent check here too right?
-                              if (booksLentToMe.values.any((book) =>
-                                  book.lenderId == widget.profileUserId)) {
-                                SharedWidgets.displayErrorDialog(context,
-                                    "Cannot unfriend: User has books lent to you");
-                              } else if (userLibrary.any((book) =>
-                                  book.borrowerId == widget.profileUserId)) {
-                                SharedWidgets.displayErrorDialog(context,
-                                    "Cannot unfriend: You have books lent to this user");
-                              } else {
-                                await removeFriend(
-                                    widget.user.uid, widget.profileUserId);
-                                SharedWidgets.displayPositiveFeedbackDialog(
-                                    context, "Removed Friend");
-                              }
-                            }
-                            setState(() {});
-                          },
-                          child: Text(
-                            isFriend ? "Unfriend" : "Add Friend",
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 16),
-                          ))
->>>>>>> Stashed changes
                       : const SizedBox.shrink()
                 ],
               )
@@ -235,8 +202,8 @@ class _ProfileState extends State<Profile> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
             onPressed: () async {
               // Unfriend button - we probably need the books lent check here too right?
-              if (booksLentToMe
-                  .any((book) => book.lenderId == widget.profileUserId)) {
+              if (booksLentToMe.
+                  values.any((book) => book.lenderId == widget.profileUserId)) {
                 SharedWidgets.displayErrorDialog(
                     context, "Cannot unfriend: User has books lent to you");
               } else if (userLibrary

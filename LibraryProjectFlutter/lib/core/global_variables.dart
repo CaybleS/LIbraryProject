@@ -62,10 +62,7 @@ void resetGlobalData() { // TODO should this go in appwide_setup?
   userIdToUserModel.clear();
   userIdToProfileSubscription.clear();
   userIdToProfile.clear();
-<<<<<<< Updated upstream
   idsToFriendList.clear();
   idToFriendSubscription.clear();
-=======
   requestsAndBooksLoaded.value = 0;
->>>>>>> Stashed changes
 }
