@@ -1,12 +1,13 @@
 // TODO stuff which can be here. Just ideas to be clear, not requirements. Delete this eventually.
 // logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats (its extra feature so not really good to have at this point),
-// goodreads stuff, rate button which links to google play store, feedback form which links to an anonymous feedback google form or something
+// goodreads stuff, rate button which links to google play store, feedback form which links to an anonymous feedback google form or something TODO put feedback form for user testing.
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:library_project/add_book/goodreads/goodreads_dialog.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/auth.dart';
+import 'package:library_project/app_startup/login.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/book_requests_model.dart';
@@ -109,7 +110,7 @@ class _SettingsState extends State<Settings> {
       SharedWidgets.displayPositiveFeedbackDialog(context, "Removed All Books");
     }
   }
-  
+
   Future<void> _deleteAccountButtonClicked() async {
     bool hasBookLentOut = false;
     for (int i = 0; i < userLibrary.length; i++) {
@@ -139,6 +140,15 @@ class _SettingsState extends State<Settings> {
     if (!shouldProceed) {
       return;
     }
+    if (mounted) {
+      // to execute delete() the user needs to be recently authenticated so we just do this before deleting their database stuff
+      // TODO improve error handling for this
+      bool reauthenticationWorked = await reauthenticateUser(context, widget.user);
+      if (!reauthenticationWorked && mounted) {
+        SharedWidgets.displayErrorDialog(context, "There was an error with reauthentication. Please try again");
+        return;
+      }
+    }
     // 1.) removing all book requests involving this user
     await removeAllBookRequestsInvolvingThisUser(widget.user.uid, widget.user.uid, deletingThisAccount: true);
     // 2.) removing users books
@@ -152,16 +162,24 @@ class _SettingsState extends State<Settings> {
     // 4.) removing user's user properties
     DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
     await removeRef(usersProperties);
-    // TODO do we also need to signOutGoogle() if they used it to sign in or no?
-    userModel.value = null;
-    cancelDatabaseSubscriptions(); // honestly no clue when this should be called but it should be eventually probably at the very end right?
-    await FirebaseAuth.instance.currentUser?.delete(); // idk if this works havent tested
-    // TODO below stuff.
-    // remove the friends (this becomes more difficult)
+    // TODO below stuff needs to be done
+    // remove the friends
     // and friend requests
     // and chats
-    // and userTokens (for notification stuff, its easy to do but its not implemented completely yet so)
-    // and scheduledNotifications stuff (would this even exist in this case with no books lent? Pretty sure no)
+    // and userTokens (for notification stuff, its easy but its not implemented completely yet so)
+    // and scheduledNotifications stuff (shouldnt exist since no books are lent assuming we even have time to implement it)
+    cancelDatabaseSubscriptions(); // honestly no clue when this should be called but it should be eventually probably at the very end right?
+    // TODO someone else pls check this order cuz idk delete this comment if u think its good
+    userModel.value = null;
+    for (var data in widget.user.providerData) {
+      if (data.providerId == "google.com") {
+        await signOutGoogle(); // dont know if this is even needed or if it works
+      }
+    }
+    await widget.user.delete();
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+    }
     if (mounted) {
       SharedWidgets.displayPositiveFeedbackDialog(context, "Account Deleted");
     }
@@ -295,6 +313,109 @@ class _SettingsState extends State<Settings> {
               style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<String> displayReenterPasswordDialog(BuildContext context, User user) async {
+  String? passwordInput = await showDialog(
+    context: context,
+    builder: (context) => DisplayReenterPasswordDialog(user),
+  );
+  return passwordInput ?? "";
+}
+
+class DisplayReenterPasswordDialog extends StatefulWidget {
+  final User user;
+  const DisplayReenterPasswordDialog(this.user, {super.key});
+
+  @override
+  State<DisplayReenterPasswordDialog> createState() => _DisplayReenterPasswordDialogState();
+}
+
+class _DisplayReenterPasswordDialogState extends State<DisplayReenterPasswordDialog> {
+  bool _noPasswordInput = false;
+  final _inputPasswordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _inputPasswordController.addListener(() {
+      if (_noPasswordInput && _inputPasswordController.text.isNotEmpty) {
+        setState(() {
+          _noPasswordInput = false;
+        });
+    }});
+  }
+
+  @override
+  void dispose() {
+    _inputPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Material(
+        borderRadius: const BorderRadius.all(Radius.circular(25)), // dialog has a border, Material widget doesnt
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(13, 10, 13, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black,
+                blurRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.user.email!),
+              TextField(
+                controller: _inputPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: "Password",
+                  hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                  fillColor: Colors.white,
+                  filled: true,
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                  ),
+                  errorText: _noPasswordInput ? "Please enter a password" : null,
+                  suffixIcon: IconButton(
+                  onPressed: () {
+                    _inputPasswordController.clear();
+                  },
+                  icon: const Icon(Icons.clear),
+                  ),
+                ),
+                onTapOutside: (event) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context, _inputPasswordController.text);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.skyBlue,
+                  padding: const EdgeInsets.all(8),
+                ),
+                child: const Text(
+                  "Reauthenticate",
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

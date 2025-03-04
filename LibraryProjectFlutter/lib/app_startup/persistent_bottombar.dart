@@ -10,6 +10,7 @@ import 'package:library_project/core/homepage.dart';
 import 'package:library_project/Social/profile/profile.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/ui/colors.dart';
+import 'dart:math';
 
 class PersistentBottomBar extends StatefulWidget {
   final User user;
@@ -163,6 +164,8 @@ class _FriendsIconState extends State<FriendsIcon> {
   Widget build(BuildContext context) {
     return requests == 0 ? const Icon(Icons.people_alt_rounded) : Badge.count(
       count: requests,
+      offset: Offset.fromDirection(-pi/4, 9),
+      backgroundColor: Colors.red,
       child: const Icon(Icons.people_alt_rounded),
     );
   }
@@ -204,45 +207,23 @@ class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        const Icon(
-          Icons.message_rounded,
-        ),
-        StreamBuilder(
-          stream: _chatListStream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.hasError) {
-              return const SizedBox.shrink();
-            }
-            int unreadMessages = snapshot.data!;
-            if (unreadMessages == 0) {
-              return const SizedBox.shrink();
-            }
-            return Positioned(
-              bottom: 14, // putting it on top right of the icon
-              left: 14,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  unreadMessages.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+    return StreamBuilder(
+      stream: _chatListStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const Icon(Icons.message_rounded);
+        }
+        int unreadMessages = snapshot.data!;
+        if (unreadMessages == 0) {
+          return const Icon(Icons.message_rounded);
+        }
+        return Badge.count(
+          count: unreadMessages,
+          offset: Offset.fromDirection(-pi/4, 9),
+          backgroundColor: Colors.red,
+          child: const Icon(Icons.message_rounded),
+        );
+      },
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/first_profile_setup.dart';
 import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/core/settings.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/user.dart';
 import 'login.dart';
@@ -164,5 +165,33 @@ changeStatus(bool status) async {
       'isActive': status,
       'lastSignedIn': DateTime.now().toUtc().toIso8601String(),
     });
+  }
+}
+
+// false return value signals error which causes the calling function to just return instead of continuing
+Future<bool> reauthenticateUser(BuildContext context, User user) async {
+  AuthCredential? credential;
+  try {
+    for (var userInfo in user.providerData) {
+      if (userInfo.providerId == "google.com") {
+        final GoogleSignInAccount? googleSignInAccount = await GoogleSignIn().signIn();
+        final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
+        if (googleSignInAuthentication == null) {
+          return false;
+        }
+        credential = GoogleAuthProvider.credential(idToken: googleSignInAuthentication.idToken, accessToken: googleSignInAuthentication.accessToken);
+        await user.reauthenticateWithCredential(credential);
+        return true;
+      }
+      else if (userInfo.providerId == "password") {
+        credential = EmailAuthProvider.credential(email: user.email!, password: await displayReenterPasswordDialog(context, user));
+        await user.reauthenticateWithCredential(credential);
+        return true;
+      }
+    }
+    return false;
+  } catch (e) {
+    print(e); // TODO add error handling like for wrong password and whatever else can go wrong
+    return false;
   }
 }

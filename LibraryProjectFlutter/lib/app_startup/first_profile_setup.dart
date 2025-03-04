@@ -57,7 +57,6 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
   }
 
   Future<bool> _checkIfUsernameIsValid(String usernameInput) async {
-    usernameInput = usernameInput.trim().toLowerCase(); // obviously it needs to be trimmed but I think usernames should be lowercase as well
     if (usernameInput.isEmpty) {
       _noUsernameInput = true;
       _noUsernameInputOrInputIsMaxLength = true;
@@ -77,10 +76,9 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
     return true;
   }
 
-  // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric
-  // TODO should it allow underscores or sumthing? It technically can I just didn't think of it initially.
+  // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric + underscore
   bool _checkIfUsernameContainsValidCharacters(String usernameInput) {
-    if (RegExp(r'^[a-z0-9]+$').hasMatch(usernameInput)) {
+    if (RegExp(r'^[a-z0-9_]+$').hasMatch(usernameInput)) {
       return true;
     }
     return false;
@@ -98,11 +96,11 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColor.appbarColor,
-        title: const Text("Setup Profile"),
+        title: const Text("Set Your Username"),
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 21),
+        padding: const EdgeInsets.fromLTRB(10, 15, 10, 21),
         child: Column(
           children: [
             Flexible(
@@ -117,6 +115,9 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                       controller: _inputUsernameController,
                       maxLength: 32,
                       maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      inputFormatters: [
+                        LowerCaseTextFormatter(),
+                      ],
                       decoration: InputDecoration(
                         counterText: "",
                         filled: true,
@@ -142,6 +143,7 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                 ],
               ),
             ),
+            const SizedBox(height: 10),
             Flexible(
               child: SizedBox(
                 width: double.infinity,
@@ -149,12 +151,15 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ElevatedButton(
                     onPressed: () async {
-                      bool isValid = await _checkIfUsernameIsValid(_inputUsernameController.text);
+                      // obviously it needs to be trimmed but I think usernames should be lowercase as well
+                      // the LowerCaseTextFormatter should handle this but this is just being safe converting it to lower case again
+                      String lowercaseUsernameInput = _inputUsernameController.text.trim().toLowerCase();
+                      bool isValid = await _checkIfUsernameIsValid(lowercaseUsernameInput);
                       if (!isValid) {
                         return;
                       }
                       if (context.mounted) {
-                        Navigator.pop(context, _inputUsernameController.text);
+                        Navigator.pop(context, lowercaseUsernameInput);
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
@@ -167,5 +172,12 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
         ),
       ),
     );
+  }
+}
+
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toLowerCase());
   }
 }

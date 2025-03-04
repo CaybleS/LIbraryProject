@@ -67,7 +67,7 @@ Future<void> removeAllBookRequestsInvolvingThisUser(String userUid, String uidTo
   // 1.) removing all this users sentBookRequests usersWhoRequested tied to their books (since each book stores in it all users who requested it)
   sentBookRequests.forEach((k, v) async {
     List<Book> books = friendIdToBooks[v.receiverId]!;
-    for (var book in books) {
+    for (Book book in books) {
       if (book.id.key! == k) {
         // 2.) removing all book requests stored associated with this user's sent requests
         await removeBookRequestData(uidToDeleteBookRequestsFor, v.receiverId, book.id.key!);
