@@ -95,7 +95,7 @@ Future<String> findUser(String txt) async {
     Map<dynamic, dynamic> allUsers = snapshot.value as Map<dynamic, dynamic>;
     for (var entry in allUsers.entries) {
       dynamic child = entry.value;
-      if (child['email'] == txt) {
+      if (child['username'] == txt) {
         return entry.key; // this is the 28 character uid
       }
     }

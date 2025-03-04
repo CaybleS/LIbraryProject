@@ -152,6 +152,9 @@ class _FriendsIconState extends State<FriendsIcon> {
       }
     };
     requestIDs.addListener(_requestListener);
+    if (requestIDs.value.isNotEmpty) {
+      requests = requestIDs.value.length;
+    }
   }
 
   @override

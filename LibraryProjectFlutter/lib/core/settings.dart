@@ -162,9 +162,34 @@ class _SettingsState extends State<Settings> {
     // 4.) removing user's user properties
     DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
     await removeRef(usersProperties);
+    DatabaseReference profileInfo = dbReference.child('profileInfo/${widget.user.uid}');
+    await removeRef(profileInfo);
     // TODO below stuff needs to be done
-    // remove the friends
     // and friend requests
+    for (String id in sentFriendRequests) {
+      DatabaseReference requestRef = dbReference.child('requests/$id/${widget.user.uid}');
+      await removeRef(requestRef);
+    }
+    DatabaseReference sentRequestsRef = dbReference.child('sentFriendRequests/${widget.user.uid}');
+    await removeRef(sentRequestsRef);
+
+    for (String id in requestIDs.value) {
+      DatabaseReference requestRef = dbReference.child('sentFriendRequests/$id/${widget.user.uid}');
+      await removeRef(requestRef);
+    }
+    DatabaseReference friendRequestsRef = dbReference.child('requests/${widget.user.uid}');
+    await removeRef(friendRequestsRef);
+    
+    // remove the friends
+    // I'm putting friends after requests for the race condition of someone accepting a friend request as an account is being deleted
+    // TODO we should probably consider if more similar race conditions apply
+    for (String friendId in friendIDs) {
+      DatabaseReference friendRef = dbReference.child('friends/$friendId/${widget.user.uid}');
+      await removeRef(friendRef);
+    }
+    DatabaseReference friends = dbReference.child('friends/${widget.user.uid}');
+    await removeRef(friends);
+
     // and chats
     // and userTokens (for notification stuff, its easy but its not implemented completely yet so)
     // and scheduledNotifications stuff (shouldnt exist since no books are lent assuming we even have time to implement it)

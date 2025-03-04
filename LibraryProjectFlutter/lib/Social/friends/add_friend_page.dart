@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:library_project/Social/friends/friend_scanner_driver.dart';
 import 'package:library_project/Social/profile/profile.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
@@ -50,27 +51,34 @@ class _AddFriendPageState extends State<AddFriendPage> {
   void onSubmit(BuildContext context) async {
     String txt = controller.text;
     String id = await findUser(txt);
-    bool requestToMe = requestIDs.value.contains(id); // if there is already a request sent from this user, add as friend
+    bool requestToMe = requestIDs.value.contains(
+        id); // if there is already a request sent from this user, add as friend
     if (requestToMe) {
       await addFriend(id, widget.user.uid);
-      SharedWidgets.displayPositiveFeedbackDialog(
-        context, "Friend Added");
+      SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
     } else {
-      if (id != '' && id != widget.user.uid) {
-        if (!friendIDs.contains(id)) {
-          sendFriendRequest(widget.user, id);
-          SharedWidgets.displayPositiveFeedbackDialog(
-              context, 'Friend Request Sent!');
-          Navigator.pop(context);
+      if (id != widget.user.uid) {
+        if (id != '') {
+          if (!friendIDs.contains(id)) {
+            sendFriendRequest(widget.user, id);
+            SharedWidgets.displayPositiveFeedbackDialog(
+                context, 'Friend Request Sent!');
+            Navigator.pop(context);
+          } else {
+            setState(() {
+              _msg = "You are already friends with this user";
+              showErrorTxt = true;
+            });
+          }
         } else {
           setState(() {
-            _msg = "You are already friends with this user";
+            _msg = "User not found";
             showErrorTxt = true;
           });
         }
       } else {
         setState(() {
-          _msg = "User not found";
+          _msg = "Cannot send friend request to yourself";
           showErrorTxt = true;
         });
       }
@@ -134,74 +142,90 @@ class _AddFriendPageState extends State<AddFriendPage> {
       default:
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[0],
-              padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_selected == "enter") {
-              return;
-            } else {
-              setState(() {
-                _selected = "enter";
-              });
-            }
-          },
-          child: const Text(
-            "Add Friend",
-            style: TextStyle(color: Colors.black, fontSize: 20),
-          ),
-        ),
-        const SizedBox(width: 10),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[1],
-              padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_selected == "info") {
-              return;
-            } else {
-              setState(() {
-                _selected = "info";
-              });
-            }
-          },
-          child: const Text(
-            "Your Friend Code",
-            style: TextStyle(color: Colors.black, fontSize: 20),
-          ),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor[2],
-              padding: const EdgeInsets.all(8)),
-          onPressed: () {
-            if (_selected == "sent") {
-              return;
-            } else {
-              setState(() {
-                _selected = "sent";
-              });
-            }
-          },
-          child: const Text(
-            "View Sent Requests",
-            style: TextStyle(color: Colors.black, fontSize: 20),
-          ),
-        ),
-      ],
-    );
+    return SizedBox(
+        height: 50,
+        child: ListView(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor[0],
+                        padding: const EdgeInsets.all(8)),
+                    onPressed: () {
+                      if (_selected == "enter") {
+                        return;
+                      } else {
+                        setState(() {
+                          _selected = "enter";
+                        });
+                      }
+                    },
+                    child: const Text(
+                      "Add Friend",
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor[1],
+                        padding: const EdgeInsets.all(8)),
+                    onPressed: () {
+                      if (_selected == "info") {
+                        return;
+                      } else {
+                        setState(() {
+                          _selected = "info";
+                        });
+                      }
+                    },
+                    child: const Text(
+                      "Your Friend Code",
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor[2],
+                        padding: const EdgeInsets.all(8)),
+                    onPressed: () {
+                      if (_selected == "sent") {
+                        return;
+                      } else {
+                        setState(() {
+                          _selected = "sent";
+                        });
+                      }
+                    },
+                    child: const Text(
+                      "View Sent Requests",
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                    ),
+                  ),
+                ],
+              )
+            ]));
   }
 
   Widget friendCodeDisplay() {
     return Column(
       children: [
-        Text("ID: ${widget.user.uid}",
-            style: const TextStyle(fontSize: 20, color: Colors.black)),
+        Row(mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+          Text("ID: ${widget.user.uid}",
+              style: const TextStyle(fontSize: 20, color: Colors.black)),
+          IconButton(onPressed: () {Clipboard.setData(ClipboardData(text: widget.user.uid));}, icon: const Icon(Icons.copy))
+        ]),
         QrImageView(
           data: widget.user.uid,
           size: 300,
@@ -213,7 +237,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
   Widget addFriendDisplay() {
     return Column(children: [
       const Text(
-        "Friend's ID or Email:",
+        "Friend's ID or Username:",
         style: TextStyle(fontSize: 20),
       ),
       const SizedBox(
