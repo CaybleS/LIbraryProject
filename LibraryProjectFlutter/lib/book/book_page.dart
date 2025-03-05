@@ -364,7 +364,7 @@ class _BookPageState extends State<BookPage> {
                     flex:2,
                     child:
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    //crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Row(
                         mainAxisSize: MainAxisSize.min,
