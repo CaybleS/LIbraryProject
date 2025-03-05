@@ -18,13 +18,18 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
   bool incrementedRequestsAndBooksLoaded = false;
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
+    int numBooksReadyToReturn = 0;
     List<Book> tempUserLibrary = [];
     if (event.snapshot.value != null) {
       for (DataSnapshot child in event.snapshot.children) {
         Book book = createBookFromJson(child.value);
         book.setId(dbReference.child('books/${user.uid}/${child.key}'));
+        if (book.readyToReturn == true) {
+          numBooksReadyToReturn++;
+        }
         tempUserLibrary.add(book);
       }
+      numBooksReadyToReturnNotifier.value = numBooksReadyToReturn;
     }
     if (!userLibraryLoaded.isCompleted) {
       userLibraryLoaded.complete();

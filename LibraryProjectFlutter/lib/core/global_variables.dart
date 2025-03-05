@@ -16,6 +16,7 @@ List<String> sentFriendRequests = [];
 ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 // signal means to show the app's "welcome back" dialog when both requests and userLibrary are initially loaded
 ValueNotifier<int> requestsAndBooksLoaded = ValueNotifier<int>(0);
+ValueNotifier<int> numBooksReadyToReturnNotifier = ValueNotifier<int>(0);
 
 // bottombar indicies, used for 1.) pages listening to the refreshNotifier to know if they are selected on the bottombar and thus should refresh and 2.)
 // for the appbar to be able to change bottombar values based on appbar selection
@@ -68,4 +69,5 @@ void resetGlobalData() { // TODO should this go in appwide_setup?
   idsToFriendList.clear();
   idToFriendSubscription.clear();
   requestsAndBooksLoaded.value = 0;
+  numBooksReadyToReturnNotifier.value = 0;
 }
