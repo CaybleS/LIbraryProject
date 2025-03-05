@@ -166,6 +166,7 @@ class _ProfileState extends State<Profile> {
                           backgroundColor: AppColor.pink),
                       onPressed: () async {
                         if (widget.user.uid == widget.profileUserId) {
+                          friendPageTabSelected = 0;
                           bottombarItemTapped(friendsPageIndex);
                         } else {
                           await Navigator.push(

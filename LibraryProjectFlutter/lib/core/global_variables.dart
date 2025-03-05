@@ -42,6 +42,9 @@ bool showBottombar = true; // this and the refreshBottombar allows for logic to 
 int selectedIndex = 0;
 int prevIndex = 0;
 
+// Indicates which tab is selected on friend page, so that other pages can send you to requests or list specifically
+int friendPageTabSelected = 0;
+
 // called from the cancelSubscriptions function in appwide_setup, which is called when logout occurs
 // that function merely cancels all subscriptions while this one independently just clears these global lists/maps
 // since they arent tied to any widget's lifecycle and need to be cleared manually upon logout

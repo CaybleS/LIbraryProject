@@ -58,9 +58,9 @@ class _FriendsPageState extends State<FriendsPage> {
     updateLists();
   }
 
-  Future<void> changeDisplay(String state) async {
+  Future<void> changeDisplay(int state) async {
     setState(() {
-      _selected = state;
+      friendPageTabSelected = state;
     });
   }
 
@@ -84,11 +84,11 @@ class _FriendsPageState extends State<FriendsPage> {
       AppColor.skyBlue,
     ];
 
-    switch (_selected) {
-      case "list":
+    switch (friendPageTabSelected) {
+      case 0:
         buttonColor[0] = const Color.fromARGB(255, 117, 117, 117);
         break;
-      case "requests":
+      case 1:
         buttonColor[1] = const Color.fromARGB(255, 117, 117, 117);
         break;
       default:
@@ -103,10 +103,10 @@ class _FriendsPageState extends State<FriendsPage> {
               backgroundColor: buttonColor[0],
               padding: const EdgeInsets.all(8)),
           onPressed: () {
-            if (_selected == "list") {
+            if (friendPageTabSelected == 0) {
               return;
             } else {
-              changeDisplay("list");
+              changeDisplay(0);
             }
           },
           child: const Text(
@@ -120,10 +120,10 @@ class _FriendsPageState extends State<FriendsPage> {
               backgroundColor: buttonColor[1],
               padding: const EdgeInsets.all(8)),
           onPressed: () {
-            if (_selected == "requests") {
+            if (friendPageTabSelected == 1) {
               return;
             } else {
-              changeDisplay("requests");
+              changeDisplay(1);
             }
           },
           child: const Text(
@@ -357,7 +357,7 @@ class _FriendsPageState extends State<FriendsPage> {
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 1, 15, 25),
-              child: _selected == "list"
+              child: friendPageTabSelected == 0
                   ? (showFriends.isNotEmpty ? displayFriends() : const SizedBox.shrink())
                   : (showRequests.isNotEmpty ? displayRequests() : const SizedBox.shrink()),
             ))

@@ -164,6 +164,11 @@ final List<GlobalKey<NavigatorState>> navigatorKeys = [
 
 // both the bottombar and the appbar call this function
 void bottombarItemTapped(int index) {
+  if (index == friendsPageIndex && requestIDs.value.isNotEmpty) {
+    // Will put user on the requests page when clicking on bottombar when there is a number (aka when you have a friend request)
+    friendPageTabSelected = 1;
+  }
+
   if (index == selectedIndex) {
     // If the user taps the current tab, pop to the root route of that tab
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
