@@ -255,11 +255,14 @@ class _BookPageState extends State<BookPage> {
               ),
             ),
             Flexible(
+              //flex: 1,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
+                    flex: 1,
                     //height: 200,
                     //width: 150,
                     //left column with status, rating, and condition
@@ -356,11 +359,17 @@ class _BookPageState extends State<BookPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  //const SizedBox(width: 10),
+                  Flexible(
+                    flex:2,
+                    child:
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          //Flexible(
                           (widget.book.lentDbKey != null)
                               ? _returnBookButton()
                               : _lendBookButton(),
@@ -410,7 +419,7 @@ class _BookPageState extends State<BookPage> {
                                 ),
                               ),
                             ),
-                           // ),
+                           //),
                           
                         ],
                       ),
@@ -424,17 +433,17 @@ class _BookPageState extends State<BookPage> {
                                   TextSpan(
                                     text: "Lent to:\n",
                                     style: TextStyle(
-                                      fontSize: 18, // Larger font for "Lent to"
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Colors
-                                          .black, // Ensure proper color rendering
+                                          .black,
                                     ),
                                   ),
                                   TextSpan(
                                     text: _userLent,
                                     style: TextStyle(
                                       fontSize:
-                                          15, // Smaller font for borrowerId
+                                          15,
                                       fontWeight: FontWeight.normal,
                                       color: Colors.black,
                                     ),
@@ -444,6 +453,7 @@ class _BookPageState extends State<BookPage> {
                             ),)
                           : const SizedBox.shrink(),
                     ],
+                  ),
                   ),
                   //const SizedBox(height: 2),
                 ],
