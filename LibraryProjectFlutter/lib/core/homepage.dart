@@ -39,7 +39,9 @@ class _HomePageState extends State<HomePage> {
   _BooksShowing _showing = _BooksShowing.all;
   bool _sortingAscending = true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
   bool _showEmptyLibraryMsg = false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
-  bool dialogShown = false;
+  bool _showingLentOutReadyToReturn = false; // subfilter within "lent" section of filters
+  bool _showingLentToMeReadyToReturn = false; // subfilter within "lent to me" section of filters
+  int _numLentToMeBooksReadyToReturn = 0; // for the lent to me section this is for the filter of ready to return "lent to me" books
 
   @override
   void initState() {
@@ -220,6 +222,8 @@ class _HomePageState extends State<HomePage> {
 
   // this is needed to change the display button colors
   void _changeDisplay(_BooksShowing state) {
+    _showingLentOutReadyToReturn = false; // when user clicks off lent tab this just gets unset, resetting that subfilter to avoid confusion
+    _showingLentToMeReadyToReturn = false;
     _showing = state;
     _updateList();
   }
@@ -238,15 +242,40 @@ class _HomePageState extends State<HomePage> {
         }
         break;
       case _BooksShowing.lent:
-        for (int i = 0; i < userLibrary.length; i++) {
-          if (userLibrary[i].lentDbKey != null) {
-            _shownList.add(i);
+        if (_showingLentOutReadyToReturn) {
+          for (int i = 0; i < userLibrary.length; i++) {
+            if (userLibrary[i].lentDbKey != null && userLibrary[i].readyToReturn == true) {
+              _shownList.add(i);
+            }
+          }
+        }
+        else {
+          for (int i = 0; i < userLibrary.length; i++) {
+            if (userLibrary[i].lentDbKey != null) {
+              _shownList.add(i);
+            }
           }
         }
         break;
       case _BooksShowing.lentToMe:
         _usingBooksLentToMe = true;
-        _shownList = Iterable<int>.generate(_booksLentToMeList.length).toList();
+        _numLentToMeBooksReadyToReturn = 0;
+        if (_showingLentToMeReadyToReturn) {
+          for (int i = 0; i < _booksLentToMeList.length; i++) {
+            if (_booksLentToMeList[i].book.readyToReturn == true) {
+              _numLentToMeBooksReadyToReturn++;
+              _shownList.add(i);
+            }
+          }
+        }
+        else {
+          for (int i = 0; i < _booksLentToMeList.length; i++) {
+            _shownList.add(i); // adding irrelevant of the readyToReturn bool, but still counting that bool cuz it needs to be counted
+            if (_booksLentToMeList[i].book.readyToReturn == true) {
+              _numLentToMeBooksReadyToReturn++;
+            }
+          }
+        }
         break;
     }
     _unsortedShownList = List.from(_shownList);
@@ -524,29 +553,95 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-Widget _displayInfoOnRequests() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Text("You have ${receivedBookRequests.length} outstanding book requests."),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+  Widget _displayLentReadyToReturnFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "You have ${numBooksReadyToReturnNotifier.value} books ready to return.",
+            style: const TextStyle(fontSize: 14),
           ),
-          onPressed: () async {
-            await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
-          },
-          child: const Text(
-            "View",
-            style: TextStyle(color: Colors.black, fontSize: 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: (numBooksReadyToReturnNotifier.value > 0 || _showingLentOutReadyToReturn)
+            ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () {
+                _showingLentOutReadyToReturn = !_showingLentOutReadyToReturn;
+                _updateList();
+              },
+              child: Text(
+                (_showingLentOutReadyToReturn) ? "Unview" : "View",
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            )
+            : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+Widget _displayLentToMeReadyToReturnFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "You have marked $_numLentToMeBooksReadyToReturn books ready to return.",
+            style: const TextStyle(fontSize: 14),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: (_numLentToMeBooksReadyToReturn > 0 || _showingLentToMeReadyToReturn)
+            ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () {
+                _showingLentToMeReadyToReturn = !_showingLentToMeReadyToReturn;
+                _updateList();
+              },
+              child: Text(
+                (_showingLentToMeReadyToReturn) ? "Unview" : "View",
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            )
+            : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _displayInfoOnRequests() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("You have ${receivedBookRequests.length} outstanding book requests."),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+            ),
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
+            },
+            child: const Text(
+              "View",
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            ),
           ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -557,6 +652,12 @@ Widget _displayInfoOnRequests() {
           Padding(
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 5),
               child: _displayShowButtons()),
+              (_showing == _BooksShowing.lent)
+              ? _displayLentReadyToReturnFilter()
+              : const SizedBox.shrink(),
+              (_showing == _BooksShowing.lentToMe)
+              ? _displayLentToMeReadyToReturnFilter()
+              : const SizedBox.shrink(),
           Padding(
             padding: const EdgeInsets.fromLTRB(19, 8, 19, 5),
             child: Row(

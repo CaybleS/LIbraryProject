@@ -321,7 +321,7 @@ class _SettingsState extends State<Settings> {
               ),
             ),
             const Spacer(), // I want the stats on the bottom and this is just the perfect use case for Spacer thats crazy
-            const Text(
+            const Text( // can also add stuff like books rdy to return num friends num chat msgs sent num book requests received idk
               "Your Stats",
               style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
             ),

@@ -99,7 +99,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
               ? BottomNavigationBar(
                   items: const [
                     BottomNavigationBarItem(
-                      icon: Icon(Icons.home),
+                      icon: DynamicHomepageIcon(),
                       label: "Homepage",
                     ),
                     BottomNavigationBarItem(
@@ -128,6 +128,46 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
                 )
               : const SizedBox.shrink(),
         ));
+  }
+}
+
+// TODO determine if this is good or not cuz idk for sure
+class DynamicHomepageIcon extends StatefulWidget {
+  const DynamicHomepageIcon({super.key});
+
+  @override
+  State<DynamicHomepageIcon> createState() => _DynamicHomepageIconState();
+}
+
+class _DynamicHomepageIconState extends State<DynamicHomepageIcon> {
+  late final VoidCallback _readyToReturnListener;
+  int _numBooksReadyToReturn = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _numBooksReadyToReturn = numBooksReadyToReturnNotifier.value;
+    _readyToReturnListener = () {
+      _numBooksReadyToReturn = numBooksReadyToReturnNotifier.value;
+      setState(() {});
+    };
+    numBooksReadyToReturnNotifier.addListener(_readyToReturnListener);
+  }
+
+  @override
+  void dispose() {
+    numBooksReadyToReturnNotifier.removeListener(_readyToReturnListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _numBooksReadyToReturn == 0 ? const Icon(Icons.home) : Badge.count(
+      count: _numBooksReadyToReturn,
+      offset: Offset.fromDirection(-pi/4, 9),
+      backgroundColor: Colors.red,
+      child: const Icon(Icons.home),
+    );
   }
 }
 

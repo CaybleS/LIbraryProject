@@ -150,7 +150,7 @@ class _BookPageState extends State<BookPage> {
     return ElevatedButton(
       onPressed: () async {
         bool shouldReturn = await SharedWidgets.displayConfirmActionDialog(
-            context, "Do you want to return this book?");
+            context, "Do you want to mark this book as returned?");
         if (shouldReturn) {
           widget.book.returnBook();
           if (mounted) {
