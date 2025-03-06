@@ -92,6 +92,20 @@ class _BookPageState extends State<BookPage> {
     }
   }
 
+  // Widget _displayRequests() {
+  //   String requestText;
+  //   String requestNum = toString(widget.book.usersWhoRequested.length);
+  //   if(widget.book.usersWhoRequested!.length != 1){
+  //     requestText = "There are "+requestNum+" requests for this book";
+  //   }
+  //   else{
+  //     requestText = "There is "+requestNum+" request for this book";
+  //   }
+  //   return Text(
+  //     requestText,
+  //     style: TextStyle(fontSize: 10),
+  //     );
+  // }
   Widget _displayStatus() {
     String availableTxt;
     Color availableTxtColor;
@@ -356,6 +370,9 @@ class _BookPageState extends State<BookPage> {
                             }
                           },
                         ),
+                        //Flexible(
+                          //child: _displayRequests(),
+                        //),
                       ],
                     ),
                   ),
