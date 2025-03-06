@@ -203,8 +203,8 @@ class _ProfileState extends State<Profile> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
             onPressed: () async {
               // Unfriend button - we probably need the books lent check here too right?
-              if (booksLentToMe.
-                  values.any((book) => book.lenderId == widget.profileUserId)) {
+              if (booksLentToMe.values
+                  .any((book) => book.lenderId == widget.profileUserId)) {
                 SharedWidgets.displayErrorDialog(
                     context, "Cannot unfriend: User has books lent to you");
               } else if (userLibrary
@@ -265,8 +265,9 @@ class _ProfileState extends State<Profile> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
+                        const SizedBox(width: 20,),
                         CircleAvatar(
                           backgroundImage: _userInfo!.photoUrl != null
                               ? NetworkImage(
@@ -277,31 +278,23 @@ class _ProfileState extends State<Profile> {
                                 ),
                           radius: 40,
                         ),
-                        // ClipOval(
-                        //   child: SizedBox(
-                        //     width: 100,
-                        //     child: _userInfo!.photoUrl != null
-                        //         ? Image.network(
-                        //             _userInfo!.photoUrl!,
-                        //           )
-                        //         : Image.asset(
-                        //       "assets/profile_pic.jpg",
-                        //     ),
-                        //   ),
-                        // ),
-                        Column(
+                        const SizedBox(width: 20,),
+                        Flexible(child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               _userInfo!.name,
                               style: const TextStyle(fontSize: 25),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               _userInfo!.username,
                               style: const TextStyle(fontSize: 16),
                             )
                           ],
-                        ),
+                        )),
+                        const SizedBox(width: 20,)
                       ],
                     ),
                     const SizedBox(height: 10),

@@ -24,7 +24,6 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   List<String> showRequests = [];
   List<String> showFriends = [];
-  String _selected = "list";
   late final VoidCallback _friendpageListener;
 
   @override

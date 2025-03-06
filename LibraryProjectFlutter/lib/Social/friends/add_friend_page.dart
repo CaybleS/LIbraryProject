@@ -223,7 +223,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         Row(mainAxisAlignment: MainAxisAlignment.center,
           children: [
           Text("ID: ${widget.user.uid}",
-              style: const TextStyle(fontSize: 20, color: Colors.black)),
+              style: const TextStyle(fontSize: 16, color: Colors.black), softWrap: true,),
           IconButton(onPressed: () {Clipboard.setData(ClipboardData(text: widget.user.uid));}, icon: const Icon(Icons.copy))
         ]),
         QrImageView(
