@@ -174,9 +174,10 @@ void bottombarItemTapped(int index) {
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
   } else {
     bottombarIndexChangedNotifier.value = -1;
+    bottombarIndexChangedNotifier.value = selectedIndex; // signaling the page we switched to so it can refresh itself if it wants // TODO test this when have time
     bottombarIndexChangedNotifier.value = prevIndex; // signaling the page we switched off so it can refresh itself now if it wants to
-    // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
-    // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
+    // for this popUntil, if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to
+    // be done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
     navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
