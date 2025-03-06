@@ -4,6 +4,7 @@ import 'package:library_project/book/book_requests_page.dart';
 import 'package:library_project/core/global_variables.dart';
 import 'package:library_project/models/book.dart';
 import 'package:library_project/ui/colors.dart';
+import 'package:library_project/ui/shared_widgets.dart';
 
 Future<void> displayAppReturnDialog(BuildContext context, User user) async {
   int numBooksReadyToReturn = 0;
@@ -60,36 +61,69 @@ class _AppReturnDialogState extends State<AppReturnDialog> {
     setState(() {});
   }
 
-Widget _displayInfoOnRequests() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Text("You have ${receivedBookRequests.length} outstanding book requests."),
-      (receivedBookRequests.isEmpty)
-      ? const SizedBox.shrink()
-      : Flexible(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
-            ),
-            onPressed: () async {
-              await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
-            },
-            child: const FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                "View",
-                style: TextStyle(color: Colors.black, fontSize: 16),
+  Widget _displayInfoOnRequests() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("${receivedBookRequests.length} outstanding book requests"),
+        (receivedBookRequests.isEmpty)
+        ? const SizedBox.shrink()
+        : Flexible(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () async {
+                // TODO should it pop the dialog idk
+                await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
+              },
+              child: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "View",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
+Widget _displayInfoOnReadyToReturn() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Have $numBooksReadyToReturn books ready to return"),
+        (numBooksReadyToReturn == 0)
+        ? const SizedBox.shrink()
+        : Flexible(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () {
+                // TODO go to homepage place or something idk
+                SharedWidgets.displayPositiveFeedbackDialog(context, "Not implemented sorry :(");
+              },
+              child: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "View",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _displayDialog() {
     return Column(
@@ -103,17 +137,40 @@ Widget _displayInfoOnRequests() {
                 onTap: () => Navigator.pop(context),
                 child: const Icon(Icons.arrow_back),
               ),
-              const Text("Welcome Back", style: TextStyle(fontSize: 20, color: Colors.black)),
+              const Expanded(
+                child: Text("Welcome Back", style: TextStyle(fontSize: 20, color: Colors.black), textAlign: TextAlign.center),
+              ),
+              const SizedBox(width: 24), // meant to center the "Welcome back" text by being the same size as the icon
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        // const SizedBox(height: 6),
         Flexible(
           child: _displayInfoOnRequests(),
         ),
+        // const SizedBox(height: 8),
         Flexible(
-          child: Text("You have $numBooksReadyToReturn books ready to return."),
-        )
+          child: _displayInfoOnReadyToReturn(),
+        ),
+        const SizedBox(height: 10),
+        Flexible(
+          child: SizedBox(
+            width: 140,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.acceptGreen,
+                padding: const EdgeInsets.all(8),
+              ),
+              child: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text("Ok", style: TextStyle(fontSize: 16, color: Colors.black)),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

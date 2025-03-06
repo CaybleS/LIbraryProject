@@ -244,7 +244,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         height: 10,
       ),
       SharedWidgets.displayTextField(
-          'ID or email', controller, showErrorTxt, _msg),
+          'ID or username', controller, showErrorTxt, _msg),
       const SizedBox(
         height: 10,
       ),

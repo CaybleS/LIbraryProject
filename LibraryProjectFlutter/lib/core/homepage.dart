@@ -69,6 +69,11 @@ class _HomePageState extends State<HomePage> {
         // the bottombar also has logic to refresh the page when we go back to it; this is the
         // normal contant updated refresher which does this
         _resetFilters();
+        // TODO is this good idk who knows but its just meant to when you have books ready to return auto move to lend tab when clicking to homepage
+        if (numBooksReadyToReturnNotifier.value != 0) {
+          _showing = _BooksShowing.lent;
+          _changeDisplay(_showing);
+        }
       }
     };
     _bookRequestsAndUserLibraryLoadedListener = () {
@@ -221,7 +226,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // this is needed to change the display button colors
-  void _changeDisplay(_BooksShowing state) {
+  void _changeDisplay(_BooksShowing state) { // TODO should the buttons show how many are there? Like how to tell if a book is lent to you now? They just appear with no feedback ya know.
     _showingLentOutReadyToReturn = false; // when user clicks off lent tab this just gets unset, resetting that subfilter to avoid confusion
     _showingLentToMeReadyToReturn = false;
     _showing = state;
@@ -803,21 +808,28 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                     )
                                   : Column(
                                     children: [
-                                      const Text("Book is ready to return"),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColor.pink, padding: const EdgeInsets.all(8),
+                                      const Flexible(
+                                        child: Text("Book flagged as"),
+                                      ),
+                                      const Flexible(
+                                        child: Text("ready to return"),
+                                      ),
+                                      Flexible(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColor.pink, padding: const EdgeInsets.all(8),
+                                          ),
+                                          onPressed: () {
+                                            _shownLibrary[_shownList[index]].readyToReturn = null;
+                                            _shownLibrary[_shownList[index]].update();
+                                            setState(() {});
+                                          },
+                                          child: const FittedBox(
+                                            child: Text("Undo",
+                                            style: TextStyle(color: Colors.black, fontSize: 12)),
+                                          ),
                                         ),
-                                        onPressed: () {
-                                          _shownLibrary[_shownList[index]].readyToReturn = null;
-                                          _shownLibrary[_shownList[index]].update();
-                                          setState(() {});
-                                        },
-                                        child: const FittedBox(
-                                          child: Text("Undo",
-                                          style: TextStyle(color: Colors.black, fontSize: 12)),
-                                        ),
-                                      )
+                                      ),
                                     ],
                                   )
                                 : SizedBox(
@@ -845,6 +857,19 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                             softWrap: true,
                                           ),
                                         ),
+                                        (_showing != _BooksShowing.lentToMe && _shownLibrary[_shownList[index]].readyToReturn == true)
+                                        ? Flexible(
+                                          child: FittedBox(
+                                            child: Text(
+                                              "Ready to Return",
+                                              style: TextStyle(
+                                                color: availableTxtColor,
+                                                fontSize: 14),
+                                              softWrap: true,
+                                            ),
+                                          ),
+                                        )
+                                        : const SizedBox.shrink(),
                                         Flexible(
                                           child: IconButton(
                                             onPressed: () => {
@@ -856,15 +881,6 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                             color: Colors.red,
                                           ),
                                         ),
-                                        // TODO this design sucks .. idk how to do it right now
-                                        (_shownLibrary[_shownList[index]].readyToReturn != null)
-                                        ? const Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text("This book is ready to return"),
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
                                       ],
                                     ),
                                   ),
