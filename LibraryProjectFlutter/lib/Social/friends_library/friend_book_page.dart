@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 
 class FriendBookPage extends StatefulWidget {
 

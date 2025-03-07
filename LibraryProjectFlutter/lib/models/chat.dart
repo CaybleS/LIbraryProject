@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
+import 'package:shelfswap/core/global_variables.dart';
 
 enum ChatType { private, group }
 

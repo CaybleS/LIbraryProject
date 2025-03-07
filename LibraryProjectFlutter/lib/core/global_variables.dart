@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests_model.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/user.dart';
 
 // pages can access these at any time, knowing that they will be up to date guaranteed
 // there are just the representations of database data which are updated by onvalue subscriptions

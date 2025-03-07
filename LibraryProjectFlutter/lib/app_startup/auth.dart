@@ -2,12 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/first_profile_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/settings.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/app_startup/first_profile_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/settings.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/user.dart';
 import 'login.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/auth.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/settings.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/app_startup/auth.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/settings.dart';
+import 'package:shelfswap/ui/colors.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final User user;

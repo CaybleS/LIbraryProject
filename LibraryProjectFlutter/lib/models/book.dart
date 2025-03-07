@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/book_requests_model.dart';
+import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
 
 //putting this definition here allows us to not use bools for read state.
 enum ReadingState { notRead, currentlyReading, read }

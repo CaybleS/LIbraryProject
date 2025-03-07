@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/database/subscriptions.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/profile_info.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/database/subscriptions.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/profile_info.dart';
 import 'dart:async';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/models/user.dart';
 
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;

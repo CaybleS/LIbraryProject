@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "827528856030",
+    "firebase_url": "https://libraryproject10-2f3aa-default-rtdb.firebaseio.com",
     "project_id": "libraryproject10-2f3aa",
     "storage_bucket": "libraryproject10-2f3aa.appspot.com"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "827528856030-g8cp992c7pp6oekbt0716cmha3skfg7a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryprojec",
+            "certificate_hash": "f7fbeece1c400650362c5656f10e88125a7b7e13"
+          }
+        },
         {
           "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
           "client_type": 3
@@ -29,6 +38,13 @@
             {
               "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "827528856030-3ba3vn62qtuu58n6ri4i3v4p23u75v4r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.libraryproject"
+              }
             }
           ]
         }
@@ -51,6 +67,54 @@
           }
         },
         {
+          "client_id": "827528856030-6fdnscsdea1unkiflhhj1lrk9v1fl6na.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "680611a963fa63736b2993dd3dd6b6d8db323ce7"
+          }
+        },
+        {
+          "client_id": "827528856030-hamc04dq9vr9bp3elk18o10m0ju7uhot.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "037d046ec05dc3bf50fa4bbeb7411ea8c197dde1"
+          }
+        },
+        {
+          "client_id": "827528856030-jgoajb8kmu0cc37ucdeokstvqmh745b7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "f10ace02bae35b54c1ea4ce2cd4840608de0987c"
+          }
+        },
+        {
+          "client_id": "827528856030-ndsigt6l761b54i3j0otbo45org1bsgo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "f7fbeece1c400650362c5656f10e88125a7b7e13"
+          }
+        },
+        {
+          "client_id": "827528856030-qdm43nihsc3tus4fsqr1p23vq2dgaj3o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "0b51e659b71a45f043af1f46c3026134dd727f6d"
+          }
+        },
+        {
+          "client_id": "827528856030-spq8l9thh7l2149t2cpv6ui0g8lbduui.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.libraryproject",
+            "certificate_hash": "5b1a09bb9bd89926a0d46b6fa72614e7b9149bee"
+          }
+        },
+        {
           "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -66,6 +130,49 @@
             {
               "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "827528856030-3ba3vn62qtuu58n6ri4i3v4p23u75v4r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.libraryproject"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:827528856030:android:7d345fe781d445231a1d4f",
+        "android_client_info": {
+          "package_name": "com.shelfswap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz1LUtJvlDsYEftOrkYbJ683_wy270eSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "827528856030-6etpiaseb4pmrki5ovk1vmg8mo64f549.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "827528856030-3ba3vn62qtuu58n6ri4i3v4p23u75v4r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.libraryproject"
+              }
             }
           ]
         }

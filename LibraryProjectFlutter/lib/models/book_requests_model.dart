@@ -1,8 +1,8 @@
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/database/subscriptions.dart';
-import 'package:library_project/models/book.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/database/subscriptions.dart';
+import 'package:shelfswap/models/book.dart';
 import 'dart:async';
 // maybe could have designed it better but basically, if a book is removed, all requests for it need to be deleted as well,
 // so most of the logic for these requests is in the book and database files. This file is just the simple requests which

@@ -2,10 +2,10 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests_model.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/user.dart';
 import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();

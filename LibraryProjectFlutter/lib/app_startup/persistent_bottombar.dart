@@ -1,15 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:library_project/Social/chats/message_home.dart';
-import 'package:library_project/Social/friends/friends_page.dart';
-import 'package:library_project/add_book/add_book_homepage.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/homepage.dart';
-import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:shelfswap/Social/chats/message_home.dart';
+import 'package:shelfswap/Social/friends/friends_page.dart';
+import 'package:shelfswap/add_book/add_book_homepage.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/homepage.dart';
+import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/ui/colors.dart';
 import 'dart:math';
 
 class PersistentBottomBar extends StatefulWidget {

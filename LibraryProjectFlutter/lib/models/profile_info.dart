@@ -1,4 +1,4 @@
-import 'package:library_project/models/book.dart';
+import 'package:shelfswap/models/book.dart';
 
 // I'm going to store the profile stuff in a new section of the db since it will only be needed on the profile page
 class ProfileInfo {

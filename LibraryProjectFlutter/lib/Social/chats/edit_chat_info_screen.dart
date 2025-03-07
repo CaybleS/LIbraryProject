@@ -6,13 +6,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/conditional_widget.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/chat.dart';
-import 'package:library_project/models/message.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/conditional_widget.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/chat.dart';
+import 'package:shelfswap/models/message.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
 
 class EditChatInfoScreen extends StatefulWidget {

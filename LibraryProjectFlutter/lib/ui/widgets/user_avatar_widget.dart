@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 
 class UserAvatarWidget extends StatelessWidget {
   const UserAvatarWidget({
@@ -54,7 +54,7 @@ class UserAvatarWidget extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 name[0].toUpperCase(),
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.black, fontSize: fontSize),
+                style: TextStyle(color: Colors.black, fontSize: fontSize),
               ),
             ),
     );

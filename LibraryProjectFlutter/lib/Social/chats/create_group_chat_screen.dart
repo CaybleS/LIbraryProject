@@ -7,16 +7,16 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/Social/chats/chat_screen.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/conditional_widget.dart';
-import 'package:library_project/models/chat.dart';
-import 'package:library_project/models/message.dart';
-import 'package:library_project/models/user.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
-import 'package:library_project/ui/widgets/user_avatar_widget.dart';
+import 'package:shelfswap/Social/chats/chat_screen.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/conditional_widget.dart';
+import 'package:shelfswap/models/chat.dart';
+import 'package:shelfswap/models/message.dart';
+import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
+import 'package:shelfswap/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateGroupChatScreen extends StatefulWidget {

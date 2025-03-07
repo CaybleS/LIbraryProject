@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'; // using over mobile_scanner cuz its better! better user experience with this one! 3.5MB more tho
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 
 class FriendScannerScreen extends StatefulWidget {
   const FriendScannerScreen({super.key});

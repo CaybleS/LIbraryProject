@@ -2,11 +2,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart'; // literally only needed to convert exported goodreads csv to a list, but thats kinda helpful ya know
-import 'package:library_project/add_book/shared_helper_util.dart';
-import 'package:library_project/core/global_variables.dart';
+import 'package:shelfswap/add_book/shared_helper_util.dart';
+import 'package:shelfswap/core/global_variables.dart';
 import 'dart:convert';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:library_project/app_startup/create_account_screen.dart';
-import 'package:library_project/app_startup/persistent_bottombar.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/app_startup/create_account_screen.dart';
+import 'package:shelfswap/app_startup/persistent_bottombar.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -82,7 +82,6 @@ class _LoginPageState extends State<LoginPage> {
               child: Text(
                 'Sign in with Google',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   color: Colors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -142,9 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             'ShelfSwap',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
               fontSize: 28,
-              fontFamily: 'Poppins',
             ),
           ),
           centerTitle: true,
@@ -172,7 +169,6 @@ class _LoginPageState extends State<LoginPage> {
                       color: AppColor.appbarColor,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   const Text(
@@ -181,13 +177,11 @@ class _LoginPageState extends State<LoginPage> {
                       color: Colors.black,
                       fontSize: 26,
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   const SizedBox(height: 30),
                   TextField(
                     controller: controllerEmail,
-                    style: const TextStyle(fontFamily: 'Poppins'),
                     decoration: InputDecoration(
                         hintText: 'Email',
                         hintStyle: const TextStyle(color: Colors.grey),
@@ -200,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: controllerPswd,
-                    style: const TextStyle(fontFamily: 'Poppins'),
+                    obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Password',
                       hintStyle: const TextStyle(color: Colors.grey),
@@ -228,7 +222,6 @@ class _LoginPageState extends State<LoginPage> {
                               Text(
                                 'Log In',
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   color: Colors.black,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -253,7 +246,6 @@ class _LoginPageState extends State<LoginPage> {
                               Text(
                                 'Register',
                                 style: TextStyle(
-                                  fontFamily: 'Poppins',
                                   color: Colors.black,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

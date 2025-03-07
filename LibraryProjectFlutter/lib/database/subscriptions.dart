@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests_model.dart';
-import 'package:library_project/models/profile_info.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/profile_info.dart';
+import 'package:shelfswap/models/user.dart';
 import 'dart:async';
 
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.

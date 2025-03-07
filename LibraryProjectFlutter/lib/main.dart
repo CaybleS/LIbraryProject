@@ -3,11 +3,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:library_project/app_startup/connectivity_wrapper.dart';
-import 'package:library_project/app_startup/login.dart';
-import 'package:library_project/core/app_life_cycle.dart';
-import 'package:library_project/database/firebase_options.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:shelfswap/app_startup/connectivity_wrapper.dart';
+import 'package:shelfswap/app_startup/login.dart';
+import 'package:shelfswap/core/app_life_cycle.dart';
+import 'package:shelfswap/database/firebase_options.dart';
+import 'package:shelfswap/ui/colors.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
