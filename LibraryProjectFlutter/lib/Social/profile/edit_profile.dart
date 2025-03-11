@@ -4,15 +4,15 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:library_project/Social/profile/add_fav_book.dart';
-import 'package:library_project/add_book/custom_add/book_cover_changers.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/database/subscriptions.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/profile_info.dart';
-import 'package:library_project/models/user.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/Social/profile/add_fav_book.dart';
+import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/database/subscriptions.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/profile_info.dart';
+import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
 
 class EditProfileScreen extends StatefulWidget {

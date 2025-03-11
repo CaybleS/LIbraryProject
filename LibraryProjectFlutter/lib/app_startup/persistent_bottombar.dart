@@ -1,15 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:library_project/Social/chats/message_home.dart';
-import 'package:library_project/Social/friends/friends_page.dart';
-import 'package:library_project/add_book/add_book_homepage.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/homepage.dart';
-import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:shelfswap/Social/chats/message_home.dart';
+import 'package:shelfswap/Social/friends/friends_page.dart';
+import 'package:shelfswap/add_book/add_book_homepage.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/homepage.dart';
+import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'dart:math';
 
 class PersistentBottomBar extends StatefulWidget {
   final User user;
@@ -73,58 +74,142 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope( // this allows the android back button to work properly
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) {
-          return;
-        }
-        bool shouldPop = !await navigatorKeys[selectedIndex].currentState!.maybePop();
-        if (shouldPop) {
-          // ensuring the app closes, since in this case this only runs to close the app I believe
-          SystemNavigator.pop();
-        }
-      },
-      child: Scaffold(
-        body: Stack(
-          children: List.generate(
-            navigatorKeys.length,
-            (index) => _buildOffstageNavigator(index),
+    return PopScope(
+        // this allows the android back button to work properly
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, Object? result) async {
+          if (didPop) {
+            return;
+          }
+          bool shouldPop =
+              !await navigatorKeys[selectedIndex].currentState!.maybePop();
+          if (shouldPop) {
+            // ensuring the app closes, since in this case this only runs to close the app I believe
+            SystemNavigator.pop();
+          }
+        },
+        child: Scaffold(
+          body: Stack(
+            children: List.generate(
+              navigatorKeys.length,
+              (index) => _buildOffstageNavigator(index),
+            ),
           ),
-        ),
-        bottomNavigationBar: (showBottombar)
-          ? BottomNavigationBar(
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: "Homepage",
-              ),
-              BottomNavigationBarItem(
-                // can be search, my_library_add, add, add_circle, bookmark_add. I just think the search is intuitive enough, others dont look amazing
-                icon: Icon(Icons.search),
-                label: "Add book",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.people_alt_rounded),
-                label: "Friends",
-              ),
-              BottomNavigationBarItem(
-                icon: DynamicMessagesIcon(),
-                label: "Messages",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.account_circle_rounded),
-                label: "Profile",
-              ),
-            ],
-            currentIndex: selectedIndex,
-            selectedItemColor: AppColor.appbarColor,
-            unselectedItemColor: Colors.grey,
-            backgroundColor: Colors.white,
-            onTap: bottombarItemTapped,
-          )
-          : const SizedBox.shrink(),
-      )
+          bottomNavigationBar: (showBottombar)
+              ? BottomNavigationBar(
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: DynamicHomepageIcon(),
+                      label: "Homepage",
+                    ),
+                    BottomNavigationBarItem(
+                      // can be search, my_library_add, add, add_circle, bookmark_add. I just think the search is intuitive enough, others dont look amazing
+                      icon: Icon(Icons.search),
+                      label: "Add book",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: FriendsIcon(),
+                      label: "Friends",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: DynamicMessagesIcon(),
+                      label: "Messages",
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.account_circle_rounded),
+                      label: "Profile",
+                    ),
+                  ],
+                  currentIndex: selectedIndex,
+                  selectedItemColor: AppColor.appbarColor,
+                  unselectedItemColor: Colors.grey,
+                  backgroundColor: Colors.white,
+                  onTap: bottombarItemTapped,
+                )
+              : const SizedBox.shrink(),
+        ));
+  }
+}
+
+// TODO determine if this is good or not cuz idk for sure
+class DynamicHomepageIcon extends StatefulWidget {
+  const DynamicHomepageIcon({super.key});
+
+  @override
+  State<DynamicHomepageIcon> createState() => _DynamicHomepageIconState();
+}
+
+class _DynamicHomepageIconState extends State<DynamicHomepageIcon> {
+  late final VoidCallback _readyToReturnListener;
+  int _numBooksReadyToReturn = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _numBooksReadyToReturn = numBooksReadyToReturnNotifier.value;
+    _readyToReturnListener = () {
+      _numBooksReadyToReturn = numBooksReadyToReturnNotifier.value;
+      setState(() {});
+    };
+    numBooksReadyToReturnNotifier.addListener(_readyToReturnListener);
+  }
+
+  @override
+  void dispose() {
+    numBooksReadyToReturnNotifier.removeListener(_readyToReturnListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _numBooksReadyToReturn == 0 ? const Icon(Icons.home) : Badge.count(
+      count: _numBooksReadyToReturn,
+      offset: Offset.fromDirection(-pi/4, 9),
+      backgroundColor: Colors.red,
+      child: const Icon(Icons.home),
+    );
+  }
+}
+
+class FriendsIcon extends StatefulWidget {
+  const FriendsIcon({super.key});
+
+  @override
+  State<FriendsIcon> createState() => _FriendsIconState();
+}
+
+class _FriendsIconState extends State<FriendsIcon> {
+  late final VoidCallback _requestListener;
+  int requests = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestListener = () {
+      if (requests != requestIDs.value.length) {
+        requests = requestIDs.value.length;
+        setState(() {});
+      }
+    };
+    requestIDs.addListener(_requestListener);
+    if (requestIDs.value.isNotEmpty) {
+      requests = requestIDs.value.length;
+    }
+  }
+
+  @override
+  void dispose() {
+    requestIDs.removeListener(_requestListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return requests == 0 ? const Icon(Icons.people_alt_rounded) : Badge.count(
+      count: requests,
+      offset: Offset.fromDirection(-pi/4, 9),
+      backgroundColor: Colors.red,
+      child: const Icon(Icons.people_alt_rounded),
     );
   }
 }
@@ -152,56 +237,36 @@ class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
       }
     };
     userModel.addListener(_userHasBeenSetListener);
-    _chatListStream = _getChatList(); // initially this will fail since user will be set to null but when user is set it will fetch the correct info
+    _chatListStream =
+        _getChatList(); // initially this will fail since user will be set to null but when user is set it will fetch the correct info
   }
 
   @override
   void dispose() {
-    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    userModel.removeListener(
+        _userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        const Icon(
-          Icons.message_rounded,
-        ),
-        StreamBuilder(
-          stream: _chatListStream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.hasError) {
-              return const SizedBox.shrink();
-            }
-            int unreadMessages = snapshot.data!;
-            if (unreadMessages == 0) {
-              return const SizedBox.shrink();
-            }
-            return Positioned(
-              bottom: 14, // putting it on top right of the icon
-              left: 14,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  unreadMessages.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+    return StreamBuilder(
+      stream: _chatListStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const Icon(Icons.message_rounded);
+        }
+        int unreadMessages = snapshot.data!;
+        if (unreadMessages == 0) {
+          return const Icon(Icons.message_rounded);
+        }
+        return Badge.count(
+          count: unreadMessages,
+          offset: Offset.fromDirection(-pi/4, 9),
+          backgroundColor: Colors.red,
+          child: const Icon(Icons.message_rounded),
+        );
+      },
     );
   }
 
@@ -209,7 +274,10 @@ class _DynamicMessagesIconState extends State<DynamicMessagesIcon> {
     if (userModel.value == null) {
       return Stream.value(0);
     }
-    return dbReference.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) {
+    return dbReference
+        .child('userChats/${userModel.value!.uid}')
+        .onValue
+        .asyncMap((event) {
       final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
       if (chatsMap == null) {
         return 0;

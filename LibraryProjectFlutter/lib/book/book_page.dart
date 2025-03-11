@@ -6,11 +6,12 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/book/book_lend_page.dart';
-import 'package:library_project/book/custom_added_book_edit.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/book/book_lend_page.dart';
+import 'package:shelfswap/book/custom_added_book_edit.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 
 enum _ReadStatus { notRead, currentlyReading, unknown, read }
 
@@ -53,17 +54,11 @@ class _BookPageState extends State<BookPage> {
         selection = {_ReadStatus.unknown};
         break;
     }
-    _setUserLentIfBookIsLent();
+    if (widget.book.borrowerId != null) {
+      _userLent = userIdToUserModel[widget.book.borrowerId]!.name;
+    }
     setState(() {});
   }
-
-  Future<void> _setUserLentIfBookIsLent() async {
-    if (widget.book.borrowerId != null) {
-      _userLent = await getUserDisplayName(widget.book.borrowerId!);
-      setState(() {});
-    }
-  }
-
   void processSelectionOption(_ReadStatus selection) {
     switch (selection) {
       case _ReadStatus.notRead:
@@ -97,6 +92,20 @@ class _BookPageState extends State<BookPage> {
     }
   }
 
+  // Widget _displayRequests() {
+  //   String requestText;
+  //   String requestNum = toString(widget.book.usersWhoRequested.length);
+  //   if(widget.book.usersWhoRequested!.length != 1){
+  //     requestText = "There are "+requestNum+" requests for this book";
+  //   }
+  //   else{
+  //     requestText = "There is "+requestNum+" request for this book";
+  //   }
+  //   return Text(
+  //     requestText,
+  //     style: TextStyle(fontSize: 10),
+  //     );
+  // }
   Widget _displayStatus() {
     String availableTxt;
     Color availableTxtColor;
@@ -155,7 +164,7 @@ class _BookPageState extends State<BookPage> {
     return ElevatedButton(
       onPressed: () async {
         bool shouldReturn = await SharedWidgets.displayConfirmActionDialog(
-            context, "Do you want to return this book?");
+            context, "Do you want to mark this book as returned?");
         if (shouldReturn) {
           widget.book.returnBook();
           if (mounted) {
@@ -200,7 +209,7 @@ class _BookPageState extends State<BookPage> {
       appBar: AppBar(
         title: const Text("Book Info"),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColor.appbarColor
       ),
       backgroundColor: Colors.grey[400],
       body: Padding(
@@ -260,13 +269,16 @@ class _BookPageState extends State<BookPage> {
               ),
             ),
             Flexible(
+              //flex: 1,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    height: 200,
-                    width: 150,
+                  Flexible(
+                    flex: 1,
+                    //height: 200,
+                    //width: 150,
                     //left column with status, rating, and condition
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -283,7 +295,7 @@ class _BookPageState extends State<BookPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: [ Flexible( child:
                             DropdownButton<String?>(
                               value: _selectedRating,
                               iconSize: 0.0,
@@ -307,6 +319,7 @@ class _BookPageState extends State<BookPage> {
                                 }
                               },
                             ),
+                          ),
                             //_displayRating(),
                             const Padding(
                               padding: EdgeInsets.only(top: 3.0),
@@ -357,14 +370,23 @@ class _BookPageState extends State<BookPage> {
                             }
                           },
                         ),
+                        //Flexible(
+                          //child: _displayRequests(),
+                        //),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  //const SizedBox(width: 10),
+                  Flexible(
+                    flex:2,
+                    child:
                   Column(
+                    //crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          //Flexible(
                           (widget.book.lentDbKey != null)
                               ? _returnBookButton()
                               : _lendBookButton(),
@@ -393,7 +415,7 @@ class _BookPageState extends State<BookPage> {
                             child: const SizedBox(
                               height: 160,
                               width: 50,
-                              child: Flexible(
+                              //child: Flexible(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -414,7 +436,8 @@ class _BookPageState extends State<BookPage> {
                                 ),
                               ),
                             ),
-                          ),
+                           //),
+                          
                         ],
                       ),
                       SizedBox(height: 5),
@@ -427,17 +450,17 @@ class _BookPageState extends State<BookPage> {
                                   TextSpan(
                                     text: "Lent to:\n",
                                     style: TextStyle(
-                                      fontSize: 18, // Larger font for "Lent to"
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Colors
-                                          .black, // Ensure proper color rendering
+                                          .black,
                                     ),
                                   ),
                                   TextSpan(
                                     text: _userLent,
                                     style: TextStyle(
                                       fontSize:
-                                          15, // Smaller font for borrowerId
+                                          15,
                                       fontWeight: FontWeight.normal,
                                       color: Colors.black,
                                     ),
@@ -448,12 +471,14 @@ class _BookPageState extends State<BookPage> {
                           : const SizedBox.shrink(),
                     ],
                   ),
+                  ),
                   //const SizedBox(height: 2),
                 ],
               ),
             ),
             //const SizedBox(height: 10),
-            Flexible(
+            //Column( mainAxisAlignment:MainAxisAlignment.start, children: [
+              Flexible(
               child: SegmentedButton<_ReadStatus>(
                 selected: selection,
                 onSelectionChanged: (Set<_ReadStatus> newSelection) {
@@ -479,7 +504,11 @@ class _BookPageState extends State<BookPage> {
                 ],
               ),
             ),
+            //],
+            //),
             
+            Row(
+              children: [
             (widget.book.isManualAdded == true)
                 ? ElevatedButton(
                     onPressed: () async {
@@ -497,7 +526,26 @@ class _BookPageState extends State<BookPage> {
                     child: const Text("Edit manually added book here"),
                   )
                 : const SizedBox.shrink(),
+
+              //ElevatedButton(
+              // do edit notes
+              //)
+              ],
+            ),
+                (widget.book.bookNotes != null)
+                    ? Card(
+                      color: Color.fromARGB(255, 145, 210, 244),
+                      child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        widget.book.bookNotes!,
+                        style: const TextStyle(
+                          color: Colors.black, fontSize: 14),
+                      ),
+                      ))
+                : const SizedBox.shrink(),
           ],
+          
         ),
       ),
     );

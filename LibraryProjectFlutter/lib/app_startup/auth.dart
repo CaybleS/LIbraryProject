@@ -2,12 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/first_profile_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/services/secure_chat_service.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/app_startup/first_profile_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/settings.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/user.dart';
 import 'login.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -73,7 +73,7 @@ Future<void> signOutGoogle() async {
   await _googleSignIn.signOut();
 }
 
-void logout(context) async {
+Future<void> logout(context) async {
   await changeStatus(false);
   cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
@@ -167,5 +167,33 @@ changeStatus(bool status) async {
       'isActive': status,
       'lastSignedIn': DateTime.now().toUtc().toIso8601String(),
     });
+  }
+}
+
+// false return value signals error which causes the calling function to just return instead of continuing
+Future<bool> reauthenticateUser(BuildContext context, User user) async {
+  AuthCredential? credential;
+  try {
+    for (var userInfo in user.providerData) {
+      if (userInfo.providerId == "google.com") {
+        final GoogleSignInAccount? googleSignInAccount = await GoogleSignIn().signIn();
+        final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
+        if (googleSignInAuthentication == null) {
+          return false;
+        }
+        credential = GoogleAuthProvider.credential(idToken: googleSignInAuthentication.idToken, accessToken: googleSignInAuthentication.accessToken);
+        await user.reauthenticateWithCredential(credential);
+        return true;
+      }
+      else if (userInfo.providerId == "password") {
+        credential = EmailAuthProvider.credential(email: user.email!, password: await displayReenterPasswordDialog(context, user));
+        await user.reauthenticateWithCredential(credential);
+        return true;
+      }
+    }
+    return false;
+  } catch (e) {
+    print(e); // TODO add error handling like for wrong password and whatever else can go wrong
+    return false;
   }
 }

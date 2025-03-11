@@ -1,4 +1,4 @@
-package com.example.libraryproject
+package com.shelfswap
 
 import io.flutter.embedding.android.FlutterActivity
 

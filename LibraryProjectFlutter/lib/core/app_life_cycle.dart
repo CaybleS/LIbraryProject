@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/app_startup/connectivity_wrapper.dart';
+import 'package:shelfswap/app_startup/connectivity_wrapper.dart';
 
 class AppLifeCycle extends StatefulWidget {
   const AppLifeCycle({super.key, required this.child});

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:library_project/add_book/goodreads/goodreads_export.dart';
-import 'package:library_project/add_book/goodreads/goodreads_import.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/add_book/goodreads/goodreads_export.dart';
+import 'package:shelfswap/add_book/goodreads/goodreads_import.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 
 Future<void> displayGoodreadsDialog(BuildContext contextFromPageUserIsOn, User user) async {
   await showDialog(

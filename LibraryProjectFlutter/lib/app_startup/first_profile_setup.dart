@@ -1,9 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:library_project/database/database.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
+// TODO this needs goodreads import sokmewhere also idk how exactly to design it but yeh. (remove all these comments when done)
+// and when selecting a username there maybe should be something which automatically determines if the username is good
+// so that they can import with goodreads on this page. In my head its intuitive to have it that way. You enter the uesrname, it says its
+// valid with a nice checkmark and you're good to go and you also can import from goodreads at that point or something
+// ehh idk its weird because once you import it assumes your accoutn is created but technically its not right or is it?
+// so maybe you enter a username and as soon as it says its valid it writes it ot the db and you are in? Idk if thats good necesarily
 
 class FirstProfileSetup extends StatefulWidget {
   final User user;
@@ -51,7 +57,6 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
   }
 
   Future<bool> _checkIfUsernameIsValid(String usernameInput) async {
-    usernameInput = usernameInput.trim().toLowerCase(); // obviously it needs to be trimmed but I think usernames should be lowercase as well
     if (usernameInput.isEmpty) {
       _noUsernameInput = true;
       _noUsernameInputOrInputIsMaxLength = true;
@@ -71,9 +76,9 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
     return true;
   }
 
-  // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric
+  // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric + underscore
   bool _checkIfUsernameContainsValidCharacters(String usernameInput) {
-    if (RegExp(r'^[a-z0-9]+$').hasMatch(usernameInput)) {
+    if (RegExp(r'^[a-z0-9_]+$').hasMatch(usernameInput)) {
       return true;
     }
     return false;
@@ -91,11 +96,11 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColor.appbarColor,
-        title: const Text("Setup Profile"),
+        title: const Text("Set Your Username"),
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 25),
+        padding: const EdgeInsets.fromLTRB(10, 15, 10, 21),
         child: Column(
           children: [
             Flexible(
@@ -110,6 +115,9 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                       controller: _inputUsernameController,
                       maxLength: 32,
                       maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      inputFormatters: [
+                        LowerCaseTextFormatter(),
+                      ],
                       decoration: InputDecoration(
                         counterText: "",
                         filled: true,
@@ -135,6 +143,7 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                 ],
               ),
             ),
+            const SizedBox(height: 10),
             Flexible(
               child: SizedBox(
                 width: double.infinity,
@@ -142,12 +151,15 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ElevatedButton(
                     onPressed: () async {
-                      bool isValid = await _checkIfUsernameIsValid(_inputUsernameController.text);
+                      // obviously it needs to be trimmed but I think usernames should be lowercase as well
+                      // the LowerCaseTextFormatter should handle this but this is just being safe converting it to lower case again
+                      String lowercaseUsernameInput = _inputUsernameController.text.trim().toLowerCase();
+                      bool isValid = await _checkIfUsernameIsValid(lowercaseUsernameInput);
                       if (!isValid) {
                         return;
                       }
                       if (context.mounted) {
-                        Navigator.pop(context, _inputUsernameController.text);
+                        Navigator.pop(context, lowercaseUsernameInput);
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColor.skyBlue),
@@ -160,5 +172,12 @@ class _FirstProfileSetupState extends State<FirstProfileSetup> {
         ),
       ),
     );
+  }
+}
+
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toLowerCase());
   }
 }

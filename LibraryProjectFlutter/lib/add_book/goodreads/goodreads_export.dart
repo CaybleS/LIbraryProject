@@ -1,9 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 

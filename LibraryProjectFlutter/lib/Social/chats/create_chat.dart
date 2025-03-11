@@ -1,12 +1,12 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/chats/create_group_chat_screen.dart';
-import 'package:library_project/Social/chats/private_chat_screen.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/models/user.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/widgets/user_avatar_widget.dart';
+import 'package:shelfswap/Social/chats/create_group_chat_screen.dart';
+import 'package:shelfswap/Social/chats/private_chat_screen.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/widgets/user_avatar_widget.dart';
 
 class CreateChatScreen extends StatefulWidget {
   const CreateChatScreen({super.key});

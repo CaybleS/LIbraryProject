@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:shelfswap/ui/colors.dart';
 
 class SharedWidgets {
   SharedWidgets._(); // prevents class instantiation

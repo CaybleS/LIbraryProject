@@ -2,10 +2,10 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/user.dart';
 import 'dart:async';
 
 final dbReference = FirebaseDatabase.instance.ref();
@@ -51,8 +51,7 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
   id.set({'senders': senders});
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey,
-    {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
   // for the number of request senders in this case to remove all the sender requests separately though).
@@ -69,7 +68,7 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
     } else {
-      // there are no senders so we just remove everything
+      // there are no senders so we just remove everything (assuming the once() call doesn't return null when there is in fact data there...)
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
   }
@@ -79,8 +78,8 @@ Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
   }
-  DatabaseEvent event = await dbReference.child('users/$id').once();
-  return (event.snapshot.value != null);
+  DataSnapshot snapshot = await dbReference.child('users/$id').get();
+  return (snapshot.value != null);
 }
 
 // TODO this should only find users based off input name or username I'd say, which should change this a bit and make userExists only relevant for auth I think
@@ -91,12 +90,12 @@ Future<String> findUser(String txt) async {
     return txt;
   }
 
-  DatabaseEvent event = await dbReference.child('users/').once();
-  if (event.snapshot.value != null) {
-    Map<dynamic, dynamic> allUsers = event.snapshot.value as Map<dynamic, dynamic>;
+  DataSnapshot snapshot = await dbReference.child('users/').get();
+  if (snapshot.value != null) {
+    Map<dynamic, dynamic> allUsers = snapshot.value as Map<dynamic, dynamic>;
     for (var entry in allUsers.entries) {
       dynamic child = entry.value;
-      if (child['email'] == txt) {
+      if (child['username'] == txt) {
         return entry.key; // this is the 28 character uid
       }
     }
@@ -153,10 +152,19 @@ void removeUsername(String oldUsername) {
   dbReference.child('usernames/$oldUsername').remove();
 }
 
-
 void sendFriendRequest(User user, String friendId) {
   var id = dbReference.child('requests/$friendId/${user.uid}');
-  id.set({'sender': user.uid, 'sendDate': DateTime.now().toUtc().toIso8601String()});
+  id.set({'sendDate': DateTime.now().toUtc().toIso8601String()});
+  id = dbReference.child('sentFriendRequests/${user.uid}');
+  Map<String, dynamic> map = {friendId : true};
+  id.update(map);
+}
+
+Future<void> removeFriendRequest(String senderID, String receiverID) async {
+  var ref = dbReference.child('sentFriendRequests/$senderID/$receiverID');
+  await ref.remove();
+  ref = dbReference.child('requests/$receiverID/$senderID');
+  ref.remove();
 }
 
 Future<void> removeRef(DatabaseReference id) async {
@@ -170,7 +178,7 @@ Future<void> addFriend(String requestID, String uid) async {
   id = dbReference.child('friends/$uid/$requestID');
   id.set({"friendsSince": time});
 
-  await removeRef(dbReference.child('requests/$uid/$requestID'));
+  await removeFriendRequest(requestID, uid);
 }
 
 Future<void> removeFriend(String uid, String friendId) async {
@@ -178,6 +186,9 @@ Future<void> removeFriend(String uid, String friendId) async {
   await friend.remove();
   friend = dbReference.child('friends/$friendId/$uid');
   await friend.remove();
+  // removing friends silently also removes all book requests involving the 2 users
+  await removeAllBookRequestsInvolvingThisUser(uid, friendId);
+  await removeAllBookRequestsInvolvingThisUser(friendId, uid);
 }
 
 Future<Map<String, dynamic>> getChatInfo(String roomID) async {
@@ -221,8 +232,3 @@ Future<String> getUserDisplayName(String id) async {
 
   return name;
 }
-
-// Future<void> updateProfile(String uid, ProfileInfo profile) async {
-//   var id = dbReference.child('profileInfo/$uid');
-//   id.set(profile.toJson());
-// }

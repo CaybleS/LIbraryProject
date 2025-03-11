@@ -1,18 +1,22 @@
 import 'package:flutter/foundation.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/book_requests.dart';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/user.dart';
 
 // pages can access these at any time, knowing that they will be up to date guaranteed
 // there are just the representations of database data which are updated by onvalue subscriptions
 List<Book> userLibrary = [];
-List<LentBookInfo> booksLentToMe = [];
-List<SentBookRequest> sentBookRequests = [];
+Map<String, LentBookInfo> booksLentToMe = {}; // it maps the book db key itself to the LentBookInfo so we can update the LentBookInfo if needed
+Map<String, SentBookRequest> sentBookRequests = {};
 List<ReceivedBookRequest> receivedBookRequests = [];
 List<String> friendIDs = [];
-List<String> requestIDs = [];
+ValueNotifier<List<String>> requestIDs = ValueNotifier<List<String>>(List<String>.empty(growable: true));
+List<String> sentFriendRequests = [];
 ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
+// signal means to show the app's "welcome back" dialog when both requests and userLibrary are initially loaded
+ValueNotifier<int> requestsAndBooksLoaded = ValueNotifier<int>(0);
+ValueNotifier<int> numBooksReadyToReturnNotifier = ValueNotifier<int>(0);
 
 // bottombar indicies, used for 1.) pages listening to the refreshNotifier to know if they are selected on the bottombar and thus should refresh and 2.)
 // for the appbar to be able to change bottombar values based on appbar selection
@@ -39,16 +43,22 @@ bool showBottombar = true; // this and the refreshBottombar allows for logic to 
 int selectedIndex = 0;
 int prevIndex = 0;
 
+// Indicates which tab is selected on friend page, so that other pages can send you to requests or list specifically
+int friendPageTabSelected = 0;
+
 // called from the cancelSubscriptions function in appwide_setup, which is called when logout occurs
 // that function merely cancels all subscriptions while this one independently just clears these global lists/maps
 // since they arent tied to any widget's lifecycle and need to be cleared manually upon logout
-void resetGlobalData() {
+void resetGlobalData() { // TODO should this go in appwide_setup?
   userLibrary.clear();
   booksLentToMe.clear();
   sentBookRequests.clear();
   receivedBookRequests.clear();
+  lentBookDbKeyToSubscriptionForIt.clear();
+  sentBookRequestBookDbKeyToSubscriptionForIt.clear();
   friendIDs.clear();
-  requestIDs.clear();
+  requestIDs.value.clear();
+  sentFriendRequests.clear();
   // these track or are built up from subscriptions so they should be cleared as well
   friendIdToBooks.clear();
   friendIdToLibrarySubscription.clear();
@@ -56,4 +66,8 @@ void resetGlobalData() {
   userIdToUserModel.clear();
   userIdToProfileSubscription.clear();
   userIdToProfile.clear();
+  idsToFriendList.clear();
+  idToFriendSubscription.clear();
+  requestsAndBooksLoaded.value = 0;
+  numBooksReadyToReturnNotifier.value = 0;
 }

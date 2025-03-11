@@ -1,13 +1,18 @@
 // TODO stuff which can be here. Just ideas to be clear, not requirements. Delete this eventually.
-// logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats, goodreads stuff, rate button which links to google play store,
-// feedback form which links to an anonymous feedback google form or something
+// logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats (its extra feature so not really good to have at this point),
+// goodreads stuff, rate button which links to google play store, feedback form which links to an anonymous feedback google form or something TODO put feedback form for user testing.
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/add_book/goodreads/goodreads_dialog.dart';
-import 'package:library_project/app_startup/auth.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/add_book/goodreads/goodreads_dialog.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/app_startup/auth.dart';
+import 'package:shelfswap/app_startup/login.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Settings extends StatefulWidget {
@@ -21,7 +26,7 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   // at least for the logout its definitely needed, idk about the others, it might not be needed but its meant to prevent spam pressing
   // a button to try to do something many times, for example if we are trying to logout and its not done and user clicks it again,
-  // it shouldnt try do the logout stuff again. I'm just being safe since this page does some big things TODO appbar needs that also since spam pressing logout will cause error
+  // it shouldnt try do the logout stuff again. I'm just being safe since this page does some big things
   bool _pressedAButton = false;
   late final VoidCallback _userLibraryListener;
   late final VoidCallback _booksLentToMeListener;
@@ -98,7 +103,6 @@ class _SettingsState extends State<Settings> {
     if (!shouldProceed) {
       return;
     }
-    // TODO ensure that the removing here also deals with scheduled notifications since currently it doesn't
     for (int i = 0; i < userLibrary.length; i++) {
       await userLibrary[i].remove(widget.user.uid);
     }
@@ -106,8 +110,7 @@ class _SettingsState extends State<Settings> {
       SharedWidgets.displayPositiveFeedbackDialog(context, "Removed All Books");
     }
   }
-  
-  // TODO this. Honestly seems hard to implement.
+
   Future<void> _deleteAccountButtonClicked() async {
     bool hasBookLentOut = false;
     for (int i = 0; i < userLibrary.length; i++) {
@@ -138,7 +141,72 @@ class _SettingsState extends State<Settings> {
       return;
     }
     if (mounted) {
-      SharedWidgets.displayPositiveFeedbackDialog(context, "This does not work yet");
+      // to execute delete() the user needs to be recently authenticated so we just do this before deleting their database stuff
+      // TODO improve error handling for this
+      bool reauthenticationWorked = await reauthenticateUser(context, widget.user);
+      if (!reauthenticationWorked && mounted) {
+        SharedWidgets.displayErrorDialog(context, "There was an error with reauthentication. Please try again");
+        return;
+      }
+    }
+    // 1.) removing all book requests involving this user
+    await removeAllBookRequestsInvolvingThisUser(widget.user.uid, widget.user.uid, deletingThisAccount: true);
+    // 2.) removing users books
+    DatabaseReference usersBooks = dbReference.child('books/${widget.user.uid}');
+    await removeRef(usersBooks);
+    // note that "lent to me" books dont need to removed since we checked to make sure they dont have any books lent to them before letting them delete account.
+    // (assumming everything works correctly. I wonder if its actually optimal to try to remove them anyways just to be safe. No right?)
+    // 3.) removing user's username
+    DatabaseReference usersUsername = dbReference.child('usernames/${userIdToUserModel[widget.user.uid]!.username}');
+    await removeRef(usersUsername);
+    // 4.) removing user's user properties
+    DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
+    await removeRef(usersProperties);
+    DatabaseReference profileInfo = dbReference.child('profileInfo/${widget.user.uid}');
+    await removeRef(profileInfo);
+    // TODO below stuff needs to be done
+    // and friend requests
+    for (String id in sentFriendRequests) {
+      DatabaseReference requestRef = dbReference.child('requests/$id/${widget.user.uid}');
+      await removeRef(requestRef);
+    }
+    DatabaseReference sentRequestsRef = dbReference.child('sentFriendRequests/${widget.user.uid}');
+    await removeRef(sentRequestsRef);
+
+    for (String id in requestIDs.value) {
+      DatabaseReference requestRef = dbReference.child('sentFriendRequests/$id/${widget.user.uid}');
+      await removeRef(requestRef);
+    }
+    DatabaseReference friendRequestsRef = dbReference.child('requests/${widget.user.uid}');
+    await removeRef(friendRequestsRef);
+    
+    // remove the friends
+    // I'm putting friends after requests for the race condition of someone accepting a friend request as an account is being deleted
+    // TODO we should probably consider if more similar race conditions apply
+    for (String friendId in friendIDs) {
+      DatabaseReference friendRef = dbReference.child('friends/$friendId/${widget.user.uid}');
+      await removeRef(friendRef);
+    }
+    DatabaseReference friends = dbReference.child('friends/${widget.user.uid}');
+    await removeRef(friends);
+
+    // and chats
+    // and userTokens (for notification stuff, its easy but its not implemented completely yet so)
+    // and scheduledNotifications stuff (shouldnt exist since no books are lent assuming we even have time to implement it)
+    cancelDatabaseSubscriptions(); // honestly no clue when this should be called but it should be eventually probably at the very end right?
+    // TODO someone else pls check this order cuz idk delete this comment if u think its good
+    userModel.value = null;
+    for (var data in widget.user.providerData) {
+      if (data.providerId == "google.com") {
+        await signOutGoogle(); // dont know if this is even needed or if it works
+      }
+    }
+    await widget.user.delete();
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+    }
+    if (mounted) {
+      SharedWidgets.displayPositiveFeedbackDialog(context, "Account Deleted");
     }
   }
 
@@ -151,114 +219,228 @@ class _SettingsState extends State<Settings> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 25),
+        padding: const EdgeInsets.fromLTRB(10, 25, 10, 25),
         child: Column(
           children: [
-            ElevatedButton(
-              onPressed: () async {
-                if (_pressedAButton) {
-                  return;
-                }
-                _pressedAButton = true;
-                await displayGoodreadsDialog(context, widget.user);
-                _pressedAButton = false;
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue,
-                padding: const EdgeInsets.all(8),
-              ),
-              child: const Text(
-                "Import/Export Goodreads books",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_pressedAButton) {
-                  return;
-                }
-                _pressedAButton = true;
-                logout(context);
-                _pressedAButton = false;
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue,
-                padding: const EdgeInsets.all(8),
-              ),
-              child: const Text(
-                "Logout",
-                style: TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Flexible(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_pressedAButton) {
-                        return;
-                      }
-                      _pressedAButton = true;
-                      await _removeAllBooksButtonClicked();
-                      _pressedAButton = false;
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
-                      padding: const EdgeInsets.all(8),
-                    ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Remove all books",
+            const Row(), // idk how else to make the columns children be in the center of the screen if you know how just do it cuz this cant be optimal ..
+            IntrinsicWidth( // making all 4 buttons the size of the biggest one, this and CrossAxisAlignment.stretch achieve this
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await displayGoodreadsDialog(context, widget.user);
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.skyBlue,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const Text(
+                        "Import/Export Goodreads books",
                         style: TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                   ),
-                ),
-                Flexible(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_pressedAButton) {
-                        return;
-                      }
-                      _pressedAButton = true;
-                      await _deleteAccountButtonClicked();
-                      _pressedAButton = false;
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.skyBlue,
-                      padding: const EdgeInsets.all(8),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await _removeAllBooksButtonClicked();
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 165, 0),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "Remove all books",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                      ),
                     ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Delete account",
+                  ),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await logout(context);
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 147, 164, 180),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const Text(
+                        "Logout",
                         style: TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await _deleteAccountButtonClicked();
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 72, 72),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          "Delete account",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),              
+                ],
+              ),
             ),
             const Spacer(), // I want the stats on the bottom and this is just the perfect use case for Spacer thats crazy
-            const Text(
+            const Text( // can also add stuff like books rdy to return num friends num chat msgs sent num book requests received idk
               "Your Stats",
-              style: TextStyle(fontSize: 20, color: Colors.black),
+              style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
             ),
             Text(
               "Added books: ${userLibrary.length}",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
             Text(
               "Books lent out: $numBooksLent",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
             Text(
               "Books lent to you: ${booksLentToMe.length}",
-              style: const TextStyle(fontSize: 16, color: Colors.black),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<String> displayReenterPasswordDialog(BuildContext context, User user) async {
+  String? passwordInput = await showDialog(
+    context: context,
+    builder: (context) => DisplayReenterPasswordDialog(user),
+  );
+  return passwordInput ?? "";
+}
+
+class DisplayReenterPasswordDialog extends StatefulWidget {
+  final User user;
+  const DisplayReenterPasswordDialog(this.user, {super.key});
+
+  @override
+  State<DisplayReenterPasswordDialog> createState() => _DisplayReenterPasswordDialogState();
+}
+
+class _DisplayReenterPasswordDialogState extends State<DisplayReenterPasswordDialog> {
+  bool _noPasswordInput = false;
+  final _inputPasswordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _inputPasswordController.addListener(() {
+      if (_noPasswordInput && _inputPasswordController.text.isNotEmpty) {
+        setState(() {
+          _noPasswordInput = false;
+        });
+    }});
+  }
+
+  @override
+  void dispose() {
+    _inputPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Material(
+        borderRadius: const BorderRadius.all(Radius.circular(25)), // dialog has a border, Material widget doesnt
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(13, 10, 13, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black,
+                blurRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.user.email!),
+              TextField(
+                controller: _inputPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: "Password",
+                  hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                  fillColor: Colors.white,
+                  filled: true,
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                  ),
+                  errorText: _noPasswordInput ? "Please enter a password" : null,
+                  suffixIcon: IconButton(
+                  onPressed: () {
+                    _inputPasswordController.clear();
+                  },
+                  icon: const Icon(Icons.clear),
+                  ),
+                ),
+                onTapOutside: (event) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context, _inputPasswordController.text);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.skyBlue,
+                  padding: const EdgeInsets.all(8),
+                ),
+                child: const Text(
+                  "Reauthenticate",
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

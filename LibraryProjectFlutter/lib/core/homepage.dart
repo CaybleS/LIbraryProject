@@ -1,12 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/book/book_requests_page.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/book/book_page.dart';
-import 'package:library_project/book/borrowed_book_page.dart';
-import 'package:library_project/ui/colors.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:shelfswap/Social/friends_library/friend_book_page.dart';
+import 'package:shelfswap/book/book_requests_page.dart';
+import 'package:shelfswap/core/app_return_dialog.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/book/book_page.dart';
+import 'package:shelfswap/ui/colors.dart';
 import 'appbar.dart';
 
 enum _SortingOption { dateAdded, title, author }
@@ -29,20 +31,29 @@ class _HomePageState extends State<HomePage> {
   // needed to always be able to sort by 'date added" even when shownList changes to sort by title
   List<int> _unsortedShownList = [];
   List<Book> _shownLibrary = [];
+  final List<LentBookInfo> _booksLentToMeList = [];
   bool _usingBooksLentToMe = false;
   late final VoidCallback
       _homepageContentUpdatedListener; // used to run some stuff everytime we go to this page from the bottombar
   late final VoidCallback _homepageClickedOffListener;
+  late final VoidCallback _bookRequestsAndUserLibraryLoadedListener; // used to show a dialog whenever these 2 are both loaded
   final TextEditingController _filterBooksTextController = TextEditingController();
   _SortingOption _sortSelection = _SortingOption.dateAdded;
   _BooksShowing _showing = _BooksShowing.all;
   bool _sortingAscending = true; // needed to sort from A-Z or Z-A (i need to get to my zucchini book ya know)
-  bool _showEmptyLibraryMsg =
-      false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
+  bool _showEmptyLibraryMsg = false; // just a message to show if user has no books in their library. Arguably not needed but the page may be confusing without it IMO.
+  bool _showingLentOutReadyToReturn = false; // subfilter within "lent" section of filters
+  bool _showingLentToMeReadyToReturn = false; // subfilter within "lent to me" section of filters
+  int _numLentToMeBooksReadyToReturn = 0; // for the lent to me section this is for the filter of ready to return "lent to me" books
 
   @override
   void initState() {
     super.initState();
+    // removing the splash screen when homepage is loaded (in the case where user starts the app and is already logged in so as to not
+    // display the login screen for half a second while auth checks if they are signed in). This needs to be done in post frame callback
+    // since initState() apparently is called before the page is actually built so if we do it normally it shows the previous page still.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _removeSplashScreen());
+    _fillBooksLentToMeList();
     _homepageContentUpdatedListener = () {
       // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
       if (selectedIndex == homepageIndex) {
@@ -51,6 +62,7 @@ class _HomePageState extends State<HomePage> {
         } else {
           _showEmptyLibraryMsg = false;
         }
+        _fillBooksLentToMeList();
         _updateList();
       }
     };
@@ -60,18 +72,42 @@ class _HomePageState extends State<HomePage> {
         // the bottombar also has logic to refresh the page when we go back to it; this is the
         // normal contant updated refresher which does this
         _resetFilters();
+        // TODO is this good idk who knows but its just meant to when you have books ready to return auto move to lend tab when clicking to homepage
+        if (numBooksReadyToReturnNotifier.value != 0) {
+          _showing = _BooksShowing.lent;
+          _changeDisplay(_showing);
+        }
+      }
+    };
+    _bookRequestsAndUserLibraryLoadedListener = () {
+      if (requestsAndBooksLoaded.value == 2) {
+        displayAppReturnDialog(context, widget.user);
+        requestsAndBooksLoaded.removeListener(_bookRequestsAndUserLibraryLoadedListener);
       }
     };
     bottombarIndexChangedNotifier.addListener(_homepageClickedOffListener);
     pageDataUpdatedNotifier.addListener(_homepageContentUpdatedListener);
+    requestsAndBooksLoaded.addListener(_bookRequestsAndUserLibraryLoadedListener);
   }
 
   @override
   void dispose() {
     pageDataUpdatedNotifier.removeListener(_homepageContentUpdatedListener);
     bottombarIndexChangedNotifier.removeListener(_homepageClickedOffListener);
+    requestsAndBooksLoaded.removeListener(_bookRequestsAndUserLibraryLoadedListener);
     _filterBooksTextController.dispose();
     super.dispose();
+  }
+
+  void _removeSplashScreen() {
+    FlutterNativeSplash.remove();
+  }
+
+  void _fillBooksLentToMeList() {
+    _booksLentToMeList.clear();
+    booksLentToMe.forEach((k, v) {
+      _booksLentToMeList.add(v);
+    });
   }
 
   // note that these sorting and filtering functions are only changing the composition of shownList.
@@ -174,7 +210,10 @@ class _HomePageState extends State<HomePage> {
   void _bookClicked(int index) async {
     if (_usingBooksLentToMe) {
       await Navigator.push(
-          context, MaterialPageRoute(builder: (context) => BorrowedBookPage(booksLentToMe[index], widget.user)));
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  FriendBookPage(widget.user, _booksLentToMeList[index].book, _booksLentToMeList[index].lenderId!)));
     } else {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(userLibrary[index], widget.user)));
     }
@@ -184,7 +223,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   // this is needed to change the display button colors
-  void _changeDisplay(_BooksShowing state) {
+  void _changeDisplay(_BooksShowing state) { // TODO should the buttons show how many are there? Like how to tell if a book is lent to you now? They just appear with no feedback ya know.
+    _showingLentOutReadyToReturn = false; // when user clicks off lent tab this just gets unset, resetting that subfilter to avoid confusion
+    _showingLentToMeReadyToReturn = false;
     _showing = state;
     _updateList();
   }
@@ -203,15 +244,40 @@ class _HomePageState extends State<HomePage> {
         }
         break;
       case _BooksShowing.lent:
-        for (int i = 0; i < userLibrary.length; i++) {
-          if (userLibrary[i].lentDbKey != null) {
-            _shownList.add(i);
+        if (_showingLentOutReadyToReturn) {
+          for (int i = 0; i < userLibrary.length; i++) {
+            if (userLibrary[i].lentDbKey != null && userLibrary[i].readyToReturn == true) {
+              _shownList.add(i);
+            }
+          }
+        }
+        else {
+          for (int i = 0; i < userLibrary.length; i++) {
+            if (userLibrary[i].lentDbKey != null) {
+              _shownList.add(i);
+            }
           }
         }
         break;
       case _BooksShowing.lentToMe:
         _usingBooksLentToMe = true;
-        _shownList = Iterable<int>.generate(booksLentToMe.length).toList();
+        _numLentToMeBooksReadyToReturn = 0;
+        if (_showingLentToMeReadyToReturn) {
+          for (int i = 0; i < _booksLentToMeList.length; i++) {
+            if (_booksLentToMeList[i].book.readyToReturn == true) {
+              _numLentToMeBooksReadyToReturn++;
+              _shownList.add(i);
+            }
+          }
+        }
+        else {
+          for (int i = 0; i < _booksLentToMeList.length; i++) {
+            _shownList.add(i); // adding irrelevant of the readyToReturn bool, but still counting that bool cuz it needs to be counted
+            if (_booksLentToMeList[i].book.readyToReturn == true) {
+              _numLentToMeBooksReadyToReturn++;
+            }
+          }
+        }
         break;
     }
     _unsortedShownList = List.from(_shownList);
@@ -221,7 +287,9 @@ class _HomePageState extends State<HomePage> {
     _usingBooksLentToMe = _showing == _BooksShowing.lentToMe;
 
     _setShownListWithNoFilters();
-    _shownLibrary = _usingBooksLentToMe ? booksLentToMe.map((item) => item.book).toList() : userLibrary;
+    _shownLibrary = _usingBooksLentToMe
+      ? _booksLentToMeList.map((item) => item.book).toList()
+      : userLibrary;
     if (_filterBooksTextController.text.isNotEmpty) {
       // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
       // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
@@ -481,6 +549,72 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _displayLentReadyToReturnFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "You have ${numBooksReadyToReturnNotifier.value} books ready to return.",
+            style: const TextStyle(fontSize: 14),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: (numBooksReadyToReturnNotifier.value > 0 || _showingLentOutReadyToReturn)
+            ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () {
+                _showingLentOutReadyToReturn = !_showingLentOutReadyToReturn;
+                _updateList();
+              },
+              child: Text(
+                (_showingLentOutReadyToReturn) ? "Unview" : "View",
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            )
+            : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+Widget _displayLentToMeReadyToReturnFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "You have marked $_numLentToMeBooksReadyToReturn books ready to return.",
+            style: const TextStyle(fontSize: 14),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
+            child: (_numLentToMeBooksReadyToReturn > 0 || _showingLentToMeReadyToReturn)
+            ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+              ),
+              onPressed: () {
+                _showingLentToMeReadyToReturn = !_showingLentToMeReadyToReturn;
+                _updateList();
+              },
+              child: Text(
+                (_showingLentToMeReadyToReturn) ? "Unview" : "View",
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            )
+            : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _displayInfoOnRequests() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -512,7 +646,15 @@ class _HomePageState extends State<HomePage> {
       appBar: CustomAppBar(widget.user),
       body: Column(
         children: [
-          Padding(padding: const EdgeInsets.fromLTRB(8, 10, 8, 5), child: _displayShowButtons()),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 5),
+              child: _displayShowButtons()),
+              (_showing == _BooksShowing.lent)
+              ? _displayLentReadyToReturnFilter()
+              : const SizedBox.shrink(),
+              (_showing == _BooksShowing.lentToMe)
+              ? _displayLentToMeReadyToReturnFilter()
+              : const SizedBox.shrink(),
           Padding(
             padding: const EdgeInsets.fromLTRB(19, 8, 19, 5),
             child: Row(
@@ -630,7 +772,47 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                             _usingBooksLentToMe
-                                ? const SizedBox.shrink()
+                                ? (_shownLibrary[_shownList[index]].readyToReturn != true)
+                                  ? ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColor.pink, padding: const EdgeInsets.all(8),
+                                    ),
+                                    onPressed: () {
+                                      _shownLibrary[_shownList[index]].readyToReturn = true;
+                                      _shownLibrary[_shownList[index]].update();
+                                      setState(() {});
+                                    },
+                                    child: const FittedBox(
+                                      child: Text("Ready To Return",
+                                        style: TextStyle(color: Colors.black, fontSize: 12)),
+                                      ),
+                                    )
+                                  : Column(
+                                    children: [
+                                      const Flexible(
+                                        child: Text("Book flagged as"),
+                                      ),
+                                      const Flexible(
+                                        child: Text("ready to return"),
+                                      ),
+                                      Flexible(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColor.pink, padding: const EdgeInsets.all(8),
+                                          ),
+                                          onPressed: () {
+                                            _shownLibrary[_shownList[index]].readyToReturn = null;
+                                            _shownLibrary[_shownList[index]].update();
+                                            setState(() {});
+                                          },
+                                          child: const FittedBox(
+                                            child: Text("Undo",
+                                            style: TextStyle(color: Colors.black, fontSize: 12)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
                                 : SizedBox(
                                     width: 80,
                                     child: Column(
@@ -651,6 +833,19 @@ class _HomePageState extends State<HomePage> {
                                             softWrap: true,
                                           ),
                                         ),
+                                        (_showing != _BooksShowing.lentToMe && _shownLibrary[_shownList[index]].readyToReturn == true)
+                                        ? Flexible(
+                                          child: FittedBox(
+                                            child: Text(
+                                              "Ready to Return",
+                                              style: TextStyle(
+                                                color: availableTxtColor,
+                                                fontSize: 14),
+                                              softWrap: true,
+                                            ),
+                                          ),
+                                        )
+                                        : const SizedBox.shrink(),
                                         Flexible(
                                           child: IconButton(
                                             onPressed: () => {_favoriteButtonClicked(_shownList[index])},

@@ -65,7 +65,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'libraryproject10-2f3aa.appspot.com',
     androidClientId: '827528856030-4eu2uih2o40jqdtqq5mq0l4k9tm0vj7n.apps.googleusercontent.com',
     iosClientId: '827528856030-lp7mlv6j1ckn1ao3u0nj94guks9o5sgo.apps.googleusercontent.com',
-    iosBundleId: 'com.example.libraryProject',
+    iosBundleId: 'com.shelfSwap',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -76,7 +76,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'libraryproject10-2f3aa.appspot.com',
     androidClientId: '827528856030-4eu2uih2o40jqdtqq5mq0l4k9tm0vj7n.apps.googleusercontent.com',
     iosClientId: '827528856030-lp7mlv6j1ckn1ao3u0nj94guks9o5sgo.apps.googleusercontent.com',
-    iosBundleId: 'com.example.libraryProject',
+    iosBundleId: 'com.shelfSwap',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

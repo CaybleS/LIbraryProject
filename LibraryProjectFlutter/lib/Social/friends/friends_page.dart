@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/Social/friends_library/friends_library_page.dart';
-import 'package:library_project/Social/profile/profile.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/Social/friends_library/friends_library_page.dart';
+import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import '../../database/database.dart';
 import 'add_friend_page.dart';
 import '../../core/appbar.dart';
@@ -24,7 +24,6 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   List<String> showRequests = [];
   List<String> showFriends = [];
-  String _selected = "list";
   late final VoidCallback _friendpageListener;
 
   @override
@@ -48,7 +47,7 @@ class _FriendsPageState extends State<FriendsPage> {
 
   void updateLists() async {
     showFriends = friendIDs;
-    showRequests = requestIDs;
+    showRequests = requestIDs.value;
     setState(() {});
   }
 
@@ -58,24 +57,23 @@ class _FriendsPageState extends State<FriendsPage> {
     updateLists();
   }
 
-  Future<void> changeDisplay(String state) async {
+  Future<void> changeDisplay(int state) async {
     setState(() {
-      _selected = state;
+      friendPageTabSelected = state;
     });
   }
 
   void _acceptClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Accepted");
-    await addFriend(requestIDs[index], widget.user.uid);
+    await addFriend(showRequests[index], widget.user.uid);
     updateLists();
   }
 
   void _denyClicked(int index, BuildContext context) async {
     SharedWidgets.displayPositiveFeedbackDialog(
         context, "Friend Request Deleted");
-    // await requests[index].delete();
-    await removeRef(FirebaseDatabase.instance.ref('requests/${widget.user.uid}/${requestIDs[index]}'));
+    await removeFriendRequest(showRequests[index], widget.user.uid);
     updateLists();
   }
 
@@ -85,11 +83,11 @@ class _FriendsPageState extends State<FriendsPage> {
       AppColor.skyBlue,
     ];
 
-    switch (_selected) {
-      case "list":
+    switch (friendPageTabSelected) {
+      case 0:
         buttonColor[0] = const Color.fromARGB(255, 117, 117, 117);
         break;
-      case "requests":
+      case 1:
         buttonColor[1] = const Color.fromARGB(255, 117, 117, 117);
         break;
       default:
@@ -104,10 +102,10 @@ class _FriendsPageState extends State<FriendsPage> {
               backgroundColor: buttonColor[0],
               padding: const EdgeInsets.all(8)),
           onPressed: () {
-            if (_selected == "list") {
+            if (friendPageTabSelected == 0) {
               return;
             } else {
-              changeDisplay("list");
+              changeDisplay(0);
             }
           },
           child: const Text(
@@ -121,10 +119,10 @@ class _FriendsPageState extends State<FriendsPage> {
               backgroundColor: buttonColor[1],
               padding: const EdgeInsets.all(8)),
           onPressed: () {
-            if (_selected == "requests") {
+            if (friendPageTabSelected == 1) {
               return;
             } else {
-              changeDisplay("requests");
+              changeDisplay(1);
             }
           },
           child: const Text(
@@ -141,7 +139,13 @@ class _FriendsPageState extends State<FriendsPage> {
         itemCount: showRequests.length,
         itemBuilder: (BuildContext context, int index) {
           return InkWell(
-              onTap: () {}, // TODO link to user profile
+              onTap: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            Profile(widget.user, showRequests[index])));
+              },
               child: SizedBox(
                   height: 100,
                   child: Card(
@@ -180,7 +184,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    userIdToUserModel[showRequests[index]]!.email,
+                                    userIdToUserModel[showRequests[index]]!.username,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -254,7 +258,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     MaterialPageRoute(
                         builder: (context) =>
                             Profile(widget.user, showFriends[index])));
-              }, // TODO link to user profile
+              },
               child: SizedBox(
                   height: 100,
                   child: Card(
@@ -293,7 +297,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                 Align(
                                   alignment: Alignment.topLeft,
                                   child: Text(
-                                    userIdToUserModel[showFriends[index]]!.email,
+                                    userIdToUserModel[showFriends[index]]!.username,
                                     style: const TextStyle(
                                         color: Colors.black, fontSize: 14),
                                     softWrap: true,
@@ -314,7 +318,7 @@ class _FriendsPageState extends State<FriendsPage> {
                                               builder: (context) =>
                                                   FriendsLibraryPage(
                                                       widget.user,
-                                                      userIdToUserModel[friendIDs[index]]!)));
+                                                      userIdToUserModel[showFriends[index]]!)));
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColor.pink),
@@ -332,7 +336,7 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(widget.user),
+      appBar: CustomAppBar(widget.user, title: "Friends"),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.green,
           onPressed: () {
@@ -352,7 +356,7 @@ class _FriendsPageState extends State<FriendsPage> {
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.fromLTRB(15, 1, 15, 25),
-              child: _selected == "list"
+              child: friendPageTabSelected == 0
                   ? (showFriends.isNotEmpty ? displayFriends() : const SizedBox.shrink())
                   : (showRequests.isNotEmpty ? displayRequests() : const SizedBox.shrink()),
             ))

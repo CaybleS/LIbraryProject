@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:library_project/ui/colors.dart';
-import 'package:library_project/ui/shared_widgets.dart';
+import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'auth.dart';
 
 class CreateAccount extends StatefulWidget {
@@ -70,16 +70,10 @@ class _CreateAccountState extends State<CreateAccount> {
           backgroundColor: AppColor.appbarColor,
           leading: GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(IconsaxPlusLinear.arrow_left_1, color: Colors.white, size: 30),
+            child: const Icon(Icons.arrow_back),
           ),
           title: const Text(
             'Create Account',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 25,
-              fontFamily: 'Poppins',
-            ),
           ),
           centerTitle: true,
         ),
@@ -95,7 +89,6 @@ class _CreateAccountState extends State<CreateAccount> {
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
-                    style: const TextStyle(fontFamily: 'Poppins'),
                     decoration: InputDecoration(
                         hintText: 'Display Name',
                         hintStyle: const TextStyle(color: Colors.grey),
@@ -111,7 +104,6 @@ class _CreateAccountState extends State<CreateAccount> {
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
-                    style: const TextStyle(fontFamily: 'Poppins'),
                     decoration: InputDecoration(
                         hintText: 'Email',
                         hintStyle: const TextStyle(color: Colors.grey),
@@ -127,7 +119,7 @@ class _CreateAccountState extends State<CreateAccount> {
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
-                    style: const TextStyle(fontFamily: 'Poppins'),
+                    obscureText: true,
                     decoration: InputDecoration(
                         hintText: 'Password',
                         hintStyle: const TextStyle(color: Colors.grey),
@@ -172,7 +164,6 @@ class _CreateAccountState extends State<CreateAccount> {
                         'Verification email sent! Please check your inbox and follow the link to verify your account.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'Poppins',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),

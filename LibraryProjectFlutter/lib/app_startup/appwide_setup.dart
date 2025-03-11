@@ -1,25 +1,34 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/database/subscriptions.dart';
-import 'package:library_project/models/book.dart';
-import 'package:library_project/models/profile_info.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/database/subscriptions.dart';
+import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/profile_info.dart';
 import 'dart:async';
-import 'package:library_project/models/user.dart';
+import 'package:shelfswap/models/user.dart';
 
 late StreamSubscription<DatabaseEvent> _userLibrarySubscription;
 late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
+// all 3 of these, the lent book info, sent, and received book requests, all store in their data structure a book of some kind
+// so we need subscriptions to ensure this book is up to date with the database. For example, a received book request on a non-lent book
+// would be tied to a non-lent book even if that book later gets lent out, which is why this is definitely needed.
+Map<String, StreamSubscription> lentBookDbKeyToSubscriptionForIt = {};
+Map<String, StreamSubscription> sentBookRequestBookDbKeyToSubscriptionForIt = {};
 late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
+late StreamSubscription<DatabaseEvent> _sentFriendRequestsSubscription;
 Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
 Map<String, UserModel> userIdToUserModel = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToProfileSubscription = {};
 Map<String, ProfileInfo> userIdToProfile = {};
+Map<String, StreamSubscription<DatabaseEvent>> idToFriendSubscription = {};
+Map<String, List<String>> idsToFriendList = {};
+Completer<void> userLibraryLoaded = Completer<void>();
 
 void setupDatabaseSubscriptions(User user) {
   userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
@@ -29,7 +38,8 @@ void setupDatabaseSubscriptions(User user) {
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
   _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
   _friendsSubscription = setupFriendsSubscription(friendIDs, user, _friendsUpdated);
-  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendRequestsUpdated);
+  _sentFriendRequestsSubscription = setupSentFriendRequestSubscription(sentFriendRequests, user.uid, _sentFriendRequestsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
@@ -39,9 +49,13 @@ void cancelDatabaseSubscriptions() {
   _requestsSubscription.cancel();
   _sentBookRequestsSubscription.cancel();
   _receivedBookRequestsSubscription.cancel();
+  _sentFriendRequestsSubscription.cancel();
   friendIdToLibrarySubscription.forEach((k, v) => v.cancel());
   userIdToSubscription.forEach((k, v) => v.cancel());
   userIdToProfileSubscription.forEach((k, v) => v.cancel());
+  idToFriendSubscription.forEach((k, v) => v.cancel());
+  lentBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
+  sentBookRequestBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
   resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 
@@ -97,6 +111,18 @@ void _friendsUpdated() {
   }
 }
 
+void _sentFriendRequestsUpdated() {
+  if (selectedIndex == friendsPageIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
+void _friendRequestsUpdated() {
+  if (selectedIndex == friendsPageIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
 void friendsBooksUpdated() {
   if (selectedIndex == friendsPageIndex) {
     updatePageDataRefreshNotifier();
@@ -121,6 +147,12 @@ void profileUpdated() {
   }
 }
 
+void friendOfFriendUpdated() {
+  if (selectedIndex == profileIndex) {
+    updatePageDataRefreshNotifier();
+  }
+}
+
 // the bottombar works by using 5 nested navigators for each 5 bottombar options, with global keys to identify each one
 final List<GlobalKey<NavigatorState>> navigatorKeys = [
   GlobalKey<NavigatorState>(),
@@ -132,14 +164,20 @@ final List<GlobalKey<NavigatorState>> navigatorKeys = [
 
 // both the bottombar and the appbar call this function
 void bottombarItemTapped(int index) {
+  if (index == friendsPageIndex && requestIDs.value.isNotEmpty) {
+    // Will put user on the requests page when clicking on bottombar when there is a number (aka when you have a friend request)
+    friendPageTabSelected = 1;
+  }
+
   if (index == selectedIndex) {
     // If the user taps the current tab, pop to the root route of that tab
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
   } else {
     bottombarIndexChangedNotifier.value = -1;
+    bottombarIndexChangedNotifier.value = selectedIndex; // signaling the page we switched to so it can refresh itself if it wants // TODO test this when have time
     bottombarIndexChangedNotifier.value = prevIndex; // signaling the page we switched off so it can refresh itself now if it wants to
-    // so if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to be
-    // done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
+    // for this popUntil, if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to
+    // be done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
     navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);
     selectedIndex = index; // switching to selected tab
     refreshBottombar.value = true;
