@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/app_startup/first_profile_setup.dart';
 import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/core/services/secure_chat_service.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/user.dart';
 import 'login.dart';
@@ -13,7 +14,8 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
 
 Future<void> _setupProfileAndAddUser(User user, BuildContext context, {String? usernameFromEmail}) async {
-  String username = await Navigator.push(context, MaterialPageRoute(builder: (context) => FirstProfileSetup(user, usernameFromEmail: usernameFromEmail)));
+  String username = await Navigator.push(
+      context, MaterialPageRoute(builder: (context) => FirstProfileSetup(user, usernameFromEmail: usernameFromEmail)));
   addUser(user, username);
 }
 
@@ -21,7 +23,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
   try {
     final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
     final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
-    if(googleSignInAuthentication == null) return null;
+    if (googleSignInAuthentication == null) return null;
 
     final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleSignInAuthentication.idToken, accessToken: googleSignInAuthentication.accessToken);
@@ -30,7 +32,6 @@ Future<User?> signInWithGoogle(BuildContext context) async {
     final User? user = userCredential.user;
 
     if (user != null) {
-
       if (!(await userExists(user.uid))) {
         if (context.mounted) {
           // this feteches the part of the email before the @ to use as placeholder default username input
@@ -56,6 +57,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
       }
 
       await changeStatus(true);
+      await SecureChatService.instance.initialize(user.uid);
 
       return user;
     } else {
@@ -98,12 +100,12 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
       debugPrint("user null");
     }
 
-    if (userCredential.user?.emailVerified == false) {
-      return {
-        'status': false,
-        'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
-      };
-    }
+    // if (userCredential.user?.emailVerified == false) {
+    //   return {
+    //     'status': false,
+    //     'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
+    //   };
+    // }
 
     await changeStatus(true);
     final userRef = await dbReference.child('users/${userCredential.user!.uid}').once();
@@ -111,6 +113,7 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
       Map data = userRef.snapshot.value as Map;
       userModel.value = UserModel.fromJson(data, userRef.snapshot.key!);
     }
+    await SecureChatService.instance.initialize(userCredential.user!.uid);
 
     return {'status': true, 'user': userCredential.user};
   } catch (e) {

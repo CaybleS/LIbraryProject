@@ -281,7 +281,7 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
     final messageId = _database.child('messages/$chatId').push().key;
     MessageModel message = MessageModel(
       id: messageId!,
-      text: '${userModel.value!.name} created the group «${controller.text.trim()}»',
+      content: '${userModel.value!.name} created the group «${controller.text.trim()}»',
       senderId: userModel.value!.uid,
       sentTime: DateTime.now().toUtc(),
       type: MessageType.event,

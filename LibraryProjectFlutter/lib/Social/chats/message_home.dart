@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/Social/chats/private_chat_screen.dart';
+import 'package:library_project/app_startup/appwide_setup.dart';
 import 'package:library_project/core/appbar.dart';
 import 'package:library_project/core/global_variables.dart';
-import 'package:library_project/core/conditional_widget.dart';
 import 'package:library_project/database/database.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/Social/chats/chat_screen.dart';
@@ -17,7 +17,8 @@ import 'package:library_project/models/user.dart';
 import 'package:library_project/ui/widgets/user_avatar_widget.dart';
 
 class MessageHome extends StatefulWidget {
-  final User user; // only used for rendering the appbar
+  final User user;
+
   const MessageHome(this.user, {super.key});
 
   @override
@@ -25,225 +26,236 @@ class MessageHome extends StatefulWidget {
 }
 
 class _MessageHomeState extends State<MessageHome> {
-  final _database = FirebaseDatabase.instance.ref();
   ValueNotifier<String> searchQuery = ValueNotifier('');
-  // Since this page is loaded into memory via offstage from the bottombar right when the app starts up, it would previously try to setup
-  // streams listening on user's data, but the user is not fetched yet. So this listener simply waits for the user data to be fetched
-  // and just refreshes the page. There is also logic to not render the page at all in the build method until the userModel value is set.
-  late final VoidCallback _userHasBeenSetListener;
+  ValueNotifier<List<Chat>> chatsNotifier = ValueNotifier<List<Chat>>([]);
+  List<Chat> allChats = [];
+  List<UserModel> contacts = [];
 
   @override
   void initState() {
     super.initState();
-    _userHasBeenSetListener = () {
-      if (userModel.value != null) {
-        // user is set here so we can start rendering this page
-        setState(() {});
-        userModel.removeListener(_userHasBeenSetListener);
-      }
-    };
-    userModel.addListener(_userHasBeenSetListener);
+    searchQuery.addListener(_filterChats);
+    userModel.addListener(_onUserModelChanged);
+
+    if (userModel.value != null) {
+      _loadChats();
+    }
   }
 
   @override
   void dispose() {
-    userModel.removeListener(_userHasBeenSetListener); // if the listener is already removed this call gets ignored so its fine
+    searchQuery.removeListener(_filterChats);
+    searchQuery.dispose();
+    userModel.removeListener(_onUserModelChanged);
+    chatsNotifier.dispose();
     super.dispose();
+  }
+
+  void _onUserModelChanged() {
+    if (userModel.value != null) {
+      _loadChats();
+    }
+  }
+
+  void _filterChats() {
+    if (searchQuery.value.isEmpty) {
+      chatsNotifier.value = List.from(allChats);
+      return;
+    }
+
+    final query = searchQuery.value.toLowerCase();
+    chatsNotifier.value = allChats.where((chat) {
+      if (chat.type == ChatType.private) {
+        final contactId = chat.participants[0] == userModel.value!.uid ? chat.participants[1] : chat.participants[0];
+        final contact = userIdToUserModel[contactId];
+        if (contact != null) {
+          return contact.name.toLowerCase().contains(query);
+        }
+        return false;
+      } //
+      else {
+        return chat.name.toLowerCase().contains(query);
+      }
+    }).toList();
+  }
+
+  Future<void> _loadChats() async {
+    dbReference.child('userChats/${userModel.value!.uid}').onValue.listen((event) async {
+      final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (chatsMap == null) {
+        allChats = [];
+        chatsNotifier.value = [];
+        return;
+      }
+
+      List<Chat> loadedChats = [];
+      for (var entry in chatsMap.entries) {
+        final chatId = entry.key;
+        final unreadCount = entry.value['unreadCount'] as int;
+        final lastMessage = entry.value['lastMessage'];
+
+        try {
+          final chatSnapshot = await dbReference.child('chats/$chatId').get();
+          if (chatSnapshot.exists) {
+            final chatData = chatSnapshot.value as Map<dynamic, dynamic>;
+            final chatModel = Chat.fromJson(chatId, chatData);
+
+            Chat updatedChat;
+            if (lastMessage != null) {
+              updatedChat = chatModel.copyWith(
+                unreadCount: unreadCount,
+                lastMessage: lastMessage['text'],
+                lastMessageSender: lastMessage['sender'],
+                lastMessageTime: DateTime.fromMillisecondsSinceEpoch(lastMessage['timestamp']),
+              );
+            } else {
+              updatedChat = chatModel;
+            }
+
+            loadedChats.add(updatedChat);
+          }
+        } catch (e) {
+          print('Error loading chat $chatId: $e');
+        }
+      }
+
+      loadedChats.sort((a, b) => (b.lastMessageTime ?? DateTime(1970)).compareTo(a.lastMessageTime ?? DateTime(1970)));
+
+      allChats = loadedChats;
+      _filterChats();
+    });
   }
 
   void goToNewChatScreen() {
     Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateChatScreen()));
   }
 
+  Widget _buildChatItem(BuildContext context, Chat chat) {
+    if (chat.type == ChatType.private) {
+      final contactId = chat.participants[0] == userModel.value!.uid ? chat.participants[1] : chat.participants[0];
+
+      final contact = userIdToUserModel[contactId];
+      if (contact == null) {
+        return Container(
+          height: 70,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: <Widget>[
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.primaries[Random().nextInt(Colors.primaries.length)],
+                ),
+                width: 50,
+                height: 50,
+                alignment: Alignment.center,
+                child: const Text(
+                  'L',
+                  style: TextStyle(color: Colors.black, fontSize: 20),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Loading...',
+                    style: TextStyle(color: Colors.black, fontSize: 18),
+                  ),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+
+      return _chatItemBuilder(context, chat, contact);
+    } //
+    else {
+      return _chatItemBuilder(context, chat, null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (userModel.value == null) { // This page's logic requires userModel value to be set. This page's initState() handles it.
-      return const SizedBox.shrink();
-    }
-    final size = MediaQuery.of(context).size;
-    return Scaffold(
-      appBar: CustomAppBar(widget.user, title: "Chats"),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          goToNewChatScreen();
-        },
-        backgroundColor: Colors.green,
-        label: const Text(
-          'New Chat',
-          style: TextStyle(fontSize: 20),
-        ),
-        icon: const Icon(
-          Icons.add,
-          size: 30,
-        ),
-        splashColor: Colors.blue,
-        heroTag: UniqueKey(),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Container(
-            alignment: Alignment.center,
-            width: size.width * .85,
-            child: SearchBar(
-              onTapOutside: (event) {
-                FocusManager.instance.primaryFocus?.unfocus();
-              },
-              onChanged: (value) {
-                searchQuery.value = value;
-              },
+    return ValueListenableBuilder(
+      valueListenable: userModel,
+      builder: (context, value, child) {
+        if (value == null) {
+          return const SizedBox.shrink();
+        }
+        final size = MediaQuery.of(context).size;
+        return Scaffold(
+          appBar: CustomAppBar(widget.user, title: "Chats"),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: goToNewChatScreen,
+            backgroundColor: Colors.green,
+            label: const Text(
+              'New Chat',
+              style: TextStyle(fontSize: 20),
             ),
+            icon: const Icon(
+              Icons.add,
+              size: 30,
+            ),
+            splashColor: Colors.blue,
+            heroTag: UniqueKey(),
           ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: StreamBuilder(
-              stream: getChatList(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(
-                      child: Text(
-                    'Error: ${snapshot.error}',
-                  ));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                      child: Text(
-                    'No chats found.',
-                  ));
-                }
-                List<Chat> chats = snapshot.data!;
-
-                return ValueListenableBuilder<String>(
-                  valueListenable: searchQuery,
-                  builder: (context, value, child) {
-                    List<Chat> filteredChats = snapshot.data!;
-                    if (value.isNotEmpty) {
-                      filteredChats =
-                          chats.where((chat) => chat.name.toLowerCase().contains(value.toLowerCase())).toList();
-                    } //
-                    else {
-                      filteredChats = snapshot.data!;
-                    }
-                    if (filteredChats.isEmpty) {
+          body: Column(
+            children: [
+              const SizedBox(height: 20),
+              Container(
+                alignment: Alignment.center,
+                width: size.width * .85,
+                child: SearchBar(
+                  onTapOutside: (event) {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  onChanged: (value) {
+                    searchQuery.value = value;
+                  },
+                  hintText: 'Search',
+                ),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ValueListenableBuilder<List<Chat>>(
+                  valueListenable: chatsNotifier,
+                  builder: (context, chats, child) {
+                    if (chats.isEmpty) {
                       return const Center(
                         child: Text(
                           'No chats found.',
                         ),
                       );
                     }
+
                     return ListView.separated(
-                      itemCount: filteredChats.length,
+                      itemCount: chats.length,
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                       itemBuilder: (context, index) {
-                        final chat = filteredChats[index];
-                        UserModel? contact;
-                        return ConditionalWidget.single(
-                          context: context,
-                          conditionBuilder: (context) => chat.type == ChatType.private,
-                          widgetBuilder: (context) {
-                            final contactId = chat.participants[0] == userModel.value!.uid
-                                ? chat.participants[1]
-                                : chat.participants[0];
-                            return StreamBuilder(
-                              stream: _database.child('users/$contactId').onValue,
-                              builder: (context, snapshot) {
-                                if (snapshot.data?.snapshot.value == null) {
-                                  return Container(
-                                    height: 70,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                                    ),
-                                    padding: const EdgeInsets.all(10),
-                                    child: Row(
-                                      children: <Widget>[
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.primaries[Random().nextInt(Colors.primaries.length)],
-                                          ),
-                                          width: 50,
-                                          height: 50,
-                                          alignment: Alignment.center,
-                                          child: const Text(
-                                            'L',
-                                            style: TextStyle(color: Colors.black, fontSize: 20),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        const Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Loading...',
-                                              style:
-                                                  TextStyle(color: Colors.black, fontSize: 18),
-                                            ),
-                                            Text(
-                                              'Loading...',
-                                              style: TextStyle(color: Colors.black),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                } //
-                                contact = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
-                                return _chatItemBuilder(context, chat, contact);
-                              },
-                            );
-                          },
-                          fallbackBuilder: (context) {
-                            return _chatItemBuilder(context, chat, contact);
-                          },
-                        );
+                        final chat = chats[index];
+                        return _buildChatItem(context, chat);
                       },
                       separatorBuilder: (context, index) => const SizedBox(height: 10),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  Stream<List<Chat>> getChatList() {
-    return _database.child('userChats/${userModel.value!.uid}').onValue.asyncMap((event) async {
-      final chatsMap = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (chatsMap == null) return [];
-
-      final List<Chat> chats = [];
-      for (var entry in chatsMap.entries) {
-        final chatId = entry.key;
-        final unreadCount = entry.value['unreadCount'] as int;
-        final lastMessage = entry.value['lastMessage'];
-        final chatRef = _database.child('chats/$chatId');
-
-        final chatSnapshot = await chatRef.get();
-        if (chatSnapshot.exists) {
-          final chatData = chatSnapshot.value as Map<dynamic, dynamic>;
-          final chatModel = Chat.fromJson(chatId, chatData);
-          if (lastMessage != null) {
-            chats.add(chatModel.copyWith(
-              unreadCount: unreadCount,
-              lastMessage: lastMessage['text'],
-              lastMessageSender: lastMessage['sender'],
-              lastMessageTime: DateTime.fromMillisecondsSinceEpoch(lastMessage['timestamp']),
-            ));
-          } //
-          else {
-            chats.add(chatModel);
-          }
-        }
-      }
-      return chats..sort((a, b) => b.lastMessageTime!.compareTo(a.lastMessageTime!));
-    });
   }
 
   String _formatTimestamp(DateTime date) {
@@ -385,7 +397,10 @@ class _MessageHomeState extends State<MessageHome> {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PrivateChatScreen(chatRoomId: chat.id, contact: contact!),
+                builder: (context) => PrivateChatScreen(
+                  chatRoomId: chat.id,
+                  contact: contact!,
+                ),
               ),
             );
           } //
@@ -504,7 +519,7 @@ class _MessageHomeState extends State<MessageHome> {
       final id = dbReference.child('messages/${chat.id}').push().key;
       MessageModel message = MessageModel(
         id: id!,
-        text: '${userModel.value!.name} left the group',
+        content: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
         sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
@@ -512,7 +527,7 @@ class _MessageHomeState extends State<MessageHome> {
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
 
       for (final participantId in chat.participants) {
-        if(participantId == userModel.value!.uid) continue;
+        if (participantId == userModel.value!.uid) continue;
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',

@@ -146,7 +146,8 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                   const Text(
                                     'Add Members',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold, color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
                                     ),
                                   ),
                                 ],
@@ -180,26 +181,28 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                    Text(
-                                      members[index].name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      // kGetTime(members[index].lastSignedIn),
-                                      members[index].username,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                )),
+                                      Text(
+                                        members[index].name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        // kGetTime(members[index].lastSignedIn),
+                                        members[index].username,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 SizedBox(
                                   width: 60,
                                   child: Text(
                                     members[index].uid == chat.createdBy ? 'Owner' : '',
                                     style: const TextStyle(
-                                      color: Colors.green, fontWeight: FontWeight.w500,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -276,7 +279,9 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                     if (textEditingValue.text == '') {
                       return const Iterable<UserModel>.empty();
                     } else {
-                      var filtered = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid) && friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
+                      var filtered = userIdToUserModel.entries.where((MapEntry friend) =>
+                          friendIDs.contains(friend.value.uid) &&
+                          friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
                       return Map.fromEntries(filtered).entries.map((entry) => entry.value);
                     }
                   },
@@ -356,7 +361,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
         final id = dbReference.child('messages/${chat.id}').push().key;
         MessageModel message = MessageModel(
           id: id!,
-          text: '${userModel.value!.name} added ${member.name} to a group',
+          content: '${userModel.value!.name} added ${member.name} to a group',
           senderId: userModel.value!.uid,
           sentTime: DateTime.now().toUtc(),
           type: MessageType.event,
@@ -394,15 +399,15 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
 
     if (snapshot.value == null || (snapshot.value as Map).isEmpty) {
       await dbReference.child('chats/${chat.id}').remove();
-    }//
-    else{
+    } //
+    else {
       int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
       await dbReference.child('chats/${chat.id}/cleared/${userModel.value!.uid}').set(timestamp);
 
       final id = dbReference.child('messages/${chat.id}').push().key;
       MessageModel message = MessageModel(
         id: id!,
-        text: '${userModel.value!.name} left the group',
+        content: '${userModel.value!.name} left the group',
         senderId: userModel.value!.uid,
         sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
@@ -410,7 +415,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
       await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
 
       for (final participantId in chat.participants) {
-        if(participantId == userModel.value!.uid) continue;
+        if (participantId == userModel.value!.uid) continue;
         await dbReference.child('userChats/$participantId/${chat.id}').update({
           'lastMessage': {
             'text': '${userModel.value!.name} left the group',

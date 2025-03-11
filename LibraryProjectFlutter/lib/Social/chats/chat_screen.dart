@@ -81,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
               bool isMe = userModel.value!.uid == message.senderId;
               bool isTopMessage = messages.length == index + 1;
               if (message.type == MessageType.event) {
-                final isImage = message.text.startsWith('https://');
+                final isImage = message.content.startsWith('https://');
                 return Column(
                   children: [
                     if (index == messages.length - 1 || !_isSameDay(messages[index + 1].sentTime, message.sentTime))
@@ -115,7 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           conditionBuilder: (context) => !isImage,
                           widgetBuilder: (context) {
                             return Text(
-                              message.text,
+                              message.content,
                               style: const TextStyle(fontSize: 16, color: Colors.white),
                             );
                           },
@@ -123,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             return ClipRRect(
                               borderRadius: const BorderRadius.all(Radius.circular(60)),
                               child: CachedNetworkImage(
-                                imageUrl: message.text,
+                                imageUrl: message.content,
                                 width: 120,
                                 height: 120,
                                 fit: BoxFit.cover,
@@ -208,7 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ],
                                   if (message.type == MessageType.text) ...[
                                     Text(
-                                      message.text,
+                                      message.content,
                                       style: TextStyle(
                                           fontSize: 16,
                                           color: isMe ? Colors.black : Colors.white),
@@ -246,7 +246,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             bottomRight: isMe ? Radius.zero : const Radius.circular(20),
                                           ),
                                           child: CachedNetworkImage(
-                                            imageUrl: message.text,
+                                            imageUrl: message.content,
                                           ),
                                         ),
                                         Container(
@@ -439,7 +439,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final id = dbRef.child('messages/${chat.id}/').push().key;
         MessageModel message = MessageModel(
           id: id!,
-          text: messageText,
+          content: messageText,
           senderId: userModel.value!.uid,
           sentTime: DateTime.now().toUtc(),
         );
@@ -492,7 +492,7 @@ class _ChatScreenState extends State<ChatScreen> {
       MessageModel message = MessageModel(
         id: messageId,
         senderId: userModel.value!.uid,
-        text: url,
+        content: url,
         type: MessageType.image,
         sentTime: DateTime.now().toUtc(),
       );

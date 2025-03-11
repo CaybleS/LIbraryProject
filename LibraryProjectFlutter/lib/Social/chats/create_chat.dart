@@ -33,7 +33,10 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   }
 
   void resetFriendsResult() {
-    friendsResult = userIdToUserModel.entries.where((MapEntry friend) => friendIDs.contains(friend.value.uid)).map((entry) => entry.value).toList();
+    friendsResult = userIdToUserModel.entries
+        .where((MapEntry friend) => friendIDs.contains(friend.value.uid))
+        .map((entry) => entry.value)
+        .toList();
     setState(() {});
   }
 
@@ -45,13 +48,15 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => PrivateChatScreen(chatRoomId: id, contact: user),
+          builder: (context) => PrivateChatScreen(
+            chatRoomId: id,
+            contact: user,
+          ),
         ),
       );
     }
     showBottombar = true;
     refreshBottombar.value = true;
-
   }
 
   Future<String> getChatRoomId(String currentUser, String contact) async {
@@ -101,40 +106,43 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child:
-              TextField(
-              controller: controller,
-              onChanged: (value) {
-                if (value.isEmpty) {
-                  resetFriendsResult();
-                } //
-                else {
-                  friendsResult =
-                      userIdToUserModel.entries.where((element) => friendIDs.contains(element.value.uid) && element.value.name.toLowerCase().contains(value.toLowerCase())).map((entry) => entry.value).toList();
-                }
-                setState(() {});
-              },
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                hintText: 'Search Friend',
-                hintStyle: const TextStyle(color: Colors.grey),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(25)),
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    resetFriendsResult();
-                    controller.clear();
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: TextField(
+                  controller: controller,
+                  onChanged: (value) {
+                    if (value.isEmpty) {
+                      resetFriendsResult();
+                    } //
+                    else {
+                      friendsResult = userIdToUserModel.entries
+                          .where((element) =>
+                              friendIDs.contains(element.value.uid) &&
+                              element.value.name.toLowerCase().contains(value.toLowerCase()))
+                          .map((entry) => entry.value)
+                          .toList();
+                    }
+                    setState(() {});
                   },
-                  icon: const Icon(Icons.clear),
-                ),
-              ),
-              onTapOutside: (event) {
-                FocusManager.instance.primaryFocus?.unfocus();
-              },
-            )),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    hintText: 'Search Friend',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(25)),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        resetFriendsResult();
+                        controller.clear();
+                      },
+                      icon: const Icon(Icons.clear),
+                    ),
+                  ),
+                  onTapOutside: (event) {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                )),
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
@@ -154,7 +162,8 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.fromLTRB(1, 0, 5, 0),
-                              child: UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                              child: UserAvatarWidget(
+                                  photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -163,7 +172,8 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                                 children: [
                                   Text(
                                     user.name,
-                                    style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
+                                    style:
+                                        const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                                     softWrap: true,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

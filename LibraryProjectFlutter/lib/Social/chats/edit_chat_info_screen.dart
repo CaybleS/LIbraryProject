@@ -245,7 +245,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       final textId = dbReference.child('messages/${chat.id}').push().key;
       MessageModel textMessage = MessageModel(
         id: textId!,
-        text: '${userModel.value!.name} changed group name to «${controller.text}»',
+        content: '${userModel.value!.name} changed group name to «${controller.text}»',
         senderId: userModel.value!.uid,
         sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
@@ -258,7 +258,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       final textId = dbReference.child('messages/${chat.id}').push().key;
       MessageModel titleMessage = MessageModel(
         id: textId!,
-        text: '${userModel.value!.name} updated group photo',
+        content: '${userModel.value!.name} updated group photo',
         senderId: userModel.value!.uid,
         sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
@@ -267,7 +267,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       final photoId = dbReference.child('messages/${chat.id}').push().key;
       MessageModel photoMessage = MessageModel(
         id: photoId!,
-        text: chat.chatImage!,
+        content: chat.chatImage!,
         senderId: userModel.value!.uid,
         sentTime: DateTime.now().toUtc(),
         type: MessageType.event,
@@ -279,7 +279,7 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
     for (final participantId in chat.participants) {
       await dbReference.child('userChats/$participantId/${chat.id}').update({
         'lastMessage': {
-          'text': messages.last.text,
+          'text': messages.last.content,
           'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
           'sender': userModel.value!.uid
         },

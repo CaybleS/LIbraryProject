@@ -9,6 +9,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:library_project/core/global_variables.dart';
+import 'package:library_project/core/services/secure_chat_service.dart';
 import 'package:library_project/models/chat.dart';
 import 'package:library_project/models/message.dart';
 import 'package:library_project/models/user.dart';
@@ -42,6 +43,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     super.initState();
     updateUnreadCount(widget.chatRoomId, userModel.value!.uid);
     scrollToBottom();
+    SecureChatService.instance.initialize(userModel.value!.uid);
   }
 
   Future<void> scrollToBottom() async {
@@ -63,12 +65,13 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         backgroundColor: AppColor.appbarColor,
         automaticallyImplyLeading: false,
         title: StreamBuilder(
-          stream: FirebaseDatabase.instance.ref('users/${widget.contact.uid}').onValue,
+          stream: getUserData(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const SizedBox.shrink();
             }
-            final user = UserModel.fromJson(snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
+            final user = UserModel.fromJson(
+                snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
             return Row(
               children: [
                 Expanded(
@@ -166,10 +169,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               children: [
                                 if (message.type == MessageType.text) ...[
                                   Text(
-                                    message.text,
-                                    style: TextStyle(
-                                      fontSize: 16, color: isMe ? Colors.black : Colors.white
-                                    ),
+                                    isMe ? message.senderContent! : message.content,
+                                    style: TextStyle(fontSize: 16, color: isMe ? Colors.black : Colors.white),
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
@@ -177,9 +178,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                     children: [
                                       Text(
                                         _createTimeTextWidget(message.sentTime),
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: isMe ? Colors.black : Colors.white),
+                                        style: TextStyle(fontSize: 14, color: isMe ? Colors.black : Colors.white),
                                       ),
                                     ],
                                   ),
@@ -204,7 +203,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                           bottomRight: isMe ? Radius.zero : const Radius.circular(20),
                                         ),
                                         child: CachedNetworkImage(
-                                          imageUrl: message.text,
+                                          imageUrl: isMe ? message.senderContent! : message.content,
                                         ),
                                       ),
                                       Container(
@@ -291,7 +290,28 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
         if (messagesMap == null) return [];
         return (messagesMap as Map).entries.map((entry) {
-          return MessageModel.fromJson(entry.key, entry.value);
+          bool isMe = entry.value['sender'] == userModel.value!.uid;
+          String decryptedContent;
+          if (isMe && entry.value.containsKey('senderContent') != null) {
+            String encryptedForSender = entry.value['senderContent'];
+            try {
+              decryptedContent = SecureChatService.instance.decryptMessage(encryptedForSender);
+            } catch (e) {
+              print(e);
+              decryptedContent = 'Error decrypting message';
+            }
+            entry.value['senderContent'] = decryptedContent;
+          } else if (!isMe) {
+            String encryptedContent = entry.value['content'];
+            try {
+              decryptedContent = SecureChatService.instance.decryptMessage(encryptedContent);
+            } catch (e) {
+              decryptedContent = 'Error decrypting message';
+            }
+            entry.value['content'] = decryptedContent;
+          }
+          MessageModel message = MessageModel.fromJson(entry.key, entry.value);
+          return message;
         }).toList()
           ..sort((a, b) => b.sentTime.compareTo(a.sentTime));
       });
@@ -304,15 +324,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
   String kGetTime(DateTime lastSign) {
     int time = DateTime.now().toUtc().difference(lastSign).inMinutes;
-    print(time);
     if (time <= 1) return 'Active now';
     if (time > 1 && time < 60) return 'Last seen $time minutes ago';
-    if (time > 60 && time <= 1440) return 'Last seen ${time ~/ 60} hour${time ~/ 60 == 1?'':'s'} ago';
+    if (time > 60 && time <= 1440) return 'Last seen ${time ~/ 60} hour${time ~/ 60 == 1 ? '' : 's'} ago';
     if (time >= 1440 && time < 10080) return 'Last seen less than a week';
     return 'Last seen a long time ago';
   }
 
-  Stream getUserData() { // TODO this isnt used btw but i didnt make this file so idk if its planned to be used or not just letting you know
+  Stream getUserData() {
     return FirebaseDatabase.instance.ref('users/${widget.contact.uid}').onValue;
   }
 
@@ -328,10 +347,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         });
       } //
       else {
+        String encryptedForRecipient = await SecureChatService.instance.encryptMessage(messageText, widget.contact.uid);
+        String encryptedForSender = await SecureChatService.instance.encryptMessage(messageText, userModel.value!.uid);
+
         final id = _database.child('messages/${widget.chatRoomId}').push().key;
         MessageModel message = MessageModel(
           id: id!,
-          text: messageText,
+          content: encryptedForRecipient,
+          senderContent: encryptedForSender,
           senderId: userModel.value!.uid,
           sentTime: DateTime.now().toUtc(),
         );
@@ -343,8 +366,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
         await _database.child('chats/${widget.chatRoomId}').update(Chat(
               id: widget.chatRoomId,
-              // Previously this was storing names, but that caused problems if the names changed, so it stores uid now
-              name: '${widget.contact.uid}*${userModel.value!.uid}',
+              name: '',
               participants: [userModel.value!.uid, widget.contact.uid],
             ).toJson());
         await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
@@ -400,10 +422,15 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
       String url = await uploadTask.ref.getDownloadURL();
       final messageId = _database.child('messages/${widget.chatRoomId}').push().key!;
+      String encryptedForRecipient = await SecureChatService.instance.encryptMessage(url, widget.contact.uid);
+      String encryptedForSender = await SecureChatService.instance.encryptMessage(url, userModel.value!.uid);
+
+      final id = _database.child('messages/${widget.chatRoomId}').push().key;
       MessageModel message = MessageModel(
-        id: messageId,
+        id: id!,
+        content: encryptedForRecipient,
+        senderContent: encryptedForSender,
         senderId: userModel.value!.uid,
-        text: url,
         type: MessageType.image,
         sentTime: DateTime.now().toUtc(),
       );
@@ -413,6 +440,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         'sender': userModel.value!.uid
       };
       await _database.child('messages/${widget.chatRoomId}/$messageId').set(message.toJson());
+      await _database.child('chats/${widget.chatRoomId}').update(Chat(
+            id: widget.chatRoomId,
+            name: '',
+            participants: [userModel.value!.uid, widget.contact.uid],
+            // publicKey: publicKey,
+          ).toJson());
 
       await _database
           .child('userChats/${userModel.value!.uid}/${widget.chatRoomId}')

@@ -3,7 +3,8 @@ enum MessageType { text, image, file, event }
 
 class MessageModel {
   String id;
-  String text;
+  String content;
+  String? senderContent;
   String senderId;
   String? replyTo;
   String? userReply;
@@ -16,7 +17,8 @@ class MessageModel {
 
   MessageModel({
     required this.id,
-    required this.text,
+    required this.content,
+    this.senderContent,
     required this.senderId,
     required this.sentTime,
     this.replyTo,
@@ -30,21 +32,23 @@ class MessageModel {
   factory MessageModel.fromJson(String messageId, Map<dynamic, dynamic> json) {
     return MessageModel(
       id: messageId,
-      text: json['text'],
+      content: json['content'],
+      senderContent: json['senderContent'],
       senderId: json['sender'],
       sentTime: DateTime.fromMillisecondsSinceEpoch(json['sentTime']),
       replyTo: json['replyTo'],
       userReply: json['userReply'],
       isEdited: json['isEdited'] ?? false,
       editedText: json['editedText'],
-      type: MessageType.values.byName(json['type'] ?? 'text'),
+      type: MessageType.values.byName(json['type'] ?? 'content'),
       // status: MessageStatus.values.byName(json['status'] ?? 'sent'),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'text': text,
+      'content': content,
+      'senderContent': senderContent,
       'sender': senderId,
       'replyTo': replyTo,
       'userReply': userReply,
