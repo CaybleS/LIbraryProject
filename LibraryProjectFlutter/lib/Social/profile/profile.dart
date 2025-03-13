@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:shelfswap/Social/chats/private_chat_screen.dart';
 import 'package:shelfswap/Social/profile/edit_profile.dart';
 import 'package:shelfswap/Social/profile/friends_of_friends.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
@@ -98,12 +100,39 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  Future<void> _goToMessaging() async {
+    // TODO I copied this from the "create_chat" page, but I think it's probably better to have consistant naming
+    // such as the id that comes first alphabetically is listed first
+    String chatID = "${widget.user.uid}*${widget.profileUserId}";
+    final snapshot = await FirebaseDatabase.instance.ref('chats/$chatID').get();
+    if (!snapshot.exists) {
+      final snapshot = await FirebaseDatabase.instance
+          .ref('chats/${widget.profileUserId}*${widget.user.uid}')
+          .get();
+      if (snapshot.exists) {
+        chatID = "${widget.profileUserId}*${widget.user.uid}";
+      }
+    }
+
+    showBottombar = false;
+    refreshBottombar.value = true;
+    await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => PrivateChatScreen(
+                chatRoomId: chatID,
+                contact: userIdToUserModel[widget.profileUserId]!)));
+    showBottombar = true;
+    refreshBottombar.value = true;
+  }
+
   Widget _displayButtons() {
     int friendCount = widget.user.uid == widget.profileUserId
         ? friendIDs.length
         : (idsToFriendList[widget.profileUserId] != null
             ? idsToFriendList[widget.profileUserId]!.length
             : 0);
+    bool isFriend = friendIDs.contains(widget.profileUserId);
     return SizedBox(
         height: 50,
         child: ListView(
@@ -129,14 +158,19 @@ class _ProfileState extends State<Profile> {
                             "Edit Profile",
                             style: TextStyle(color: Colors.black, fontSize: 16),
                           ))
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.pink),
-                          onPressed: () => {}, // TODO link messaging to profile
-                          child: const Text(
-                            "Message",
-                            style: TextStyle(color: Colors.black, fontSize: 16),
-                          )),
+                      : (isFriend
+                          ? ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColor.pink),
+                              onPressed: () async {
+                                    await _goToMessaging();
+                                  }, // TODO link messaging to profile
+                              child: const Text(
+                                "Message",
+                                style: TextStyle(
+                                    color: Colors.black, fontSize: 16),
+                              ))
+                          : const SizedBox.shrink()),
                   const SizedBox(
                     width: 20,
                   ),
@@ -267,7 +301,9 @@ class _ProfileState extends State<Profile> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const SizedBox(width: 20,),
+                        const SizedBox(
+                          width: 20,
+                        ),
                         CircleAvatar(
                           backgroundImage: _userInfo!.photoUrl != null
                               ? NetworkImage(
@@ -278,8 +314,11 @@ class _ProfileState extends State<Profile> {
                                 ),
                           radius: 40,
                         ),
-                        const SizedBox(width: 20,),
-                        Flexible(child: Column(
+                        const SizedBox(
+                          width: 20,
+                        ),
+                        Flexible(
+                            child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -294,7 +333,9 @@ class _ProfileState extends State<Profile> {
                             )
                           ],
                         )),
-                        const SizedBox(width: 20,)
+                        const SizedBox(
+                          width: 20,
+                        )
                       ],
                     ),
                     const SizedBox(height: 10),

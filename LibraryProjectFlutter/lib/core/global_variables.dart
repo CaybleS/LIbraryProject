@@ -70,4 +70,5 @@ void resetGlobalData() { // TODO should this go in appwide_setup?
   idToFriendSubscription.clear();
   requestsAndBooksLoaded.value = 0;
   numBooksReadyToReturnNotifier.value = 0;
+  friendPageTabSelected = 0;
 }
