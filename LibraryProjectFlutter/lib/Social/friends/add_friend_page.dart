@@ -167,7 +167,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                     },
                     child: const Text(
                       "Add Friend",
-                      style: TextStyle(color: Colors.black, fontSize: 20),
+                      style: TextStyle(color: Colors.black, fontSize: 16),
                     ),
                   ),
                   const SizedBox(
@@ -188,7 +188,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                     },
                     child: const Text(
                       "Your Friend Code",
-                      style: TextStyle(color: Colors.black, fontSize: 20),
+                      style: TextStyle(color: Colors.black, fontSize: 16),
                     ),
                   ),
                   const SizedBox(
@@ -209,7 +209,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                     },
                     child: const Text(
                       "View Sent Requests",
-                      style: TextStyle(color: Colors.black, fontSize: 20),
+                      style: TextStyle(color: Colors.black, fontSize: 16),
                     ),
                   ),
                 ],

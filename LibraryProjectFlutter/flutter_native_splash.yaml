@@ -2,8 +2,8 @@
 # after updating this config ALWAYS run the command "dart run flutter_native_splash:create --path=flutter_native_splash.yaml" as per documentation
 
 flutter_native_splash:
-  color: "#ffffff"
-  image: assets/logo/app_logo.png
+  color: "#1d222c"
+  image: assets/logo/app_logo_no_gradient.png
 
   # Following are specific parameters for Android 12+.
   android_12:
@@ -17,7 +17,7 @@ flutter_native_splash:
     # ensure that the most important design elements of your image are placed within a circular area
     # with a 768 diameter at the center of the 1152x1152 canvas.
     image: assets/logo/android_splash_screen_logo.png
-    color: "#ffffff"
+    color: "#1d222c"
 
     # App icon background color.
     #icon_background_color: "#111111"
@@ -29,5 +29,5 @@ flutter_native_splash:
     # apply when the device is in dark mode. If they are not specified, the app will use the
     # parameters from above.  If there is no parameter above, the app will use the light mode values.
     #image_dark: assets/android12splash-invert.png
-    color_dark: "#042a49"
+    color_dark: "#1d222c"
     #icon_background_color_dark: "#eeeeee"

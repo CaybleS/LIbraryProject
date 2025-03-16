@@ -2,13 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/app_startup/auth.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/models/book_requests_model.dart';
 import 'package:shelfswap/models/profile_info.dart';
 import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'dart:async';
+import 'dart:io';
 
 // instead of fetching userLibrary once, we use a reference to update it in-memory everytime its updated.
 // The same is done with the lent to me books. It feteches them initially and updates the in-memory list as needed
@@ -29,7 +32,7 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
         }
         tempUserLibrary.add(book);
       }
-      numBooksReadyToReturnNotifier.value = numBooksReadyToReturn;
+      numUnseenBooksReadyToReturnNotifier.value = numBooksReadyToReturn;
     }
     if (!userLibraryLoaded.isCompleted) {
       userLibraryLoaded.complete();
@@ -144,11 +147,11 @@ StreamSubscription<DatabaseEvent> setupFriendsBooksSubscription(
 StreamSubscription<DatabaseEvent> setupUserSubscription(
     Map<String, UserModel> userIdToUserModel,
     String userId,
-    Function userUpdated) {
+    Function userUpdated, {BuildContext? context}) {
   DatabaseReference userReference =
       FirebaseDatabase.instance.ref('users/$userId/');
   StreamSubscription<DatabaseEvent> userSubscription =
-      userReference.onValue.listen((DatabaseEvent event) {
+      userReference.onValue.listen((DatabaseEvent event) async {
     if (event.snapshot.value != null) {
       UserModel user =
           UserModel.fromJson(event.snapshot.value as Map, event.snapshot.key!);
@@ -158,6 +161,44 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(
       }
     }
     userUpdated();
+    // this whole logic is my way of detecting if this account got deleted, for example if 2 devices are running the app and 1
+    // of them deletes the account, we just run some stuff to check if the user got deleted after a few seconds of user properties 
+    // being deleted. Obviously a signaling mechanism is optimal but I couldn't figure that out, auth listeners detecting delete()
+    // being executed from a different device is for some reason hard/impossible to implement :/
+    try {
+      if (event.snapshot.value == null && userId == FirebaseAuth.instance.currentUser!.uid) {
+        sleep(const Duration(seconds: 2));
+        await FirebaseAuth.instance.currentUser?.getIdToken(true);
+        // im pretty sure this getIdToken just throws an error if the current user doesnt exist, so all
+        // the lines below here are literally useless. But I'm not certain honestly.
+        await FirebaseAuth.instance.currentUser?.reload();
+        if (FirebaseAuth.instance.currentUser == null && context != null && context.mounted) {
+          try {
+            await signOutGoogle();
+          } catch (_) {}
+          if (context.mounted) {
+            await logout(context);
+          }
+          if (context.mounted) {
+            SharedWidgets.displayErrorDialog(context, "This account has been deleted on another device");
+          }
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'unknown') {
+        if (context != null && context.mounted) {
+          try { // need to put this here since the auth user doesnt exist so we cant directly check if its possible to do or not
+            await signOutGoogle();
+          } catch (_) {}
+          if (context.mounted) {
+            await logout(context);
+          }
+          if (context.mounted) {
+            SharedWidgets.displayErrorDialog(context, "This account has been deleted on another device");
+          }
+        }
+      }
+    }
   });
   return userSubscription;
 }

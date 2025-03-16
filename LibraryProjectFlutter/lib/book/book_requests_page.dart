@@ -29,6 +29,9 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
   @override
   void initState() {
     super.initState();
+     // TODO some listener is wrong, i think a subscription listener.
+     // Im too tired to fix it now but yeah its smth wrogn with receivedd book requests listeners
+     // something where I lent out a book but my received book requests didnt seem to register that it was lent or something. .. bruuh
     _fillBookRequestLists();
     _requestsChangedListener = () {
       _fillBookRequestLists();
@@ -170,10 +173,10 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                         return InkWell(
                           onTap: () async {
                             // The book here that we go should be guaranteed to be the exact same as the book in the userLibrary,
-                            // due to the or in the friend's library
+                            // or in the friend's library
                             _showing == _ListToShow.receivedRequests
                             ? await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(book, widget.user)))
-                            : await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, book, receiverId)));
+                            : await Navigator.push(context, MaterialPageRoute(builder: (context) => FriendBookPage(widget.user, book, receiverId, viewingFromSentRequest: true)));
                           },
                           child: Stack(
                             alignment: AlignmentDirectional.center,

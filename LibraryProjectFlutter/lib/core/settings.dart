@@ -1,9 +1,8 @@
-// TODO stuff which can be here. Just ideas to be clear, not requirements. Delete this eventually.
-// logout, clear library, delete account, certain stats, specify am/pm or 24 hr in chats (its extra feature so not really good to have at this point),
-// goodreads stuff, rate button which links to google play store, feedback form which links to an anonymous feedback google form or something TODO put feedback form for user testing.
+// TODO rate button which links to google play store, also maybe at some point remove the feedback form or no? Honestly might be a decent perma feature
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shelfswap/add_book/goodreads/goodreads_dialog.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/app_startup/auth.dart';
@@ -14,6 +13,7 @@ import 'package:shelfswap/models/book_requests_model.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Settings extends StatefulWidget {
   final User user;
@@ -24,9 +24,11 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> {
-  // at least for the logout its definitely needed, idk about the others, it might not be needed but its meant to prevent spam pressing
-  // a button to try to do something many times, for example if we are trying to logout and its not done and user clicks it again,
-  // it shouldnt try do the logout stuff again. I'm just being safe since this page does some big things
+  static const String _feedbackFormUrl = "https://forms.gle/tKjd6hR8Gwc4UDNd8";
+  // at least for the logout this _pressedAButton is definitely needed, idk about the others, it might not be
+  // needed but its meant to prevent spam pressing a button to try to do something many times, for example if
+  // we are trying to logout and its not done and user clicks it again, it shouldnt try do the logout stuff again.
+  // I'm just being safe since this page does some big things
   bool _pressedAButton = false;
   late final VoidCallback _userLibraryListener;
   late final VoidCallback _booksLentToMeListener;
@@ -142,10 +144,8 @@ class _SettingsState extends State<Settings> {
     }
     if (mounted) {
       // to execute delete() the user needs to be recently authenticated so we just do this before deleting their database stuff
-      // TODO improve error handling for this
       bool reauthenticationWorked = await reauthenticateUser(context, widget.user);
-      if (!reauthenticationWorked && mounted) {
-        SharedWidgets.displayErrorDialog(context, "There was an error with reauthentication. Please try again");
+      if (!reauthenticationWorked) {
         return;
       }
     }
@@ -159,9 +159,6 @@ class _SettingsState extends State<Settings> {
     // 3.) removing user's username
     DatabaseReference usersUsername = dbReference.child('usernames/${userIdToUserModel[widget.user.uid]!.username}');
     await removeRef(usersUsername);
-    // 4.) removing user's user properties
-    DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
-    await removeRef(usersProperties);
     DatabaseReference profileInfo = dbReference.child('profileInfo/${widget.user.uid}');
     await removeRef(profileInfo);
     // TODO below stuff needs to be done
@@ -193,19 +190,21 @@ class _SettingsState extends State<Settings> {
     // and chats
     // and userTokens (for notification stuff, its easy but its not implemented completely yet so)
     // and scheduledNotifications stuff (shouldnt exist since no books are lent assuming we even have time to implement it)
-    cancelDatabaseSubscriptions(); // honestly no clue when this should be called but it should be eventually probably at the very end right?
-    // TODO someone else pls check this order cuz idk delete this comment if u think its good
+    cancelDatabaseSubscriptions();
     userModel.value = null;
     for (var data in widget.user.providerData) {
       if (data.providerId == "google.com") {
-        await signOutGoogle(); // dont know if this is even needed or if it works
+        await signOutGoogle();
       }
     }
+    // deleting user properties immediately before deleting the current auth user, so that we can detect that in the user listener for other instances
+    // of the app running concurrently. So if you delete account on 1 device while another device is running, database writes are the
+    // only way (I think) of directly signaling to that app instance, so I just delete all this stuff to detect that. It's the only way I found to do it.
+    DatabaseReference usersProperties = dbReference.child('users/${widget.user.uid}');
+    await removeRef(usersProperties);
     await widget.user.delete();
     if (mounted) {
       Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
-    }
-    if (mounted) {
       SharedWidgets.displayPositiveFeedbackDialog(context, "Account Deleted");
     }
   }
@@ -245,6 +244,45 @@ class _SettingsState extends State<Settings> {
                       child: const Text(
                         "Import/Export Goodreads books",
                         style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        final Uri url = Uri.parse(_feedbackFormUrl);
+                        bool urlLaunched = await launchUrl(url);
+                        if (!urlLaunched && context.mounted) {
+                          SharedWidgets.displayErrorDialog(context, "An error occured while launching the url");
+                        }
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF01C68B),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          const Text("Go to our Feedback Form",
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () async {
+                              await Clipboard.setData(const ClipboardData(text: _feedbackFormUrl));
+                              if (context.mounted) {
+                                SharedWidgets.displayPositiveFeedbackDialog(context, "Feedback Form Link Copied");
+                              }
+                            },
+                            child: const Icon(Icons.copy),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -344,12 +382,12 @@ class _SettingsState extends State<Settings> {
   }
 }
 
-Future<String> displayReenterPasswordDialog(BuildContext context, User user) async {
+Future<String?> displayReenterPasswordDialog(BuildContext context, User user) async {
   String? passwordInput = await showDialog(
     context: context,
     builder: (context) => DisplayReenterPasswordDialog(user),
   );
-  return passwordInput ?? "";
+  return passwordInput;
 }
 
 class DisplayReenterPasswordDialog extends StatefulWidget {
@@ -402,7 +440,8 @@ class _DisplayReenterPasswordDialogState extends State<DisplayReenterPasswordDia
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(widget.user.email!),
+              Text(widget.user.email!, style: const TextStyle(fontSize: 16, color: Colors.black)),
+              const SizedBox(height: 15),
               TextField(
                 controller: _inputPasswordController,
                 obscureText: true,
@@ -426,6 +465,7 @@ class _DisplayReenterPasswordDialogState extends State<DisplayReenterPasswordDia
                   FocusManager.instance.primaryFocus?.unfocus();
                 },
               ),
+              const SizedBox(height: 15),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context, _inputPasswordController.text);

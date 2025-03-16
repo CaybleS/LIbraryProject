@@ -17,33 +17,63 @@ class _CreateAccountState extends State<CreateAccount> {
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
 
-  String nameErr = '';
-  String emailErr = '';
-  String pswdErr = '';
   String loginErr = '';
   bool showLoading = false;
   bool showEmailVerificationText = false;
+  bool _noNameInput = false;
+  bool _noEmailInput = false;
+  bool _noPasswordInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameCtrl.addListener(() {
+      if (_noNameInput && nameCtrl.text.isNotEmpty) {
+        setState(() {
+          _noNameInput = false;
+        });
+    }});
+    emailCtrl.addListener(() {
+      if (_noEmailInput && emailCtrl.text.isNotEmpty) {
+        setState(() {
+          _noEmailInput = false;
+        });
+    }});
+    passwordCtrl.addListener(() {
+      if (_noPasswordInput && passwordCtrl.text.isNotEmpty) {
+        setState(() {
+          _noPasswordInput = false;
+        });
+    }});
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    emailCtrl.dispose();
+    passwordCtrl.dispose();
+    super.dispose();
+  }
 
   void createBtnClicked() async {
     String name = nameCtrl.text.trim();
     String email = emailCtrl.text.trim();
+    // TODO is it problematic to trim a password or no? Also login page doesnt trim the passowrd input
     String pswd = passwordCtrl.text.trim();
-    emailErr = '';
-    pswdErr = '';
-    nameErr = '';
 
     if (email == '') {
-      emailErr = 'Required';
-      setState(() {});
+      _noEmailInput = true;
     }
 
     if (pswd == '') {
-      pswdErr = 'Required';
-      setState(() {});
+      _noPasswordInput = true;
     }
 
     if (name == '') {
-      nameErr = 'Required';
+      _noNameInput = true;
+    }
+
+    if (_noEmailInput || _noPasswordInput  || _noNameInput) {
       setState(() {});
     }
 
@@ -90,15 +120,21 @@ class _CreateAccountState extends State<CreateAccount> {
                       FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
-                        hintText: 'Display Name',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Name',
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noNameInput ? "Required" : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            nameCtrl.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(nameErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: emailCtrl,
                     onTapOutside: (event) {
@@ -106,14 +142,20 @@ class _CreateAccountState extends State<CreateAccount> {
                     },
                     decoration: InputDecoration(
                         hintText: 'Email',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noEmailInput ? "Required" : null,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              emailCtrl.clear();
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: passwordCtrl,
                     onTapOutside: (event) {
@@ -122,13 +164,19 @@ class _CreateAccountState extends State<CreateAccount> {
                     obscureText: true,
                     decoration: InputDecoration(
                         hintText: 'Password',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noPasswordInput ? "Required" : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            passwordCtrl.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
                   const SizedBox(height: 10),
                   Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
                   const SizedBox(height: 10),

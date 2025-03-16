@@ -1,0 +1,3 @@
+just a couple of logos here. The app logo no gradient is currently not used. And the android splash screen logo is currently just the app logo but with 110 padding around it. That's the only reason I made this really, just to say that the splash screen logo uses 110 padding since for some reason without it, it will cut off parts of the logo, like it zooms in on it for some reason.
+
+Also note that the app icon packages need this logo in png. I don't know why but yeah make sure its png if you change stuff.

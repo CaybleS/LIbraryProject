@@ -23,7 +23,20 @@ class GoodreadsDialog extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const Text("Goodreads", style: TextStyle(fontSize: 20, color: Colors.black)),
+        Flexible(
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () => Navigator.pop(dialogContext),
+                child: const Icon(Icons.arrow_back),
+              ),
+              const Expanded(
+                child: Text("Goodreads", style: TextStyle(fontSize: 20, color: Colors.black), textAlign: TextAlign.center),
+              ),
+              const SizedBox(width: 24), // meant to center the "Goodreads" text by being the same size as the icon
+            ],
+          ),
+        ),
         const SizedBox(height: 6),
           SizedBox(
           width: double.infinity,
@@ -97,7 +110,7 @@ class GoodreadsDialog extends StatelessWidget {
             child: Text(
             "The Goodreads import/export page doesn't exist in their app, so you need to download your books from Goodreads by going to the "
             "export page in your web browser by copying the link here and pasting it in a web browser. Also, for our exporting to "
-            "Goodreads, not all our books can be transferred to Goodreads, and ensure you do not change the exported file's file extension.",
+            "Goodreads, not all our books can be transferred to Goodreads.",
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: Colors.black),
           ),

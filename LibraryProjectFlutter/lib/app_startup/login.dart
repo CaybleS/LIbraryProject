@@ -5,6 +5,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shelfswap/app_startup/create_account_screen.dart';
 import 'package:shelfswap/app_startup/persistent_bottombar.dart';
+import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'auth.dart';
@@ -19,10 +20,10 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final controllerEmail = TextEditingController();
   final controllerPswd = TextEditingController();
-  String emailErr = '';
-  String pswdErr = '';
   String loginErr = '';
   bool showLoading = false;
+  bool _noEmailInput = false;
+  bool _noPasswordInput = false;
 
   User? user;
 
@@ -31,17 +32,44 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
 
     initial();
+    controllerEmail.addListener(() {
+      if (_noEmailInput && controllerEmail.text.isNotEmpty) {
+        setState(() {
+          _noEmailInput = false;
+        });
+    }});
+    controllerPswd.addListener(() {
+      if (_noPasswordInput && controllerPswd.text.isNotEmpty) {
+        setState(() {
+          _noPasswordInput = false;
+        });
+    }});
     // signOutGoogle();
   }
 
   void initial() async {
     FirebaseAuth auth = FirebaseAuth.instance;
 
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       if (auth.currentUser != null && auth.currentUser!.emailVerified) {
         user = auth.currentUser;
-        changeStatus(true);
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
+        // this handles the case where the user didnt set their username on the first profile setup screen.
+        // In this case even though the auth user is set, their account isnt setup
+        if (!await userExists(auth.currentUser!.uid) && mounted) {
+          FlutterNativeSplash.remove();
+          // They signed in with google, so even if they close the app and reopen, if they click the sign in with google button
+          // without this signOutGoogle() it will not let them select their email it will just use their last selected email automatically
+          for (var data in auth.currentUser!.providerData) {
+            if (data.providerId == "google.com") {
+              await signOutGoogle();
+            }
+          }
+          return;
+        }
+        await changeStatus(true);
+        if (mounted) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
+        }
       }
       else {
         FlutterNativeSplash.remove();
@@ -97,17 +125,17 @@ class _LoginPageState extends State<LoginPage> {
   void loginBtnClicked() async {
     String email = controllerEmail.text;
     String pswd = controllerPswd.text;
-    emailErr = '';
-    pswdErr = '';
     loginErr = '';
 
     if (email == '') {
-      emailErr = 'Required';
-      setState(() {});
+      _noEmailInput = true;
     }
 
     if (pswd == '') {
-      pswdErr = 'Required';
+      _noPasswordInput = true;
+    }
+
+    if (_noEmailInput || _noPasswordInput) {
       setState(() {});
     }
 
@@ -115,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         showLoading = true;
       });
-      Map<String, dynamic> userLogin = await logIn(email, pswd);
+      Map<String, dynamic> userLogin = await logIn(email, pswd, context);
 
       if (userLogin['status'] == false) {
         loginErr = userLogin['error'];
@@ -187,11 +215,20 @@ class _LoginPageState extends State<LoginPage> {
                         hintStyle: const TextStyle(color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noEmailInput ? "Required" : null,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              controllerEmail.clear();
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                    ),
+                    onTapOutside: (event) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
                   ),
-                  const SizedBox(height: 10),
-                  Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: controllerPswd,
                     obscureText: true,
@@ -201,10 +238,19 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.white,
                       filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noPasswordInput ? "Required" : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          controllerPswd.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
+                    onTapOutside: (event) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
                   ),
                   const SizedBox(height: 10),
-                  Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
                   Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
                   const SizedBox(height: 10),
                   Row(

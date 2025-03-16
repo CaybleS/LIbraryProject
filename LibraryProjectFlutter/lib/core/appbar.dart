@@ -9,7 +9,8 @@ import 'package:shelfswap/ui/colors.dart';
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final User user;
   final String title;
-  const CustomAppBar(this.user, {this.title = "", super.key});
+  final List<Widget>? actions;
+  const CustomAppBar(this.user, {this.title = "", this.actions, super.key});
 
   @override
   // this is the default appbar "toolbar" height I believe, kToolbarHeight is usually 56px but it seems it can vary
@@ -84,6 +85,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
       ),
       title: Text(widget.title),
       centerTitle: true,
+      actions: widget.actions,
     );
   }
 }

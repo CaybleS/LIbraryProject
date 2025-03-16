@@ -37,12 +37,12 @@ void addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String
 }
 
 Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String receiverId, String bookDbKey) async {
-  DatabaseEvent event = await dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/senders/').once();
+  DataSnapshot snapshot = await dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/senders/').get();
   Map<String, String> senders = {};
   // if there are already senders we need to fetch them before adding our new sender to them
-  if (event.snapshot.value != null) {
+  if (snapshot.value != null) {
     // need to create the map like this, safely, rather than just raw type casting
-    senders = (event.snapshot.value as Map).map(
+    senders = (snapshot.value as Map).map(
       (key, value) => MapEntry(key.toString(), value.toString()),
     );
   }
@@ -59,26 +59,27 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
     dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
   } else {
     // need to see current senders and update as needed
-    DatabaseEvent event = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').once();
-    if (event.snapshot.value != null) {
-      Map<String, String> senders = (event.snapshot.value as Map).map(
+    DataSnapshot snapshot = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').get();
+    if (snapshot.value != null) {
+      Map<String, String> senders = (snapshot.value as Map).map(
         (key, value) => MapEntry(key.toString(), value.toString()),
       );
       senders.remove(requesterId);
       DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
     } else {
-      // there are no senders so we just remove everything (assuming the once() call doesn't return null when there is in fact data there...)
+      // there are no senders so we just remove everything (assuming the get() call doesn't return null when there is in fact data there...)
       dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
     }
   }
 }
 
+// TODO this is a fine change right? To check only username instead of the entire user node. Delete this comment if you agree
 Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
   }
-  DataSnapshot snapshot = await dbReference.child('users/$id').get();
+  DataSnapshot snapshot = await dbReference.child('users/$id/username').get();
   return (snapshot.value != null);
 }
 
@@ -126,8 +127,8 @@ Future<bool> usernameExists(String username) async {
   if (username.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
   }
-  DatabaseEvent event = await dbReference.child('usernames/$username').once();
-  return (event.snapshot.value != null);
+  DataSnapshot snapshot = await dbReference.child('usernames/$username').get();
+  return (snapshot.value != null);
 }
 
 // call this only from the add user function
@@ -137,10 +138,10 @@ void addUsername(String username) async {
 }
 
 // call this everytime username gets updated
-// TODO this function isnt tested. Also there really should be some update user interface function, its just bad design not to have it really.
-// I shouldnt have to go thru code to update the user model I should just call a nice abstraction ya feel me
+// TODO this and removeUsername maybe can be deleted honestly. The reason I implemented it is just to add an interface if we want to
+// allow users to change usernames. Is that something we want or no? If we decide no just delete these 2 functions k?
 Future<void> updateUsername(String oldUsername, String newUsername, User user) async {
-  removeUsername(oldUsername);
+  _removeUsername(oldUsername);
   DatabaseReference  id = dbReference.child('usernames/');
   id.update({newUsername: true});
   Map<String, dynamic> userJson = {'username': newUsername};
@@ -148,7 +149,7 @@ Future<void> updateUsername(String oldUsername, String newUsername, User user) a
   await userRef.update(userJson);
 }
 
-void removeUsername(String oldUsername) {
+void _removeUsername(String oldUsername) {
   dbReference.child('usernames/$oldUsername').remove();
 }
 

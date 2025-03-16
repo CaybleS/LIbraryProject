@@ -343,22 +343,6 @@ class _FriendsLibraryPageState extends State<FriendsLibraryPage> {
           ],
         ),
         centerTitle: true,
-        actions: [
-          InkWell(
-            onTap: () {
-              // something to send the user to the specific private chat of this friend id say TODO should it be on friend book page also or no?
-              // im not even convinced that this should exist, its something to think about / discuss I'd say.
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(
-                Icons.message_rounded,
-                size: 30,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
         backgroundColor: AppColor.appbarColor,
       ),
       body: Column(

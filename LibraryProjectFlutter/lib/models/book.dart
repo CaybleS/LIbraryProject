@@ -95,11 +95,6 @@ class Book {
   }
   
   Future<void> remove(String userId) async {
-    // I dont even think this should be needed for anything. Everywhere in the app, you cant remove a book if its lent out, intentionally.
-    // I just don't think any lent out books should be removable, the user should need to hit the "return book" button. TODO ensure this can be removed
-    if (lentDbKey != null && borrowerId != null) {
-      removeLentBookInfo(lentDbKey!, borrowerId!);
-    }
     if (cloudCoverUrl != null) {
       deleteCoverFromStorage(cloudCoverUrl!);
     }
