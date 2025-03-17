@@ -3,6 +3,7 @@ import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/models/book_requests_model.dart';
 import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/notifications/notifications.dart';
 
 // pages can access these at any time, knowing that they will be up to date guaranteed
 // there are just the representations of database data which are updated by onvalue subscriptions
@@ -17,6 +18,7 @@ ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 // signal means to show the app's "welcome back" dialog when both requests and userLibrary are initially loaded
 ValueNotifier<int> requestsAndBooksLoaded = ValueNotifier<int>(0);
 ValueNotifier<int> numUnseenBooksReadyToReturnNotifier = ValueNotifier<int>(0);
+late NotificationService notificationInstance;
 
 // bottombar indicies, used for 1.) pages listening to the refreshNotifier to know if they are selected on the bottombar and thus should refresh and 2.)
 // for the appbar to be able to change bottombar values based on appbar selection

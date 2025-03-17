@@ -11,13 +11,6 @@ import 'package:shelfswap/Social/profile/profile.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'dart:math';
-import 'package:library_project/Social/friends/friends_page.dart';
-import 'package:library_project/add_book/add_book_homepage.dart';
-import 'package:library_project/app_startup/appwide_setup.dart';
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/core/homepage.dart';
-import 'package:library_project/Social/profile.dart';
-import 'package:library_project/core/settings.dart';
 
 class PersistentBottomBar extends StatefulWidget {
   final User user;
@@ -37,10 +30,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     // I guess this is the best place to initialize things which need to be initialized user-specifically
     // (whereas main.dart is best place to initialize things which can be the same even if you logout)
     setupDatabaseSubscriptions(widget.user, context);
-    notificationInstance = NotificationService();
-    notificationInstance.initialize(widget.user); // its attempted to be "reset" upon logout
-    setupDatabaseSubscriptions(widget.user);
-    notificationInstance.userLoggedIn(widget.user); // I think its fine to call this when theoretically the rest of the notification stuff isnt setup TODO double check
+    notificationInstance.userLoggedIn(widget.user.uid); // I think its fine to call this when theoretically the rest of the notification stuff isnt setup TODO double check
     _pagesList[homepageIndex] = HomePage(widget.user);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);
@@ -62,7 +52,7 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     for (GlobalKey<NavigatorState> key in navigatorKeys) {
       key.currentState?.dispose();
     }
-    cancelDatabaseSubscriptions(widget.user);
+    cancelDatabaseSubscriptions();
     refreshBottombar.removeListener(_refreshBottombarListener);
     resetBottombarValues();
     super.dispose();

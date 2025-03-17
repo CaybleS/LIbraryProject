@@ -54,7 +54,7 @@ void setupDatabaseSubscriptions(User user, BuildContext context) {
       sentFriendRequests, user.uid, _sentFriendRequestsUpdated);
 }
 
-void cancelDatabaseSubscriptions(User user) {
+void cancelDatabaseSubscriptions() {
   _userLibrarySubscription.cancel();
   _lentToMeSubscription.cancel();
   _friendsSubscription.cancel();
@@ -68,7 +68,7 @@ void cancelDatabaseSubscriptions(User user) {
   idToFriendSubscription.forEach((k, v) => v.cancel());
   lentBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
   sentBookRequestBookDbKeyToSubscriptionForIt.forEach((k, v) => v.cancel());
-  resetGlobalData(user); // we cancelled the subscriptions but still need to clear the lists and such, this does that
+  resetGlobalData(); // we cancelled the subscriptions but still need to clear the lists and such, this does that
 }
 
 // everytime the user logs out and the bottombar gets disposed these varibles still exist so they are reset when bottombar is disposed

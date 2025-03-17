@@ -1,10 +1,9 @@
 import 'package:app_badge_plus/app_badge_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
-import 'package:library_project/app_startup/global_variables.dart';
-import 'package:library_project/notifications/notification_database.dart';
+import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/notifications/notification_database.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -71,16 +70,16 @@ class NotificationService {
   // so with this, all the notification logic is setup when the app starts; this is the only stuff which runs upon login or logout.
   // I believe it works correctly with this being the case, if you log out it says should not sent to this token so any logic wont send
   // to the token, and if you uninstall the app I believe it changes the token when you reinstall.
-  Future<void> userLoggedIn(User user) async {
+  Future<void> userLoggedIn(String userId) async {
     token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
-      writeUserTokenData(token!, user, shouldSendToThisToken: true);
+      writeUserTokenData(token!, userId, shouldSendToThisToken: true);
     }
   }
 
-  void userLoggedOut(User user) {
+  void userLoggedOut(String userId) {
     if (token != null) {
-      writeUserTokenData(token!, user, shouldSendToThisToken: false);
+      writeUserTokenData(token!, userId, shouldSendToThisToken: false);
       token = null;
     }
   }

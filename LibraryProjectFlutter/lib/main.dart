@@ -7,6 +7,7 @@ import 'package:shelfswap/app_startup/connectivity_wrapper.dart';
 import 'package:shelfswap/app_startup/login.dart';
 import 'package:shelfswap/core/app_life_cycle.dart';
 import 'package:shelfswap/database/firebase_options.dart';
+import 'package:shelfswap/notifications/notifications.dart';
 import 'package:shelfswap/ui/colors.dart';
 
 void main() async {

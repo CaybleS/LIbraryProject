@@ -61,7 +61,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 return;
               }
               _pressedAButton = true;
-              await logout(context);
+              await logout(widget.user.uid, context);
               _pressedAButton = false;
             },
             child: const Icon(Icons.logout),

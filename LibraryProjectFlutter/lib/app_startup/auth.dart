@@ -86,10 +86,13 @@ Future<void> signOutGoogle() async {
   await _googleSignIn.signOut();
 }
 
-Future<void> logout(context) async {
+Future<void> logout(String userId, context) async {
   await changeStatus(false);
+  if (notificationInstance.token != null) {
+    notificationInstance.userLoggedOut(userId);
+  }
+  cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
-    cancelDatabaseSubscriptions(_auth.currentUser!); // ensuring the onvalue listeners are canceled before we are signed out
     for (var data in _auth.currentUser!.providerData) {
       debugPrint(data.providerId);
       if (data.providerId == "google.com") {

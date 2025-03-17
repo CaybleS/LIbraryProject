@@ -158,6 +158,10 @@ class Book {
   }
 
   Map<String, dynamic> toJson() {
+    Map<String, bool>? usersWhoRequestedMap;
+    if (usersWhoRequested != null) {
+      usersWhoRequestedMap = { for (String e in usersWhoRequested!) e : true };
+    }
     return {
       'title': title,
       'author': author,
@@ -177,7 +181,7 @@ class Book {
       'dateLent': dateLent?.toIso8601String(),
       'dateToReturn': dateToReturn?.toIso8601String(),
       'readyToReturn': readyToReturn == null ? null : true,
-      'usersWhoRequested': usersWhoRequested,
+      'usersWhoRequested': usersWhoRequestedMap,
     };
   }
 
@@ -226,9 +230,12 @@ Book createBookFromJson(record) {
   if (record['usersWhoRequested'] != null) {
     book.usersWhoRequested ??= [];
     dynamic usersWhoRequestedInDb = record['usersWhoRequested'];
-    for (dynamic userId in usersWhoRequestedInDb) {
-      book.usersWhoRequested!.add(userId);
-    }
+    usersWhoRequestedInDb.forEach((k, v) {
+      book.usersWhoRequested!.add(k);
+    });
+    // for (dynamic userId in usersWhoRequestedInDb) {
+    //   book.usersWhoRequested!.add(userId);
+    // }
   }
   return book;
 }

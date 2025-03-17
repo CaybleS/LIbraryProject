@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/app_startup/auth.dart';
+import 'package:shelfswap/app_startup/login.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/book.dart';
@@ -175,9 +176,12 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(
         if (FirebaseAuth.instance.currentUser == null && context != null && context.mounted) {
           try {
             await signOutGoogle();
+            await FirebaseAuth.instance.signOut();
           } catch (_) {}
           if (context.mounted) {
-            await logout(context);
+             cancelDatabaseSubscriptions();
+             userModel.value = null;
+             Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
           }
           if (context.mounted) {
             SharedWidgets.displayErrorDialog(context, "This account has been deleted on another device");
@@ -189,9 +193,12 @@ StreamSubscription<DatabaseEvent> setupUserSubscription(
         if (context != null && context.mounted) {
           try { // need to put this here since the auth user doesnt exist so we cant directly check if its possible to do or not
             await signOutGoogle();
+            await FirebaseAuth.instance.signOut(); // dont know if this is needed, I know the sign out google is for google sign in only
           } catch (_) {}
           if (context.mounted) {
-            await logout(context);
+             cancelDatabaseSubscriptions();
+             userModel.value = null;
+             Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
           }
           if (context.mounted) {
             SharedWidgets.displayErrorDialog(context, "This account has been deleted on another device");
