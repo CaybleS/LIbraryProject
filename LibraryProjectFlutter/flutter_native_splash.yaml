@@ -1,5 +1,7 @@
 # !! IMPORTANT !!
 # after updating this config ALWAYS run the command "dart run flutter_native_splash:create --path=flutter_native_splash.yaml" as per documentation
+# also, I believe running that command removes the android:screenOrientation="portrait" from android/app/src/mainAndroidManifest.xml
+# so make sure its still there after running that command
 
 flutter_native_splash:
   color: "#1d222c"

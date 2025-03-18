@@ -810,7 +810,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                   : Column(
                                     children: [
                                       const Flexible(
-                                        child: Text("Book flagged as"),
+                                        child: Text("Book marked as"),
                                       ),
                                       const Flexible(
                                         child: Text("ready to return"),

@@ -14,15 +14,13 @@ late StreamSubscription<DatabaseEvent> _lentToMeSubscription;
 // so we need subscriptions to ensure this book is up to date with the database. For example, a received book request on a non-lent book
 // would be tied to a non-lent book even if that book later gets lent out, which is why this is definitely needed.
 Map<String, StreamSubscription> lentBookDbKeyToSubscriptionForIt = {};
-Map<String, StreamSubscription> sentBookRequestBookDbKeyToSubscriptionForIt =
-    {};
+Map<String, StreamSubscription> sentBookRequestBookDbKeyToSubscriptionForIt = {};
 late StreamSubscription<DatabaseEvent> _sentBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _receivedBookRequestsSubscription;
 late StreamSubscription<DatabaseEvent> _friendsSubscription;
 late StreamSubscription<DatabaseEvent> _requestsSubscription;
 late StreamSubscription<DatabaseEvent> _sentFriendRequestsSubscription;
-Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription =
-    {};
+Map<String, StreamSubscription<DatabaseEvent>> friendIdToLibrarySubscription = {};
 Map<String, List<Book>> friendIdToBooks = {};
 Map<String, StreamSubscription<DatabaseEvent>> userIdToSubscription = {};
 Map<String, UserModel> userIdToUserModel = {};
@@ -33,25 +31,15 @@ Map<String, List<String>> idsToFriendList = {};
 Completer<void> userLibraryLoaded = Completer<void>();
 
 void setupDatabaseSubscriptions(User user, BuildContext context) {
-  userIdToSubscription[user.uid] = setupUserSubscription(
-      userIdToUserModel, user.uid, userUpdated,
-      context: context);
-  userIdToProfileSubscription[user.uid] =
-      setupProfileSubscription(userIdToProfile, user.uid, profileUpdated);
-  _userLibrarySubscription =
-      setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
-  _lentToMeSubscription =
-      setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
-  _sentBookRequestsSubscription = setupSentBookRequestsSubscription(
-      sentBookRequests, user, _sentBookRequestsUpdated);
-  _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(
-      receivedBookRequests, user, _receivedBookRequestsUpdated);
-  _friendsSubscription =
-      setupFriendsSubscription(friendIDs, user, _friendsUpdated);
-  _requestsSubscription =
-      setupRequestsSubscription(requestIDs, user, _friendRequestsUpdated);
-  _sentFriendRequestsSubscription = setupSentFriendRequestSubscription(
-      sentFriendRequests, user.uid, _sentFriendRequestsUpdated);
+  userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated, context: context);
+  userIdToProfileSubscription[user.uid] = setupProfileSubscription(userIdToProfile, user.uid, profileUpdated);
+  _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
+  _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
+  _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
+  _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);
+  _friendsSubscription = setupFriendsSubscription(friendIDs, user, _friendsUpdated);
+  _requestsSubscription = setupRequestsSubscription(requestIDs, user, _friendRequestsUpdated);
+  _sentFriendRequestsSubscription = setupSentFriendRequestSubscription(sentFriendRequests, user.uid, _sentFriendRequestsUpdated);
 }
 
 void cancelDatabaseSubscriptions() {
@@ -86,16 +74,14 @@ void updatePageDataRefreshNotifier() {
   // on the bottombar, since the offstage bottombar loads the 5 pages into memory. Note that this is only a concern
   // with the main pages (homepage, add books page, profile), not the nested pages since those are disposed when user
   // clicks off them (prevIndex logic) and thus are never in memory when the user's selectedIndex isn't the one for that page.
-  pageDataUpdatedNotifier.value = (pageDataUpdatedNotifier.value + 1) %
-      100; // the mod just to ensure the value cant overflow since theoretically it can without it
+   // using mod just to ensure the value cant overflow since theoretically it can without it
+  pageDataUpdatedNotifier.value = (pageDataUpdatedNotifier.value + 1) % 100;
 }
 
 // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
 // for them, which will call setState and refresh the page with the updated userLibrary.
 void _ownedBooksUpdated() {
-  if (selectedIndex == homepageIndex ||
-      selectedIndex == addBookPageIndex ||
-      selectedIndex == profileIndex) {
+  if (selectedIndex == homepageIndex || selectedIndex == addBookPageIndex || selectedIndex == profileIndex) {
     updatePageDataRefreshNotifier();
   }
 }
@@ -103,9 +89,7 @@ void _ownedBooksUpdated() {
 void _lentToMeBooksUpdated() {
   // if we are on the pages which care about books lent to the user we refresh it
   // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it
-  if (selectedIndex == homepageIndex ||
-      selectedIndex == friendsPageIndex ||
-      selectedIndex == profileIndex) {
+  if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex || selectedIndex == profileIndex) {
     updatePageDataRefreshNotifier();
   }
 }
