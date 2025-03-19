@@ -1,5 +1,6 @@
 import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:shelfswap/core/global_variables.dart';
@@ -232,33 +233,40 @@ class NotificationService {
   // TODO found from https://www.youtube.com/watch?v=dXbd0GcKERU delete this comment k?
   // this dont work, basically this needs to be done through cloud functions using firebase admin sdk
   // since the access token is weird to get otherwise, its just something which is done by server not client. 
-  Future<void> sendNotification(String title, String body) async {
+  Future<void> sendNotification(String title, String body, String uidToSendTo) async {
     String accessToken = "";
     dynamic messagePayload = {
-      'message': {
-        'topic': 'all_devices',
-        'data': {
-          'title': title,
-          'body': body,
-          // if you do a type in this data you can use that to navigate to specific screens when clicking on the notif
-          // also im excluding notification field here since I think that allows for the prevention of background notifications become "misc"
-        },
-        'android': {
-          'priority': 'high',
-          'notification': {'channel_id': 'high_importance_channel'}
-        }
-      }
+      // 'message': {
+      //   'topic': 'all_devices',
+      //   'data': {
+      //     'title': title,
+      //     'body': body,
+      //     // if you do a type in this data you can use that to navigate to specific screens when clicking on the notif
+      //     // also im excluding notification field here since I think that allows for the prevention of background notifications become "misc"
+      //   },
+      //   'android': {
+      //     'priority': 'high',
+      //     'notification': {'channel_id': 'high_importance_channel'}
+      //   }
+      // },
+      'title': title,
+      'body': body,
+      'uid': uidToSendTo,
     };
-    const String url = 'https://fcm.googleapis.com/v1/projects/libraryproject10-2f3aa/messages:send';
     final headers = {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
     };
-
+    String endpoint = dotenv.env['AWS_SEND_NOTIFICATION_ENDPOINT'] ?? "";
     final response = await http.post(
-      Uri.parse(url),
+      Uri.parse(endpoint),
       headers: headers,
       body: json.encode(messagePayload),
+    ).timeout(
+      const Duration(seconds: 25),
+      onTimeout: () {
+        throw "Timeout"; // TODO add try catch block
+      },
     );
 
     if (response.statusCode == 200) {

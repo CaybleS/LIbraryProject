@@ -354,6 +354,12 @@ class _SettingsState extends State<Settings> {
                 ],
               ),
             ),
+            ElevatedButton(
+              onPressed: () async {
+                await notificationInstance.sendNotification("Test title", "Test body hi this is my notification", widget.user.uid);
+              },
+              child: const Text("Press me to send notif"),
+            ),
             const Spacer(), // I want the stats on the bottom and this is just the perfect use case for Spacer thats crazy
             const Text( // can also add stuff like books rdy to return num friends num chat msgs sent num book requests received idk
               "Your Stats",

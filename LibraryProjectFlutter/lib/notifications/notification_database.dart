@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shelfswap/database/database.dart';
+// TODO this whole design is unnecessary nice one :|
 
 // TODO do old tokens get detected when sending notifications? When exactly do tokens get reset? IDk.
 // this function will just always overwrite the current user token spot
