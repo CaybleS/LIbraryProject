@@ -13,54 +13,77 @@ class CreateAccount extends StatefulWidget {
 }
 
 class _CreateAccountState extends State<CreateAccount> {
-  final TextEditingController nameCtrl = TextEditingController();
-  final TextEditingController emailCtrl = TextEditingController();
-  final TextEditingController passwordCtrl = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController rePasswordController = TextEditingController();
 
-  String nameErr = '';
-  String emailErr = '';
-  String pswdErr = '';
-  String loginErr = '';
+  String nameError = '';
+  String emailError = '';
+  String passwordError = '';
+  String loginError = '';
   bool showLoading = false;
   bool showEmailVerificationText = false;
 
   void createBtnClicked() async {
-    String name = nameCtrl.text.trim();
-    String email = emailCtrl.text.trim();
-    String pswd = passwordCtrl.text.trim();
-    emailErr = '';
-    pswdErr = '';
-    nameErr = '';
-
-    if (email == '') {
-      emailErr = 'Required';
-      setState(() {});
-    }
-
-    if (pswd == '') {
-      pswdErr = 'Required';
-      setState(() {});
-    }
+    String name = nameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String rePassword = rePasswordController.text.trim();
+    emailError = '';
+    passwordError = '';
+    nameError = '';
 
     if (name == '') {
-      nameErr = 'Required';
+      nameError = 'Required';
       setState(() {});
+      return;
     }
 
-    if (email != '' && pswd != '' && name != '') {
-      setState(() {
-        showLoading = true;
-      });
-      User? user = await createAccount(name, email, pswd, context);
-
-      if (user == null) {
-        loginErr = 'Problem with Login';
-      }
-      setState(() {
-        showLoading = false;
-        showEmailVerificationText = true;
-      });
+    if (email == '') {
+      emailError = 'Required';
+      setState(() {});
+      return;
     }
+
+    // use regedit for check email is valid
+    if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email)) {
+      emailError = 'Invalid Email';
+      setState(() {});
+      return;
+    }
+
+    if (password == '') {
+      passwordError = 'Required';
+      setState(() {});
+      return;
+    }
+
+    if (password != rePassword) {
+      passwordError = 'The passwords do not match.';
+      setState(() {});
+      return;
+    }
+
+    if (password.length < 6) {
+      passwordError = 'The passwords must be at least 6 characters long.';
+      setState(() {});
+      return;
+    }
+
+    setState(() {
+      showLoading = true;
+    });
+    User? user = await createAccount(name, email, password, context);
+
+    if (user == null) {
+      loginError = 'Problem with Login';
+    } else {
+      showEmailVerificationText = true;
+    }
+    setState(() {
+      showLoading = false;
+    });
   }
 
   @override
@@ -85,7 +108,7 @@ class _CreateAccountState extends State<CreateAccount> {
                 children: [
                   const SizedBox(height: 25),
                   TextField(
-                    controller: nameCtrl,
+                    controller: nameController,
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
@@ -97,10 +120,10 @@ class _CreateAccountState extends State<CreateAccount> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                   ),
                   const SizedBox(height: 10),
-                  Text(nameErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  Text(nameError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   TextField(
-                    controller: emailCtrl,
+                    controller: emailController,
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
@@ -112,10 +135,10 @@ class _CreateAccountState extends State<CreateAccount> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                   ),
                   const SizedBox(height: 10),
-                  Text(emailErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  Text(emailError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   TextField(
-                    controller: passwordCtrl,
+                    controller: passwordController,
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
@@ -128,9 +151,28 @@ class _CreateAccountState extends State<CreateAccount> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                   ),
                   const SizedBox(height: 10),
-                  Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  TextField(
+                    controller: rePasswordController,
+                    onTapOutside: (event) {
+                      FocusScope.of(context).unfocus();
+                    },
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Confirm Password',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  Text(
+                    passwordError,
+                    style: const TextStyle(fontSize: 16, color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(loginError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(

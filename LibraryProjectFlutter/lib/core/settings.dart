@@ -179,6 +179,24 @@ class _SettingsState extends State<Settings> {
     }
     DatabaseReference friendRequestsRef = dbReference.child('requests/${widget.user.uid}');
     await removeRef(friendRequestsRef);
+
+    // and userChats
+    DatabaseReference userChatsRef = dbReference.child('userChats/${widget.user.uid}');
+    await removeRef(userChatsRef);
+
+    final chats = await dbReference.child('chats').get();
+    if (chats.exists) {
+      final chatData = chats.value as Map<dynamic, dynamic>;
+      for (var entry in chatData.entries) {
+        final chat = entry.value as Map<dynamic, dynamic>;
+        final chatId = entry.key;
+        final participants = chat['participants'] as Map<dynamic, dynamic>? ?? {};
+        if (participants.containsKey(widget.user.uid) && chat['type'] == 'group') {
+          DatabaseReference participantRef = dbReference.child('chats/$chatId/participants/${widget.user.uid}');
+          await removeRef(participantRef);
+        }
+      }
+    }
     
     // remove the friends
     // I'm putting friends after requests for the race condition of someone accepting a friend request as an account is being deleted

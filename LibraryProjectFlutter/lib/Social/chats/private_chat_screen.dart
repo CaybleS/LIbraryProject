@@ -2,17 +2,20 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shelfswap/Social/profile/profile.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/models/message.dart';
 import 'package:shelfswap/models/user.dart';
 import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:shelfswap/ui/widgets/user_avatar_widget.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,7 +23,7 @@ class PrivateChatScreen extends StatefulWidget {
   const PrivateChatScreen({super.key, required this.chatRoomId, required this.contact});
 
   final String chatRoomId;
-  final UserModel contact;
+  final UserModel? contact;
 
   @override
   State<PrivateChatScreen> createState() => _PrivateChatScreenState();
@@ -36,13 +39,15 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   String messageID = '-1';
   String replyText = '';
   bool isReply = false;
+  File selectedImage = File('');
+  String selectedImagePath = '';
 
   @override
   void initState() {
     super.initState();
     updateUnreadCount(widget.chatRoomId, userModel.value!.uid);
     scrollToBottom();
-    SecureChatService.instance.initialize(userModel.value!.uid);
+    // SecureChatService.instance.initialize(userModel.value!.uid);
   }
 
   Future<void> scrollToBottom() async {
@@ -69,8 +74,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
             if (!snapshot.hasData) {
               return const SizedBox.shrink();
             }
-            final user = UserModel.fromJson(
-                snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
+            final user = snapshot.data!.snapshot.value == null
+                ? null
+                : UserModel.fromJson(
+                    snapshot.data!.snapshot.value as Map<dynamic, dynamic>, snapshot.data!.snapshot.key!);
             return Row(
               children: [
                 Expanded(
@@ -82,21 +89,42 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     ),
                   ),
                 ),
-                Column(
-                  children: [
-                    Text(
-                      user.name,
-                    ),
-                    Text(
-                      user.isTyping ? 'is typing...' : kGetTime(user.lastSignedIn),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
+                GestureDetector(
+                  onTap: () {
+                    if (user == null) return;
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid)));
+                  },
+                  child: Column(
+                    children: [
+                      Text(
+                        user?.name ?? 'Deleted Account',
+                      ),
+                      if (user != null)
+                        Text(
+                          user.isTyping ? 'is typing...' : kGetTime(user.lastSignedIn),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                    ],
+                  ),
                 ),
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: UserAvatarWidget(photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (user == null) return;
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid)));
+                    },
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: UserAvatarWidget(
+                        photoUrl: user?.photoUrl,
+                        name: user?.name ?? 'Deleted Account',
+                        avatarColor: user?.avatarColor ?? Colors.red,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -116,16 +144,28 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 List<MessageModel> messages = snapshot.data!;
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  itemCount: messages.length,
+                  itemCount: messages.length + (selectedImagePath.isEmpty ? 0 : 1),
                   controller: _scrollController,
                   reverse: true,
                   itemBuilder: (context, index) {
-                    final message = messages[index];
+                    if (selectedImagePath.isNotEmpty && index == 0) {
+                      return Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          height: 30,
+                          width: 30,
+                          child: SharedWidgets.displayCircularProgressIndicator(3),
+                        ),
+                      );
+                    }
+                    int messageIndex = selectedImagePath.isNotEmpty ? index - 1 : index;
+                    final message = messages[messageIndex];
                     bool isMe = message.senderId == userModel.value!.uid;
-                    bool isTopMessage = messages.length == index + 1;
+                    bool isTopMessage = messages.length == messageIndex + 1;
                     return Column(
                       children: [
-                        if (isTopMessage || !_isSameDay(messages[index + 1].sentTime, message.sentTime))
+                        if (isTopMessage || !_isSameDay(messages[messageIndex + 1].sentTime, message.sentTime))
                           Align(
                             alignment: Alignment.center,
                             child: Container(
@@ -136,7 +176,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                 borderRadius: const BorderRadius.all(Radius.circular(20)),
                               ),
                               child: Text(
-                                _formatDate(messages[index].sentTime),
+                                _formatDate(messages[messageIndex].sentTime),
                                 style: const TextStyle(fontSize: 16, color: Colors.white),
                               ),
                             ),
@@ -148,16 +188,18 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                             padding: EdgeInsets.all(message.type == MessageType.image ? 2 : 10),
                             decoration: BoxDecoration(
-                              color: message.senderId == widget.contact.uid ? Colors.blue : Colors.grey,
+                              color: message.senderId == widget.contact?.uid ? Colors.blue : Colors.grey,
                               borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(
-                                    isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
-                                        ? 20
-                                        : 4),
-                                topRight: Radius.circular(
-                                    !isMe || isTopMessage || messages[index + 1].senderId != messages[index].senderId
-                                        ? 20
-                                        : 4),
+                                topLeft: Radius.circular(isMe ||
+                                        isTopMessage ||
+                                        messages[messageIndex + 1].senderId != messages[messageIndex].senderId
+                                    ? 20
+                                    : 4),
+                                topRight: Radius.circular(!isMe ||
+                                        isTopMessage ||
+                                        messages[messageIndex + 1].senderId != messages[messageIndex].senderId
+                                    ? 20
+                                    : 4),
                                 bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
                                 bottomRight: isMe ? Radius.zero : const Radius.circular(20),
                               ),
@@ -168,7 +210,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                               children: [
                                 if (message.type == MessageType.text) ...[
                                   Text(
-                                    isMe ? message.senderContent! : message.content,
+                                    message.content,
                                     style: TextStyle(fontSize: 16, color: isMe ? Colors.black : Colors.white),
                                   ),
                                   const SizedBox(height: 4),
@@ -183,44 +225,70 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                   ),
                                 ],
                                 if (message.type == MessageType.image)
-                                  Stack(
-                                    alignment: Alignment.bottomLeft,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(isMe ||
-                                                  isTopMessage ||
-                                                  messages[index + 1].senderId != messages[index].senderId
-                                              ? 20
-                                              : 4),
-                                          topRight: Radius.circular(!isMe ||
-                                                  isTopMessage ||
-                                                  messages[index + 1].senderId != messages[index].senderId
-                                              ? 20
-                                              : 4),
-                                          bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
-                                          bottomRight: isMe ? Radius.zero : const Radius.circular(20),
-                                        ),
-                                        child: CachedNetworkImage(
-                                          imageUrl: isMe ? message.senderContent! : message.content,
-                                        ),
-                                      ),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.withOpacity(0.8),
-                                          borderRadius: const BorderRadius.all(Radius.circular(20)),
-                                        ),
-                                        margin: const EdgeInsets.only(left: 5, bottom: 5),
-                                        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 7),
-                                        child: Text(
-                                          _createTimeTextWidget(message.sentTime),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white,
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => Scaffold(
+                                            appBar: AppBar(),
+                                            body: Center(
+                                              child: InteractiveViewer(
+                                                child: CachedNetworkImage(imageUrl: message.content),
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      );
+                                    },
+                                    child: Stack(
+                                      alignment: Alignment.bottomLeft,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(isMe ||
+                                                    isTopMessage ||
+                                                    messages[messageIndex + 1].senderId !=
+                                                        messages[messageIndex].senderId
+                                                ? 20
+                                                : 4),
+                                            topRight: Radius.circular(!isMe ||
+                                                    isTopMessage ||
+                                                    messages[messageIndex + 1].senderId !=
+                                                        messages[messageIndex].senderId
+                                                ? 20
+                                                : 4),
+                                            bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
+                                            bottomRight: isMe ? Radius.zero : const Radius.circular(20),
+                                          ),
+                                          child: CachedNetworkImage(
+                                            imageUrl: message.content,
+                                            progressIndicatorBuilder: (context, url, progress) {
+                                              return Container(
+                                                alignment: Alignment.center,
+                                                height: 200,
+                                                width: 200,
+                                                child: CircularProgressIndicator(value: progress.progress),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.withOpacity(0.8),
+                                            borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                          ),
+                                          margin: const EdgeInsets.only(left: 5, bottom: 5),
+                                          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 7),
+                                          child: Text(
+                                            _createTimeTextWidget(message.sentTime),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                               ],
                             ),
@@ -233,45 +301,102 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-            child: TextField(
-              controller: messageController,
-              onChanged: (value) {
-                if (_timer?.isActive ?? false) {
-                  _timer?.cancel();
-                }
-                FirebaseDatabase.instance.ref().child('users/${userModel.value!.uid}/').update({'isTyping': true});
-                _timer = Timer(
-                  const Duration(milliseconds: 2000),
-                  () {
-                    FirebaseDatabase.instance.ref().child('users/${userModel.value!.uid}/').update({'isTyping': false});
-                  },
-                );
-              },
-              decoration: InputDecoration(
-                hintText: 'Message',
-                hintStyle: const TextStyle(color: Colors.grey),
-                fillColor: Colors.white,
-                filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                prefixIcon: IconButton(
-                  onPressed: () {
-                    uploadImage();
-                  },
-                  icon: const Icon(IconsaxPlusLinear.camera),
+          if (widget.contact != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  border: Border.all(color: Colors.blue, width: 1.5),
                 ),
-                prefixIconColor: Colors.blue,
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    sendMessage();
-                  },
-                  icon: const Icon(IconsaxPlusLinear.send_1),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (selectedImage.path.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(7),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                selectedImage,
+                                width: MediaQuery.sizeOf(context).width * 0.5,
+                              ),
+                            ),
+                            Positioned(
+                              top: 5,
+                              right: 5,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selectedImage = File('');
+                                    selectedImagePath = '';
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Colors.grey,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white)),
+                                  padding: const EdgeInsets.all(2),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    TextField(
+                      controller: messageController,
+                      onChanged: (value) {
+                        if (_timer?.isActive ?? false) {
+                          _timer?.cancel();
+                        }
+                        FirebaseDatabase.instance
+                            .ref()
+                            .child('users/${userModel.value!.uid}/')
+                            .update({'isTyping': true});
+                        _timer = Timer(
+                          const Duration(milliseconds: 2000),
+                          () {
+                            FirebaseDatabase.instance
+                                .ref()
+                                .child('users/${userModel.value!.uid}/')
+                                .update({'isTyping': false});
+                          },
+                        );
+                      },
+                      maxLines: 5,
+                      minLines: 1,
+                      decoration: InputDecoration(
+                        hintText: 'Message',
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        fillColor: Colors.white,
+                        filled: true,
+                        border:
+                            OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        prefixIcon: IconButton(
+                          onPressed: () {
+                            selectImage();
+                          },
+                          icon: const Icon(IconsaxPlusLinear.camera),
+                        ),
+                        prefixIconColor: Colors.blue,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            sendMessage();
+                          },
+                          icon: const Icon(IconsaxPlusLinear.send_1),
+                        ),
+                        suffixIconColor: Colors.blue,
+                      ),
+                    ),
+                  ],
                 ),
-                suffixIconColor: Colors.blue,
               ),
             ),
-          ),
         ],
       ),
     );
@@ -288,31 +413,41 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         final messagesMap = event.snapshot.value;
 
         if (messagesMap == null) return [];
-        return (messagesMap as Map).entries.map((entry) {
-          bool isMe = entry.value['sender'] == userModel.value!.uid;
-          String decryptedContent;
-          if (isMe && entry.value.containsKey('senderContent') != null) {
-            String encryptedForSender = entry.value['senderContent'];
-            try {
-              decryptedContent = SecureChatService.instance.decryptMessage(encryptedForSender);
-            } catch (e) {
-              print(e);
-              decryptedContent = 'Error decrypting message';
-            }
-            entry.value['senderContent'] = decryptedContent;
-          } else if (!isMe) {
-            String encryptedContent = entry.value['content'];
-            try {
-              decryptedContent = SecureChatService.instance.decryptMessage(encryptedContent);
-            } catch (e) {
-              decryptedContent = 'Error decrypting message';
-            }
-            entry.value['content'] = decryptedContent;
-          }
+
+        final messages = (messagesMap as Map).entries.map((entry) {
+          // bool isMe = entry.value['sender'] == userModel.value!.uid;
+          // String decryptedContent;
+          // if (isMe && entry.value.containsKey('senderContent') != null) {
+          //   String encryptedForSender = entry.value['senderContent'];
+          //   try {
+          //     decryptedContent = SecureChatService.instance.decryptMessage(encryptedForSender);
+          //   } catch (e) {
+          //     print('Error decrypting message $e');
+          //     decryptedContent = 'Error decrypting message';
+          //   }
+          //   entry.value['senderContent'] = decryptedContent;
+          // } else if (!isMe) {
+          //   String encryptedContent = entry.value['content'];
+          //   try {
+          //     decryptedContent = SecureChatService.instance.decryptMessage(encryptedContent);
+          //   } catch (e) {
+          //     decryptedContent = 'Error decrypting message';
+          //   }
+          //   entry.value['content'] = decryptedContent;
+          // }
           MessageModel message = MessageModel.fromJson(entry.key, entry.value);
           return message;
         }).toList()
           ..sort((a, b) => b.sentTime.compareTo(a.sentTime));
+        _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
+          'lastMessage': {
+            'text': messages.first.content,
+            'timestamp': messages.first.sentTime.toUtc().millisecondsSinceEpoch,
+            'sender': messages.first.senderId
+          },
+          'unreadCount': 0
+        });
+        return messages;
       });
     });
   }
@@ -331,13 +466,17 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Stream getUserData() {
-    return FirebaseDatabase.instance.ref('users/${widget.contact.uid}').onValue;
+    return FirebaseDatabase.instance.ref('users/${widget.contact?.uid}').onValue;
   }
 
   void sendMessage() async {
+    if (widget.contact == null) return;
+
     final messageText = messageController.text.trim();
+    messageController.clear();
+    await uploadImage();
+
     if (messageText.isNotEmpty) {
-      messageController.clear();
       if (isEditing) {
         if (messageID == '-1') return;
         await _database.child('messages/${widget.chatRoomId}/$messageID').update({
@@ -346,27 +485,27 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         });
       } //
       else {
-        String encryptedForRecipient = await SecureChatService.instance.encryptMessage(messageText, widget.contact.uid);
-        String encryptedForSender = await SecureChatService.instance.encryptMessage(messageText, userModel.value!.uid);
+        // String encryptedForRecipient = await SecureChatService.instance.encryptMessage(messageText, widget.contact.uid);
+        // String encryptedForSender = await SecureChatService.instance.encryptMessage(messageText, userModel.value!.uid);
 
         final id = _database.child('messages/${widget.chatRoomId}').push().key;
         MessageModel message = MessageModel(
           id: id!,
-          content: encryptedForRecipient,
-          senderContent: encryptedForSender,
+          content: messageText,
+          // senderContent: encryptedForSender,
           senderId: userModel.value!.uid,
           sentTime: DateTime.now().toUtc(),
         );
         if (isReply) {
           message.replyTo = replyText;
-          message.userReply = widget.contact.name;
+          message.userReply = widget.contact!.name;
         }
 
         await _database.child('messages/${widget.chatRoomId}/$id').set(message.toJson());
         await _database.child('chats/${widget.chatRoomId}').update(Chat(
               id: widget.chatRoomId,
               name: '',
-              participants: [userModel.value!.uid, widget.contact.uid],
+              participants: [userModel.value!.uid, widget.contact!.uid],
             ).toJson());
         await _database.child('userChats/${userModel.value!.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
@@ -376,7 +515,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           },
           'unreadCount': 0
         });
-        await _database.child('userChats/${widget.contact.uid}/${widget.chatRoomId}').update({
+        await _database.child('userChats/${widget.contact!.uid}/${widget.chatRoomId}').update({
           'lastMessage': {
             'text': messageText,
             'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
@@ -405,12 +544,27 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     return DateFormat('MM/dd/yyyy').format(sentTime.toLocal());
   }
 
-  void uploadImage() async {
+  void selectImage() async {
     ImagePicker imagePicker = ImagePicker();
     XFile? xFile = await imagePicker.pickImage(source: ImageSource.gallery);
 
     if (xFile != null) {
       File image = File(xFile.path);
+      setState(() {
+        selectedImage = image;
+      });
+    }
+  }
+
+  Future<void> uploadImage() async {
+    if (widget.contact == null) return;
+
+    if (selectedImage.path.isNotEmpty) {
+      setState(() {
+        selectedImagePath = selectedImage.path;
+        selectedImage = File('');
+      });
+      File image = File(selectedImagePath);
       String filename = const Uuid().v1();
 
       final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
@@ -421,14 +575,13 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
       String url = await uploadTask.ref.getDownloadURL();
       final messageId = _database.child('messages/${widget.chatRoomId}').push().key!;
-      String encryptedForRecipient = await SecureChatService.instance.encryptMessage(url, widget.contact.uid);
-      String encryptedForSender = await SecureChatService.instance.encryptMessage(url, userModel.value!.uid);
+      // String encryptedForRecipient = await SecureChatService.instance.encryptMessage(url, widget.contact!.uid);
+      // String encryptedForSender = await SecureChatService.instance.encryptMessage(url, userModel.value!.uid);
 
       final id = _database.child('messages/${widget.chatRoomId}').push().key;
       MessageModel message = MessageModel(
         id: id!,
-        content: encryptedForRecipient,
-        senderContent: encryptedForSender,
+        content: url,
         senderId: userModel.value!.uid,
         type: MessageType.image,
         sentTime: DateTime.now().toUtc(),
@@ -439,18 +592,20 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         'sender': userModel.value!.uid
       };
       await _database.child('messages/${widget.chatRoomId}/$messageId').set(message.toJson());
+      setState(() {
+        selectedImagePath = selectedImage.path;
+      });
       await _database.child('chats/${widget.chatRoomId}').update(Chat(
             id: widget.chatRoomId,
             name: '',
-            participants: [userModel.value!.uid, widget.contact.uid],
-            // publicKey: publicKey,
+            participants: [userModel.value!.uid, widget.contact!.uid],
           ).toJson());
 
       await _database
           .child('userChats/${userModel.value!.uid}/${widget.chatRoomId}')
           .update({'lastMessage': userLastMessage, 'unreadCount': 0});
       await _database
-          .child('userChats/${widget.contact.uid}/${widget.chatRoomId}')
+          .child('userChats/${widget.contact!.uid}/${widget.chatRoomId}')
           .update({'lastMessage': userLastMessage, 'unreadCount': ServerValue.increment(1)});
       scrollToBottom();
     }

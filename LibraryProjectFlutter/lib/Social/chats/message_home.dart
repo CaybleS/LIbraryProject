@@ -1,13 +1,12 @@
-import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:shelfswap/Social/chats/private_chat_screen.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/appbar.dart';
 import 'package:shelfswap/core/global_variables.dart';
-import 'package:shelfswap/core/conditional_widget.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/Social/chats/chat_screen.dart';
@@ -136,46 +135,7 @@ class _MessageHomeState extends State<MessageHome> {
 
       final contact = userIdToUserModel[contactId];
       if (contact == null) {
-        return Container(
-          height: 70,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: <Widget>[
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.primaries[Random().nextInt(Colors.primaries.length)],
-                ),
-                width: 50,
-                height: 50,
-                alignment: Alignment.center,
-                child: const Text(
-                  'L',
-                  style: TextStyle(color: Colors.black, fontSize: 20),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Loading...',
-                    style: TextStyle(color: Colors.black, fontSize: 18),
-                  ),
-                  Text(
-                    'Loading...',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
+        return _chatItemBuilder(context, chat, contact, true);
       }
 
       return _chatItemBuilder(context, chat, contact);
@@ -262,20 +222,20 @@ class _MessageHomeState extends State<MessageHome> {
     return DateFormat('hh:mm a').format(date.toLocal());
   }
 
-  Widget _createAvatarWidget(Chat chat, UserModel? contact) {
-    final avatarColor = contact?.avatarColor ?? chat.avatarColor;
+  Widget _createAvatarWidget(Chat chat, UserModel? contact, bool isDeletedAccount) {
+    final avatarColor =isDeletedAccount ? Colors.red : contact?.avatarColor ?? chat.avatarColor;
     final chatImage = chat.chatImage;
     final photoUrl = contact?.photoUrl;
 
     return UserAvatarWidget(
       photoUrl: chat.type == ChatType.group ? chatImage : photoUrl,
-      name: chat.type == ChatType.group ? chat.name : contact!.name,
+      name: chat.type == ChatType.group ? chat.name : isDeletedAccount ? 'Deleted Account' : contact!.name,
       avatarColor: avatarColor,
     );
   }
 
   // TODO this is very cool but its very unintuitive I would never have guessed that you could do this
-  Widget _chatItemBuilder(BuildContext context, Chat chat, UserModel? contact) {
+  Widget _chatItemBuilder(BuildContext context, Chat chat, UserModel? contact, [bool isDeletedAccount = false]) {
     return Dismissible(
       key: Key(chat.id),
       onDismissed: (direction) {
@@ -300,7 +260,7 @@ class _MessageHomeState extends State<MessageHome> {
                     children: [
                       Row(
                         children: [
-                          _createAvatarWidget(chat, contact),
+                          _createAvatarWidget(chat, contact, isDeletedAccount),
                           const SizedBox(width: 5),
                           Text(
                             chat.type == ChatType.private ? 'Delete chat' : 'Leave group',
@@ -399,7 +359,7 @@ class _MessageHomeState extends State<MessageHome> {
               MaterialPageRoute(
                 builder: (context) => PrivateChatScreen(
                   chatRoomId: chat.id,
-                  contact: contact!,
+                  contact: contact,
                 ),
               ),
             );
@@ -424,8 +384,8 @@ class _MessageHomeState extends State<MessageHome> {
               children: [
                 Stack(
                   children: [
-                    _createAvatarWidget(chat, contact),
-                    if (chat.type == ChatType.private && contact!.isActive == true)
+                    _createAvatarWidget(chat, contact, isDeletedAccount),
+                    if (chat.type == ChatType.private && isDeletedAccount == false && contact!.isActive == true)
                       Positioned(
                         bottom: 0,
                         right: 0,
@@ -446,18 +406,18 @@ class _MessageHomeState extends State<MessageHome> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        chat.type == ChatType.private ? contact!.name : chat.name,
+                        chat.type == ChatType.private ? isDeletedAccount ? 'Deleted Account' : contact!.name : chat.name,
                         style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
                         softWrap: true,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        (chat.type == ChatType.private && contact!.isTyping) ? 'is typing...' : chat.lastMessage ?? '',
+                        (chat.type == ChatType.private && isDeletedAccount == false && contact!.isTyping) ? 'is typing...' : chat.lastMessage ?? '',
                         style: TextStyle(
                           fontSize: 14,
                           color: (chat.lastMessageSender != userModel.value!.uid ||
-                                  chat.type == ChatType.private && contact!.isTyping)
+                                  chat.type == ChatType.private && isDeletedAccount == false && contact!.isTyping)
                               ? Colors.blue
                               : Colors.black,
                         ),

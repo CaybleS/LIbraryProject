@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shelfswap/app_startup/create_account_screen.dart';
+import 'package:shelfswap/app_startup/forgot_password.dart';
 import 'package:shelfswap/app_startup/persistent_bottombar.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
@@ -38,14 +39,11 @@ class _LoginPageState extends State<LoginPage> {
     FirebaseAuth auth = FirebaseAuth.instance;
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (auth.currentUser != null
-          // && auth.currentUser!.emailVerified
-      ) {
+      if (auth.currentUser != null && auth.currentUser!.emailVerified) {
         user = auth.currentUser;
         changeStatus(true);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
-      }
-      else {
+      } else {
         FlutterNativeSplash.remove();
       }
     });
@@ -150,9 +148,12 @@ class _LoginPageState extends State<LoginPage> {
           actions: [
             Padding(
               padding: const EdgeInsets.all(5),
-              child: Image.asset(
-                "assets/logo/app_logo.png",
-                fit: BoxFit.fill,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(4)),
+                child: Image.asset(
+                  "assets/logo/app_logo.png",
+                  fit: BoxFit.fill,
+                ),
               ),
             ),
           ],
@@ -167,7 +168,6 @@ class _LoginPageState extends State<LoginPage> {
                   const Text(
                     'Welcome!',
                     style: TextStyle(
-                      // it was originally the color of the appbar (hard-coded color blue) by whoever made this. I think it's fine to make it the same color as appbar.
                       color: AppColor.appbarColor,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
@@ -203,6 +203,16 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.white,
                       filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPassword()));
+                      },
+                      child: Text('Forgot Password?', style: TextStyle(color: Colors.indigo.shade800)),
                     ),
                   ),
                   const SizedBox(height: 10),

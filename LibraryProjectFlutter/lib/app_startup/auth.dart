@@ -57,7 +57,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
       }
 
       await changeStatus(true);
-      await SecureChatService.instance.initialize(user.uid);
+      // await SecureChatService.instance.initialize(user.uid);
 
       return user;
     } else {
@@ -100,12 +100,12 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
       debugPrint("user null");
     }
 
-    // if (userCredential.user?.emailVerified == false) {
-    //   return {
-    //     'status': false,
-    //     'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
-    //   };
-    // }
+    if (userCredential.user?.emailVerified == false) {
+      return {
+        'status': false,
+        'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
+      };
+    }
 
     await changeStatus(true);
     final userRef = await dbReference.child('users/${userCredential.user!.uid}').once();
@@ -113,7 +113,7 @@ Future<Map<String, dynamic>> logIn(String email, String password) async {
       Map data = userRef.snapshot.value as Map;
       userModel.value = UserModel.fromJson(data, userRef.snapshot.key!);
     }
-    await SecureChatService.instance.initialize(userCredential.user!.uid);
+    // await SecureChatService.instance.initialize(userCredential.user!.uid);
 
     return {'status': true, 'user': userCredential.user};
   } catch (e) {

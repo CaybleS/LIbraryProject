@@ -11,6 +11,7 @@ import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/models/message.dart';
 import 'package:shelfswap/models/user.dart';
 import 'package:shelfswap/ui/colors.dart';
+import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:shelfswap/ui/widgets/user_avatar_widget.dart';
 
 class ChatInfoScreen extends StatefulWidget {
@@ -110,7 +111,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                '${chat.participants.length} members',
+                '${members.length} members',
                 style: const TextStyle(color: Colors.black),
               ),
               const SizedBox(height: 20),
@@ -182,31 +183,42 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        members[index].name,
+                                        user.name,
                                         style: const TextStyle(fontWeight: FontWeight.bold),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       Text(
-                                        // kGetTime(members[index].lastSignedIn),
-                                        members[index].username,
+                                        user.username,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
-                                SizedBox(
-                                  width: 60,
-                                  child: Text(
-                                    members[index].uid == chat.createdBy ? 'Owner' : '',
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w500,
+                                if (user.uid == chat.createdBy)
+                                  const SizedBox(
+                                    width: 60,
+                                    child: Text(
+                                      'Owner',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                ),
+                                if (userModel.value!.uid == chat.createdBy && user.uid != chat.createdBy)
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final result = await SharedWidgets.displayConfirmActionDialog(context, '');
+                                      if (result) _removeMember(user);
+                                    },
+                                    child: const Icon(
+                                      IconsaxPlusLinear.close_circle,
+                                      color: Colors.red,
+                                    ),
+                                  ),
                               ],
                             );
                           },
@@ -281,7 +293,7 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                     } else {
                       var filtered = userIdToUserModel.entries.where((MapEntry friend) =>
                           friendIDs.contains(friend.value.uid) &&
-                          friend.value.uid.toLowerCase().contains(controller.text.toLowerCase()));
+                          friend.value.name.toLowerCase().contains(controller.text.toLowerCase()));
                       return Map.fromEntries(filtered).entries.map((entry) => entry.value);
                     }
                   },
@@ -425,6 +437,39 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
           'unreadCount': ServerValue.increment(1),
         });
       }
+    }
+  }
+
+  void _removeMember(UserModel member) async {
+    await dbReference.child('chats/${chat.id}/participants/${member.uid}').remove();
+    setState(() {
+      members.remove(member);
+      chat.participants.remove(member.uid);
+    });
+    await dbReference.child('userChats/${member.uid}/${chat.id}').remove();
+
+    int timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+    await dbReference.child('chats/${chat.id}/cleared/${member.uid}').set(timestamp);
+
+    final id = dbReference.child('messages/${chat.id}').push().key;
+    MessageModel message = MessageModel(
+      id: id!,
+      content: '${member.name} has been removed from the group by the ${userModel.value!.name}',
+      senderId: userModel.value!.uid,
+      sentTime: DateTime.now().toUtc(),
+      type: MessageType.event,
+    );
+    await dbReference.child('messages/${chat.id}/$id').set(message.toJson());
+
+    for (final participantId in chat.participants) {
+      await dbReference.child('userChats/$participantId/${chat.id}').update({
+        'lastMessage': {
+          'text': '${member.name} has been removed from the group by the ${userModel.value!.name}',
+          'timestamp': DateTime.now().toUtc().millisecondsSinceEpoch,
+          'sender': userModel.value!.uid
+        },
+        'unreadCount': ServerValue.increment(participantId == userModel.value!.uid ? 0 : 1),
+      });
     }
   }
 }

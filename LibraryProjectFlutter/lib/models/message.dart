@@ -4,7 +4,7 @@ enum MessageType { text, image, file, event }
 class MessageModel {
   String id;
   String content;
-  String? senderContent;
+  // String? senderContent;
   String senderId;
   String? replyTo;
   String? userReply;
@@ -18,7 +18,7 @@ class MessageModel {
   MessageModel({
     required this.id,
     required this.content,
-    this.senderContent,
+    // this.senderContent,
     required this.senderId,
     required this.sentTime,
     this.replyTo,
@@ -33,7 +33,7 @@ class MessageModel {
     return MessageModel(
       id: messageId,
       content: json['content'],
-      senderContent: json['senderContent'],
+      // senderContent: json['senderContent'],
       senderId: json['sender'],
       sentTime: DateTime.fromMillisecondsSinceEpoch(json['sentTime']),
       replyTo: json['replyTo'],
@@ -48,7 +48,7 @@ class MessageModel {
   Map<String, dynamic> toJson() {
     return {
       'content': content,
-      'senderContent': senderContent,
+      // 'senderContent': senderContent,
       'sender': senderId,
       'replyTo': replyTo,
       'userReply': userReply,
