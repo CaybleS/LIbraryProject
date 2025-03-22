@@ -1,10 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shelfswap/book/book_requests_page.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/ui/colors.dart';
-import 'package:shelfswap/ui/shared_widgets.dart';
 
 Future<void> displayAppReturnDialog(BuildContext context, User user) async {
   int numBooksReadyToReturn = 0;
@@ -61,70 +59,6 @@ class _AppReturnDialogState extends State<AppReturnDialog> {
     setState(() {});
   }
 
-  Widget _displayInfoOnRequests() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text("${receivedBookRequests.length} outstanding book requests"),
-        (receivedBookRequests.isEmpty)
-        ? const SizedBox.shrink()
-        : Flexible(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
-              ),
-              onPressed: () async {
-                // TODO should it pop the dialog idk
-                await Navigator.push(context, MaterialPageRoute( builder: (context) => BookRequestsPage(widget.user)));
-              },
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  "View",
-                  style: TextStyle(color: Colors.black, fontSize: 16),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-Widget _displayInfoOnReadyToReturn() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text("Have $numBooksReadyToReturn books ready to return"),
-        (numBooksReadyToReturn == 0)
-        ? const SizedBox.shrink()
-        : Flexible(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
-              ),
-              onPressed: () {
-                // TODO go to homepage place or something idk
-                SharedWidgets.displayPositiveFeedbackDialog(context, "Not implemented sorry :(");
-              },
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  "View",
-                  style: TextStyle(color: Colors.black, fontSize: 16),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _displayDialog() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -144,13 +78,13 @@ Widget _displayInfoOnReadyToReturn() {
             ],
           ),
         ),
-        // const SizedBox(height: 6),
+        const SizedBox(height: 6),
         Flexible(
-          child: _displayInfoOnRequests(),
+          child: Text("You have ${receivedBookRequests.length} outstanding book requests"),
         ),
-        // const SizedBox(height: 8),
+        const SizedBox(height: 8),
         Flexible(
-          child: _displayInfoOnReadyToReturn(),
+          child: Text("You have $numBooksReadyToReturn books ready to return"),
         ),
         const SizedBox(height: 10),
         Flexible(

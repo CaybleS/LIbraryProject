@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
 import 'package:shelfswap/add_book/shared_helper_util.dart';
 import 'package:shelfswap/models/book.dart';
@@ -22,6 +23,8 @@ class _CustomAddState extends State<CustomAdd> {
   final _inputAuthorController = TextEditingController();
   bool _noTitleInput = false;
   bool _noAuthorInput = false;
+  bool _titleIsMaxLength = false;
+  bool _authorIsMaxLength = false;
   bool _bookAlreadyAddedError = false;
   XFile? _coverImage;
   String? _coverImageUrl;
@@ -30,17 +33,41 @@ class _CustomAddState extends State<CustomAdd> {
   void initState() {
     super.initState();
     _inputTitleController.addListener(() {
+      bool somethingChanged = false;
       if (_noTitleInput && _inputTitleController.text.isNotEmpty) {
-        setState(() {
-          _noTitleInput = false;
-        });
-    }});
+        _noTitleInput = false;
+        somethingChanged = true;
+      }
+      if (_titleIsMaxLength) {
+        _titleIsMaxLength = false;
+        somethingChanged = true;
+      }
+      if (!_titleIsMaxLength && _inputTitleController.text.length == maxLengthForCustomAddedTitleOrAuthor) {
+        _titleIsMaxLength = true;
+        somethingChanged = true;
+      }
+      if (somethingChanged) {
+        setState(() {});
+      }
+    });
     _inputAuthorController.addListener(() {
+      bool somethingChanged = false;
       if (_noAuthorInput && _inputAuthorController.text.isNotEmpty) {
-        setState(() {
-          _noAuthorInput = false;
-        });
-    }});
+        _noAuthorInput = false;
+        somethingChanged = true;
+      }
+      if (_authorIsMaxLength) {
+        _authorIsMaxLength = false;
+        somethingChanged = true;
+      }
+      if (!_authorIsMaxLength && _inputAuthorController.text.length == maxLengthForCustomAddedTitleOrAuthor) {
+        _authorIsMaxLength = true;
+        somethingChanged = true;
+      }
+      if (somethingChanged) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -91,6 +118,26 @@ class _CustomAddState extends State<CustomAdd> {
     return "";
   }
 
+  String? _getInputTitleError() {
+    if (_noTitleInput) {
+      return "Please enter a title";
+    }
+    if (_titleIsMaxLength) {
+      return "You are at the $maxLengthForCustomAddedTitleOrAuthor-character limit";
+    }
+    return null;
+  }
+
+  String? _getInputAuthorError() {
+    if (_noAuthorInput) {
+      return "Please enter an author";
+    }
+    if (_authorIsMaxLength) {
+      return "You are at the $maxLengthForCustomAddedTitleOrAuthor-character limit";
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,7 +158,33 @@ class _CustomAddState extends State<CustomAdd> {
                     width: 60,
                     child: Text("Title:", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
-                  Flexible(child: SharedWidgets.displayTextField("Enter title here", _inputTitleController, _noTitleInput, "Please enter a title")),
+                  Flexible(
+                    child: TextField(
+                      controller: _inputTitleController,
+                      maxLength: maxLengthForCustomAddedTitleOrAuthor,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      decoration: InputDecoration(
+                        counterText: "",
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Enter title here",
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                        ),
+                        errorText: _getInputTitleError(),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _inputTitleController.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                      ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -123,7 +196,33 @@ class _CustomAddState extends State<CustomAdd> {
                     width: 60,
                     child: Text("Author:", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
-                  Flexible(child: SharedWidgets.displayTextField("Enter author here", _inputAuthorController, _noAuthorInput, "Please enter an author")),
+                  Flexible(
+                    child: TextField(
+                      controller: _inputAuthorController,
+                      maxLength: maxLengthForCustomAddedTitleOrAuthor,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      decoration: InputDecoration(
+                        counterText: "",
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Enter author here",
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                        ),
+                        errorText: _getInputAuthorError(),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _inputAuthorController.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                      ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ),
+                  ),
                 ],
               )
             ),

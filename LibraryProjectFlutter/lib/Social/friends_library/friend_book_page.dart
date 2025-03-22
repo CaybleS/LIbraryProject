@@ -13,7 +13,8 @@ class FriendBookPage extends StatefulWidget {
   final User user;
   final Book bookToView;
   final String friendId;
-  const FriendBookPage(this.user, this.bookToView, this.friendId, {super.key});
+  final bool viewingFromSentRequest;
+  const FriendBookPage(this.user, this.bookToView, this.friendId, {this.viewingFromSentRequest = false, super.key});
 }
 
 class _FriendBookPageState extends State<FriendBookPage> {
@@ -29,7 +30,14 @@ class _FriendBookPageState extends State<FriendBookPage> {
       setState(() {});
     };
     _friendsBooksUpdatedListener = () {
-      List<Book> friendsLibrary = List.from(friendIdToBooks[widget.friendId] ?? []);
+      List<Book> friendsLibrary = [];
+      if (widget.viewingFromSentRequest) {
+        // creating a list of all books derived from all sent book requests sent to this friend
+        friendsLibrary = sentBookRequests.values.where((item) => item.receiverId == widget.friendId).map((item) => item.book).toList();
+      }
+      else {
+        friendsLibrary = List.from(friendIdToBooks[widget.friendId] ?? []);
+      }
       if (!friendsLibrary.contains(_friendsLibraryBook)) {
         Navigator.pop(context);
         SharedWidgets.displayErrorDialog(context, "Your friend no longer has this book");

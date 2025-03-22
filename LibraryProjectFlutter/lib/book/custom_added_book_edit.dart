@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shelfswap/add_book/shared_helper_util.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/ui/colors.dart';
@@ -22,6 +24,8 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
   final _editAuthorController = TextEditingController();
   bool _noTitleInput = false;
   bool _noAuthorInput = false;
+  bool _titleIsMaxLength = false;
+  bool _authorIsMaxLength = false;
   bool _noChangeError = false;
   bool _bookAlreadyAddedError = false;
   bool _bookNoLongerExistsError = false; // can only occur in scenarios where user is running the app on multiple devices
@@ -37,17 +41,39 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
       _coverIsSet = true;
     }
     _editTitleController.addListener(() {
+      bool somethingChanged = false;
       if (_noTitleInput && _editTitleController.text.isNotEmpty) {
-        setState(() {
-          _noTitleInput = false;
-        });
+        _noTitleInput = false;
+        somethingChanged = true;
+      }
+      if (_titleIsMaxLength) {
+        _titleIsMaxLength = false;
+        somethingChanged = true;
+      }
+      if (!_titleIsMaxLength && _editTitleController.text.length == maxLengthForCustomAddedTitleOrAuthor) {
+        _titleIsMaxLength = true;
+        somethingChanged = true;
+      }
+      if (somethingChanged) {
+        setState(() {});
       }
     });
     _editAuthorController.addListener(() {
+      bool somethingChanged = false;
       if (_noAuthorInput && _editAuthorController.text.isNotEmpty) {
-        setState(() {
-          _noAuthorInput = false;
-        });
+        _noAuthorInput = false;
+        somethingChanged = true;
+      }
+      if (_authorIsMaxLength) {
+        _authorIsMaxLength = false;
+        somethingChanged = true;
+      }
+      if (!_authorIsMaxLength && _editAuthorController.text.length == maxLengthForCustomAddedTitleOrAuthor) {
+        _authorIsMaxLength = true;
+        somethingChanged = true;
+      }
+      if (somethingChanged) {
+        setState(() {});
       }
     });
     _editTitleController.text = widget.book.title!;
@@ -148,6 +174,26 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
     return "";
   }
 
+  String? _getInputTitleError() {
+    if (_noTitleInput) {
+      return "Please enter a title";
+    }
+    if (_titleIsMaxLength) {
+      return "You are at the $maxLengthForCustomAddedTitleOrAuthor-character limit";
+    }
+    return null;
+  }
+
+  String? _getInputAuthorError() {
+    if (_noAuthorInput) {
+      return "Please enter an author";
+    }
+    if (_authorIsMaxLength) {
+      return "You are at the $maxLengthForCustomAddedTitleOrAuthor-character limit";
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,7 +214,33 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                     width: 60,
                     child: Text("Title:", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
-                  Flexible(child: SharedWidgets.displayTextField("Enter title here", _editTitleController, _noTitleInput, "Please enter a title")),
+                  Flexible(
+                    child: TextField(
+                      controller: _editTitleController,
+                      maxLength: maxLengthForCustomAddedTitleOrAuthor,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      decoration: InputDecoration(
+                        counterText: "",
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Enter title here",
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                        ),
+                        errorText: _getInputTitleError(),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _editTitleController.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                      ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -180,7 +252,33 @@ class _CustomAddedBookEditState extends State<CustomAddedBookEdit> {
                     width: 60,
                     child: Text("Author:", style: TextStyle(fontSize: 16, color: Colors.black)),
                   ),
-                  Flexible(child: SharedWidgets.displayTextField("Enter author here", _editAuthorController, _noAuthorInput, "Please enter an author")),
+                  Flexible(
+                    child: TextField(
+                      controller: _editAuthorController,
+                      maxLength: maxLengthForCustomAddedTitleOrAuthor,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                      decoration: InputDecoration(
+                        counterText: "",
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Enter author here",
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                        ),
+                        errorText: _getInputAuthorError(),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _editAuthorController.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                      ),
+                      onTapOutside: (event) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
+                    ),
+                  ),
                 ],
               )
             ),

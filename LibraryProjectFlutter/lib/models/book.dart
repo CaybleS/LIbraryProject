@@ -95,11 +95,6 @@ class Book {
   }
   
   Future<void> remove(String userId) async {
-    // I dont even think this should be needed for anything. Everywhere in the app, you cant remove a book if its lent out, intentionally.
-    // I just don't think any lent out books should be removable, the user should need to hit the "return book" button. TODO ensure this can be removed
-    if (lentDbKey != null && borrowerId != null) {
-      removeLentBookInfo(lentDbKey!, borrowerId!);
-    }
     if (cloudCoverUrl != null) {
       deleteCoverFromStorage(cloudCoverUrl!);
     }
@@ -163,6 +158,10 @@ class Book {
   }
 
   Map<String, dynamic> toJson() {
+    Map<String, bool>? usersWhoRequestedMap;
+    if (usersWhoRequested != null) {
+      usersWhoRequestedMap = {for (String e in usersWhoRequested!) e: true};
+    }
     return {
       'title': title,
       'author': author,
@@ -182,7 +181,7 @@ class Book {
       'dateLent': dateLent?.toIso8601String(),
       'dateToReturn': dateToReturn?.toIso8601String(),
       'readyToReturn': readyToReturn == null ? null : true,
-      'usersWhoRequested': usersWhoRequested,
+      'usersWhoRequested': usersWhoRequestedMap,
     };
   }
 
@@ -231,9 +230,9 @@ Book createBookFromJson(record) {
   if (record['usersWhoRequested'] != null) {
     book.usersWhoRequested ??= [];
     dynamic usersWhoRequestedInDb = record['usersWhoRequested'];
-    for (dynamic userId in usersWhoRequestedInDb) {
-      book.usersWhoRequested!.add(userId);
-    }
+    usersWhoRequestedInDb.forEach((k, v) {
+      book.usersWhoRequested!.add(k);
+    });
   }
   return book;
 }

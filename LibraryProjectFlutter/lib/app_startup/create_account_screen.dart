@@ -24,6 +24,40 @@ class _CreateAccountState extends State<CreateAccount> {
   String loginError = '';
   bool showLoading = false;
   bool showEmailVerificationText = false;
+  bool _noNameInput = false;
+  bool _noEmailInput = false;
+  bool _noPasswordInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameCtrl.addListener(() {
+      if (_noNameInput && nameCtrl.text.isNotEmpty) {
+        setState(() {
+          _noNameInput = false;
+        });
+    }});
+    emailCtrl.addListener(() {
+      if (_noEmailInput && emailCtrl.text.isNotEmpty) {
+        setState(() {
+          _noEmailInput = false;
+        });
+    }});
+    passwordCtrl.addListener(() {
+      if (_noPasswordInput && passwordCtrl.text.isNotEmpty) {
+        setState(() {
+          _noPasswordInput = false;
+        });
+    }});
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    emailCtrl.dispose();
+    passwordCtrl.dispose();
+    super.dispose();
+  }
 
   void createBtnClicked() async {
     String name = nameController.text.trim();
@@ -113,11 +147,19 @@ class _CreateAccountState extends State<CreateAccount> {
                       FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
-                        hintText: 'Display Name',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Name',
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noNameInput ? "Required" : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            nameCtrl.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(nameError, style: const TextStyle(fontSize: 16, color: Colors.red)),
@@ -129,10 +171,18 @@ class _CreateAccountState extends State<CreateAccount> {
                     },
                     decoration: InputDecoration(
                         hintText: 'Email',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noEmailInput ? "Required" : null,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              emailCtrl.clear();
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(emailError, style: const TextStyle(fontSize: 16, color: Colors.red)),
@@ -145,10 +195,18 @@ class _CreateAccountState extends State<CreateAccount> {
                     obscureText: true,
                     decoration: InputDecoration(
                         hintText: 'Password',
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         fillColor: Colors.white,
                         filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        errorText: _noPasswordInput ? "Required" : null,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            passwordCtrl.clear();
+                          },
+                          icon: const Icon(Icons.clear),
+                        ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(

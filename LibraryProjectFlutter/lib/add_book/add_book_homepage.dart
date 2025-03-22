@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/add_book/custom_add/custom_add.dart';
+import 'package:shelfswap/add_book/goodreads/goodreads_dialog.dart';
 import 'package:shelfswap/add_book/scan/scanner_driver.dart';
 import 'package:shelfswap/add_book/search/search_driver.dart';
 import 'package:shelfswap/core/appbar.dart';
@@ -267,7 +268,25 @@ class _AddBookHomepageState extends State<AddBookHomepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(widget.user, title: "Add Books"),
+      appBar: CustomAppBar(
+        widget.user, title: "Add Books",
+        actions: [
+          InkWell(
+            onTap: () async {
+              await displayGoodreadsDialog(context, widget.user);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: ClipOval(
+                child: Image.asset(
+                  "assets/goodreads_logo.jpg",
+                fit: BoxFit.fill,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(

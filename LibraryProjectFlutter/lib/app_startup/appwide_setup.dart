@@ -30,8 +30,8 @@ Map<String, StreamSubscription<DatabaseEvent>> idToFriendSubscription = {};
 Map<String, List<String>> idsToFriendList = {};
 Completer<void> userLibraryLoaded = Completer<void>();
 
-void setupDatabaseSubscriptions(User user) {
-  userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated);
+void setupDatabaseSubscriptions(User user, BuildContext context) {
+  userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated, context: context);
   userIdToProfileSubscription[user.uid] = setupProfileSubscription(userIdToProfile, user.uid, profileUpdated);
   _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
@@ -74,7 +74,8 @@ void updatePageDataRefreshNotifier() {
   // on the bottombar, since the offstage bottombar loads the 5 pages into memory. Note that this is only a concern
   // with the main pages (homepage, add books page, profile), not the nested pages since those are disposed when user
   // clicks off them (prevIndex logic) and thus are never in memory when the user's selectedIndex isn't the one for that page.
-  pageDataUpdatedNotifier.value = (pageDataUpdatedNotifier.value + 1) % 100; // the mod just to ensure the value cant overflow since theoretically it can without it
+   // using mod just to ensure the value cant overflow since theoretically it can without it
+  pageDataUpdatedNotifier.value = (pageDataUpdatedNotifier.value + 1) % 100;
 }
 
 // So for the pages which are affected by userLibrary, if we are currently on them, this signals the refresh notifier function
@@ -87,7 +88,7 @@ void _ownedBooksUpdated() {
 
 void _lentToMeBooksUpdated() {
   // if we are on the pages which care about books lent to the user we refresh it
-  // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it 
+  // it needs homepage index for lent to me tab, and friends page index since friend_book_page cares about it
   if (selectedIndex == homepageIndex || selectedIndex == friendsPageIndex || selectedIndex == profileIndex) {
     updatePageDataRefreshNotifier();
   }
@@ -174,8 +175,8 @@ void bottombarItemTapped(int index) {
     navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
   } else {
     bottombarIndexChangedNotifier.value = -1;
-    bottombarIndexChangedNotifier.value = selectedIndex; // signaling the page we switched to so it can refresh itself if it wants // TODO test this when have time
-    bottombarIndexChangedNotifier.value = prevIndex; // signaling the page we switched off so it can refresh itself now if it wants to
+    // signaling the page we switched off so it can refresh itself now if it wants to
+    bottombarIndexChangedNotifier.value = prevIndex;
     // for this popUntil, if you're in deeply nested pages on homepage route for example, this takes you to the homepage itself. It needs to
     // be done this way so that the popping occurs while switching from a tab rather than switching to a tab so that users don't see it.
     navigatorKeys[prevIndex].currentState?.popUntil((route) => route.isFirst);

@@ -8,7 +8,7 @@ import 'package:shelfswap/models/user.dart';
 // there are just the representations of database data which are updated by onvalue subscriptions
 List<Book> userLibrary = [];
 Map<String, LentBookInfo> booksLentToMe = {}; // it maps the book db key itself to the LentBookInfo so we can update the LentBookInfo if needed
-Map<String, SentBookRequest> sentBookRequests = {};
+Map<String, SentBookRequest> sentBookRequests = {}; // the string is the book db key here also, to update that book if needed
 List<ReceivedBookRequest> receivedBookRequests = [];
 List<String> friendIDs = [];
 ValueNotifier<List<String>> requestIDs = ValueNotifier<List<String>>(List<String>.empty(growable: true));
@@ -16,7 +16,7 @@ List<String> sentFriendRequests = [];
 ValueNotifier<UserModel?> userModel = ValueNotifier<UserModel?>(null);
 // signal means to show the app's "welcome back" dialog when both requests and userLibrary are initially loaded
 ValueNotifier<int> requestsAndBooksLoaded = ValueNotifier<int>(0);
-ValueNotifier<int> numBooksReadyToReturnNotifier = ValueNotifier<int>(0);
+ValueNotifier<int> numUnseenBooksReadyToReturnNotifier = ValueNotifier<int>(0);
 
 // bottombar indicies, used for 1.) pages listening to the refreshNotifier to know if they are selected on the bottombar and thus should refresh and 2.)
 // for the appbar to be able to change bottombar values based on appbar selection
@@ -69,6 +69,6 @@ void resetGlobalData() { // TODO should this go in appwide_setup?
   idsToFriendList.clear();
   idToFriendSubscription.clear();
   requestsAndBooksLoaded.value = 0;
-  numBooksReadyToReturnNotifier.value = 0;
+  numUnseenBooksReadyToReturnNotifier.value = 0;
   friendPageTabSelected = 0;
 }

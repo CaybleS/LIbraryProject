@@ -10,6 +10,9 @@ import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/book/book_page.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'appbar.dart';
+// TODO for showing Lent books, we need a way to filter who lent X book. I want to see what books I lent to X user, or
+// or also for lentToMe books, I want to see what books I have lent by X user. In my head its some menuanchur filter dropdown
+// or something but idk. I'm pretty confident this should be added. 
 
 enum _SortingOption { dateAdded, title, author }
 
@@ -69,14 +72,7 @@ class _HomePageState extends State<HomePage> {
     _homepageClickedOffListener = () {
       if (bottombarIndexChangedNotifier.value == homepageIndex) {
         // it only resets the filters since thats all that immediately needs to occur
-        // the bottombar also has logic to refresh the page when we go back to it; this is the
-        // normal contant updated refresher which does this
         _resetFilters();
-        // TODO is this good idk who knows but its just meant to when you have books ready to return auto move to lend tab when clicking to homepage
-        if (numBooksReadyToReturnNotifier.value != 0) {
-          _showing = _BooksShowing.lent;
-          _changeDisplay(_showing);
-        }
       }
     };
     _bookRequestsAndUserLibraryLoadedListener = () {
@@ -223,7 +219,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // this is needed to change the display button colors
-  void _changeDisplay(_BooksShowing state) { // TODO should the buttons show how many are there? Like how to tell if a book is lent to you now? They just appear with no feedback ya know.
+  void _changeDisplay(_BooksShowing state) {
     _showingLentOutReadyToReturn = false; // when user clicks off lent tab this just gets unset, resetting that subfilter to avoid confusion
     _showingLentToMeReadyToReturn = false;
     _showing = state;
@@ -556,12 +552,12 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "You have ${numBooksReadyToReturnNotifier.value} books ready to return.",
+            "You have ${numUnseenBooksReadyToReturnNotifier.value} books ready to return.",
             style: const TextStyle(fontSize: 14),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 0, 0, 5),
-            child: (numBooksReadyToReturnNotifier.value > 0 || _showingLentOutReadyToReturn)
+            child: (numUnseenBooksReadyToReturnNotifier.value > 0 || _showingLentOutReadyToReturn)
             ? ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
@@ -707,7 +703,12 @@ Widget _displayLentToMeReadyToReturnFilter() {
                   Color availableTxtColor;
 
                   if (_shownLibrary[_shownList[index]].lentDbKey != null) {
-                    availableTxt = "Lent";
+                    if (_shownLibrary[_shownList[index]].readyToReturn == true) {
+                      availableTxt = "Lent: ready to return";
+                    }
+                    else {
+                      availableTxt = "Lent";
+                    }
                     availableTxtColor = AppColor.cancelRed;
                   } else {
                     availableTxt = "Available";
@@ -790,7 +791,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                   : Column(
                                     children: [
                                       const Flexible(
-                                        child: Text("Book flagged as"),
+                                        child: Text("Book marked as"),
                                       ),
                                       const Flexible(
                                         child: Text("ready to return"),
@@ -814,7 +815,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                     ],
                                   )
                                 : SizedBox(
-                                    width: 80,
+                                    width: 90,
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
@@ -822,30 +823,23 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                         const Flexible(
                                           child: Text(
                                             "Status:",
-                                            style: TextStyle(color: Colors.black, fontSize: 16),
+                                            style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14),
                                             softWrap: true,
                                           ),
                                         ),
                                         Flexible(
                                           child: Text(
                                             availableTxt,
-                                            style: TextStyle(color: availableTxtColor, fontSize: 16),
-                                            softWrap: true,
-                                          ),
-                                        ),
-                                        (_showing != _BooksShowing.lentToMe && _shownLibrary[_shownList[index]].readyToReturn == true)
-                                        ? Flexible(
-                                          child: FittedBox(
-                                            child: Text(
-                                              "Ready to Return",
-                                              style: TextStyle(
+                                            style: TextStyle(
                                                 color: availableTxtColor,
                                                 fontSize: 14),
-                                              softWrap: true,
-                                            ),
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            textAlign: TextAlign.center,
                                           ),
-                                        )
-                                        : const SizedBox.shrink(),
+                                        ),
                                         Flexible(
                                           child: IconButton(
                                             onPressed: () => {_favoriteButtonClicked(_shownList[index])},
