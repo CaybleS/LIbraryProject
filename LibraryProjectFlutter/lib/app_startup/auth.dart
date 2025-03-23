@@ -30,44 +30,14 @@ Future<User?> signInWithGoogle(BuildContext context) async {
   try {
     final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
     final GoogleSignInAuthentication? googleSignInAuthentication = await googleSignInAccount?.authentication;
-    if (googleSignInAuthentication == null) return null;
+    if(googleSignInAuthentication == null) return null;
 
     final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleSignInAuthentication.idToken, accessToken: googleSignInAuthentication.accessToken);
 
     final UserCredential userCredential = await _auth.signInWithCredential(credential);
     final User? user = userCredential.user;
-
-    if (user != null) {
-      if (!(await userExists(user.uid))) {
-        if (context.mounted) {
-          // this feteches the part of the email before the @ to use as placeholder default username input
-          // so test@gmail.com, this will fetch the test part of the email, this logic also works if there are multiple @s in the email
-          String? userEmail = user.email;
-          if (userEmail != null) {
-            int indexOfLastAtcharacter = 0;
-            for (int i = 0; i < userEmail.length; i++) {
-              if (userEmail[i] == "@") {
-                indexOfLastAtcharacter = i;
-              }
-            }
-            userEmail = userEmail.substring(0, indexOfLastAtcharacter);
-          }
-          await _setupProfileAndAddUser(user, context, usernameFromEmail: userEmail);
-        }
-      }
-
-      final userRef = await dbReference.child('users/${user.uid}').once();
-      if (userRef.snapshot.value != null) {
-        Map data = userRef.snapshot.value as Map;
-        userModel.value = UserModel.fromJson(data, userRef.snapshot.key!);
-      }
-
-      await changeStatus(true);
-      // await SecureChatService.instance.initialize(user.uid);
-
-      return user;
-    } else {
+    if (user == null) {
       return null;
     }
 

@@ -26,6 +26,9 @@ const int friendsPageIndex = 2;
 const int messagesIndex = 3;
 const int profileIndex = 4;
 
+// use regedit for check email is valid
+const String emailRegex = r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+";
+
 // all these do is trigger some logic for any listeners, whenever they get updated. So this one is the main refresh notifier,
 // I just increment it to signify that the page should refresh
 ValueNotifier<int> pageDataUpdatedNotifier = ValueNotifier<int>(0);

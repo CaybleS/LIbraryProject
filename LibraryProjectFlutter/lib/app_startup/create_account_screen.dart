@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'auth.dart';
@@ -18,44 +19,64 @@ class _CreateAccountState extends State<CreateAccount> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController rePasswordController = TextEditingController();
 
-  String nameError = '';
-  String emailError = '';
-  String passwordError = '';
   String loginError = '';
   bool showLoading = false;
   bool showEmailVerificationText = false;
   bool _noNameInput = false;
   bool _noEmailInput = false;
+  bool _emailNotCorrectInput = false;
   bool _noPasswordInput = false;
+  bool _passwordNotMachInput = false;
+  bool _passwordLenghtInput = false;
 
   @override
   void initState() {
     super.initState();
-    nameCtrl.addListener(() {
-      if (_noNameInput && nameCtrl.text.isNotEmpty) {
+    nameController.addListener(() {
+      if (_noNameInput && nameController.text.isNotEmpty) {
         setState(() {
           _noNameInput = false;
         });
-    }});
-    emailCtrl.addListener(() {
-      if (_noEmailInput && emailCtrl.text.isNotEmpty) {
+      }
+    });
+    emailController.addListener(() {
+      if (_noEmailInput && emailController.text.isNotEmpty) {
         setState(() {
           _noEmailInput = false;
         });
-    }});
-    passwordCtrl.addListener(() {
-      if (_noPasswordInput && passwordCtrl.text.isNotEmpty) {
+      }
+      if (_emailNotCorrectInput && RegExp(emailRegex).hasMatch(emailController.text)) {
+        setState(() {
+          _emailNotCorrectInput = false;
+        });
+      }
+    });
+    passwordController.addListener(() {
+      if (_noPasswordInput && passwordController.text.isNotEmpty) {
         setState(() {
           _noPasswordInput = false;
         });
-    }});
+      }
+      if (_passwordLenghtInput && passwordController.text.length >= 6) {
+        setState(() {
+          _passwordLenghtInput = false;
+        });
+      }
+    });
+    rePasswordController.addListener(() {
+      if (_passwordNotMachInput && rePasswordController.text == passwordController.text) {
+        setState(() {
+          _passwordNotMachInput = false;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    nameCtrl.dispose();
-    emailCtrl.dispose();
-    passwordCtrl.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
@@ -64,43 +85,38 @@ class _CreateAccountState extends State<CreateAccount> {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
     String rePassword = rePasswordController.text.trim();
-    emailError = '';
-    passwordError = '';
-    nameError = '';
 
-    if (name == '') {
-      nameError = 'Required';
-      setState(() {});
-      return;
+    loginError = '';
+
+    if (email.isEmpty) {
+      _noEmailInput = true;
     }
 
-    if (email == '') {
-      emailError = 'Required';
-      setState(() {});
-      return;
+    if (!RegExp(emailRegex).hasMatch(email)) {
+      _emailNotCorrectInput = true;
     }
-
-    // use regedit for check email is valid
-    if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email)) {
-      emailError = 'Invalid Email';
-      setState(() {});
-      return;
-    }
-
-    if (password == '') {
-      passwordError = 'Required';
-      setState(() {});
-      return;
+    if (password.isEmpty) {
+      _noPasswordInput = true;
     }
 
     if (password != rePassword) {
-      passwordError = 'The passwords do not match.';
-      setState(() {});
-      return;
+      _passwordNotMachInput = true;
     }
 
     if (password.length < 6) {
-      passwordError = 'The passwords must be at least 6 characters long.';
+      _passwordLenghtInput = true;
+    }
+
+    if (name.isEmpty) {
+      _noNameInput = true;
+    }
+
+    if (_noEmailInput ||
+        _noPasswordInput ||
+        _noNameInput ||
+        _emailNotCorrectInput ||
+        _passwordNotMachInput ||
+        _passwordLenghtInput) {
       setState(() {});
       return;
     }
@@ -147,22 +163,20 @@ class _CreateAccountState extends State<CreateAccount> {
                       FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
-                        hintText: 'Name',
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        errorText: _noNameInput ? "Required" : null,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            nameCtrl.clear();
-                          },
-                          icon: const Icon(Icons.clear),
-                        ),
+                      hintText: 'Name',
+                      hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noNameInput ? "Required" : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          nameController.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(nameError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   TextField(
                     controller: emailController,
@@ -170,22 +184,24 @@ class _CreateAccountState extends State<CreateAccount> {
                       FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
-                        hintText: 'Email',
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        errorText: _noEmailInput ? "Required" : null,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              emailCtrl.clear();
-                            },
-                            icon: const Icon(Icons.clear),
-                          ),
+                      hintText: 'Email',
+                      hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noEmailInput
+                          ? "Required"
+                          : _emailNotCorrectInput
+                              ? "Invalid Email"
+                              : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          emailController.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(emailError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   TextField(
                     controller: passwordController,
@@ -194,18 +210,22 @@ class _CreateAccountState extends State<CreateAccount> {
                     },
                     obscureText: true,
                     decoration: InputDecoration(
-                        hintText: 'Password',
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        errorText: _noPasswordInput ? "Required" : null,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            passwordCtrl.clear();
-                          },
-                          icon: const Icon(Icons.clear),
-                        ),
+                      hintText: 'Password',
+                      hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noPasswordInput
+                          ? "Required"
+                          : _passwordLenghtInput
+                              ? "The passwords must be at least 6 characters long"
+                              : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          passwordController.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -217,17 +237,22 @@ class _CreateAccountState extends State<CreateAccount> {
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Confirm Password',
-                      hintStyle: const TextStyle(color: Colors.grey),
+                      hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                       fillColor: Colors.white,
                       filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noPasswordInput
+                          ? "Required"
+                          : _passwordNotMachInput
+                              ? "Password not match"
+                              : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          rePasswordController.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    passwordError,
-                    style: const TextStyle(fontSize: 16, color: Colors.red),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
                   Text(loginError, style: const TextStyle(fontSize: 16, color: Colors.red)),

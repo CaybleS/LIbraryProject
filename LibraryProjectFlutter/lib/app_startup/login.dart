@@ -6,7 +6,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shelfswap/app_startup/create_account_screen.dart';
 import 'package:shelfswap/app_startup/forgot_password.dart';
 import 'package:shelfswap/app_startup/persistent_bottombar.dart';
-import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'auth.dart';
@@ -19,11 +19,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final controllerEmail = TextEditingController();
-  final controllerPswd = TextEditingController();
-  String loginErr = '';
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  String loginError = '';
   bool showLoading = false;
   bool _noEmailInput = false;
+  bool _emailNotCorrectInput = false;
   bool _noPasswordInput = false;
 
   User? user;
@@ -33,18 +34,25 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
 
     initial();
-    controllerEmail.addListener(() {
-      if (_noEmailInput && controllerEmail.text.isNotEmpty) {
+    emailController.addListener(() {
+      if (_noEmailInput && emailController.text.isNotEmpty) {
         setState(() {
           _noEmailInput = false;
         });
-    }});
-    controllerPswd.addListener(() {
-      if (_noPasswordInput && controllerPswd.text.isNotEmpty) {
+      }
+      if (_emailNotCorrectInput && RegExp(emailRegex).hasMatch(emailController.text)) {
+        setState(() {
+          _noEmailInput = false;
+        });
+      }
+    });
+    passwordController.addListener(() {
+      if (_noPasswordInput && passwordController.text.isNotEmpty) {
         setState(() {
           _noPasswordInput = false;
         });
-    }});
+      }
+    });
     // signOutGoogle();
   }
 
@@ -108,12 +116,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void loginBtnClicked() async {
-    String email = controllerEmail.text;
-    String pswd = controllerPswd.text;
-    loginErr = '';
+    String email = emailController.text.trim();
+    String pswd = passwordController.text.trim();
+    loginError = '';
 
     if (email == '') {
       _noEmailInput = true;
+    }
+
+    if (!RegExp(emailRegex).hasMatch(email)) {
+      _emailNotCorrectInput = true;
     }
 
     if (pswd == '') {
@@ -131,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
       Map<String, dynamic> userLogin = await logIn(email, pswd, context);
 
       if (userLogin['status'] == false) {
-        loginErr = userLogin['error'];
+        loginError = userLogin['error'];
         setState(() {
           showLoading = false;
         });
@@ -196,20 +208,24 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 30),
                   TextField(
-                    controller: controllerEmail,
+                    controller: emailController,
                     decoration: InputDecoration(
-                        hintText: 'Email',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        fillColor: Colors.white,
-                        filled: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        errorText: _noEmailInput ? "Required" : null,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              controllerEmail.clear();
-                            },
-                            icon: const Icon(Icons.clear),
-                          ),
+                      hintText: 'Email',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: _noEmailInput
+                          ? "Required"
+                          : _emailNotCorrectInput
+                              ? "Invalid Email"
+                              : null,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          emailController.clear();
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                     ),
                     onTapOutside: (event) {
                       FocusManager.instance.primaryFocus?.unfocus();
@@ -217,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
                   TextField(
-                    controller: controllerPswd,
+                    controller: passwordController,
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Password',
@@ -228,7 +244,7 @@ class _LoginPageState extends State<LoginPage> {
                       errorText: _noPasswordInput ? "Required" : null,
                       suffixIcon: IconButton(
                         onPressed: () {
-                          controllerPswd.clear();
+                          passwordController.clear();
                         },
                         icon: const Icon(Icons.clear),
                       ),
@@ -248,8 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(pswdErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
-                  Text(loginErr, style: const TextStyle(fontSize: 20, color: Colors.red)),
+                  Text(loginError, style: const TextStyle(fontSize: 16, color: Colors.red)),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
