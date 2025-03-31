@@ -3,6 +3,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shelfswap/Social/profile/profile_privacy_dialog.dart';
 import 'package:shelfswap/add_book/goodreads/goodreads_dialog.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/app_startup/auth.dart';
@@ -262,6 +263,27 @@ class _SettingsState extends State<Settings> {
                       child: const Text(
                         "Import/Export Goodreads books",
                         style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
+                        await displayProfilePrivacyDialog(context, widget.user);
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.pink,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: Text(
+                        "Profile: ${userIdToUserModel[widget.user.uid]!.isPublic ? "Public" : "Private"}",
+                        style: const TextStyle(fontSize: 16, color: Colors.black),
                       ),
                     ),
                   ),

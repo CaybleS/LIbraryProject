@@ -133,6 +133,28 @@ class _ProfileState extends State<Profile> {
             ? idsToFriendList[widget.profileUserId]!.length
             : 0);
     bool isFriend = friendIDs.contains(widget.profileUserId);
+
+    if (!isFriend &&
+        widget.profileUserId != widget.user.uid &&
+        !_userInfo!.isPublic) {
+      return SizedBox(
+          height: 50,
+          child: ListView(
+              scrollDirection: Axis.horizontal,
+              shrinkWrap: true,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    widget.user.uid != widget.profileUserId
+                        ? _friendUnfriendButton()
+                        : const SizedBox.shrink()
+                  ],
+                )
+              ]));
+    }
+
     return SizedBox(
         height: 50,
         child: ListView(
@@ -163,8 +185,8 @@ class _ProfileState extends State<Profile> {
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColor.pink),
                               onPressed: () async {
-                                    await _goToMessaging();
-                                  }, // TODO link messaging to profile
+                                await _goToMessaging();
+                              },
                               child: const Text(
                                 "Message",
                                 style: TextStyle(
@@ -287,8 +309,84 @@ class _ProfileState extends State<Profile> {
                 )));
   }
 
+  Widget _profileDisplay() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _profileInfo?.aboutMe != null
+          ? Card(
+              color: AppColor.skyBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  "About Me:\n${_profileInfo!.aboutMe!}",
+                  style: const TextStyle(color: Colors.black, fontSize: 14),
+                ),
+              ))
+          : const SizedBox.shrink(),
+      _profileInfo!.favBooks.isNotEmpty
+          ? ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: Card(
+                  color: AppColor.skyBlue,
+                  child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Favorite Books:",
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 14),
+                            ),
+                            Flexible(
+                                child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _profileInfo?.favBooks.length,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return Padding(
+                                          padding: const EdgeInsets.all(5),
+                                          child: SizedBox(
+                                              width: 120,
+                                              child: Column(children: [
+                                                SizedBox(
+                                                    height: 120,
+                                                    child: AspectRatio(
+                                                        aspectRatio: 0.7,
+                                                        child: _profileInfo!
+                                                            .favBooks[index]
+                                                            .getCoverImage())),
+                                                Text(
+                                                  _profileInfo!
+                                                      .favBooks[index].title!,
+                                                  style: const TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 14),
+                                                  softWrap: true,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                )
+                                              ])));
+                                    }))
+                          ]))))
+          : const SizedBox.shrink(),
+      _profileInfo?.favGenre != null
+          ? Card(
+              color: AppColor.skyBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  "Favorite Genre: ${_profileInfo!.favGenre!}",
+                  style: const TextStyle(color: Colors.black, fontSize: 14),
+                ),
+              ))
+          : const SizedBox.shrink()
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool isFriend = friendIDs.contains(widget.profileUserId);
+
     return Scaffold(
         appBar: CustomAppBar(widget.user),
         body: (_userInfo != null && _profileInfo != null)
@@ -343,93 +441,14 @@ class _ProfileState extends State<Profile> {
                     const SizedBox(
                       height: 10,
                     ),
-                    _profileInfo?.aboutMe != null
-                        ? Card(
-                            color: AppColor.skyBlue,
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Text(
-                                "About Me:\n${_profileInfo!.aboutMe!}",
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 14),
-                              ),
-                            ))
-                        : const SizedBox.shrink(),
-                    _profileInfo!.favBooks.isNotEmpty
-                        ? ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 200),
-                            child: Card(
-                                color: AppColor.skyBlue,
-                                child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            "Favorite Books:",
-                                            style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14),
-                                          ),
-                                          Flexible(
-                                              child: ListView.builder(
-                                                  scrollDirection:
-                                                      Axis.horizontal,
-                                                  itemCount: _profileInfo
-                                                      ?.favBooks.length,
-                                                  itemBuilder:
-                                                      (BuildContext context,
-                                                          int index) {
-                                                    return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(5),
-                                                        child: SizedBox(
-                                                            width: 120,
-                                                            child: Column(
-                                                                children: [
-                                                                  SizedBox(
-                                                                      height:
-                                                                          120,
-                                                                      child: AspectRatio(
-                                                                          aspectRatio:
-                                                                              0.7,
-                                                                          child: _profileInfo!
-                                                                              .favBooks[index]
-                                                                              .getCoverImage())),
-                                                                  Text(
-                                                                    _profileInfo!
-                                                                        .favBooks[
-                                                                            index]
-                                                                        .title!,
-                                                                    style: const TextStyle(
-                                                                        color: Colors
-                                                                            .black,
-                                                                        fontSize:
-                                                                            14),
-                                                                    softWrap:
-                                                                        true,
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  )
-                                                                ])));
-                                                  }))
-                                        ]))))
-                        : const SizedBox.shrink(),
-                    _profileInfo?.favGenre != null
-                        ? Card(
-                            color: AppColor.skyBlue,
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Text(
-                                "Favorite Genre: ${_profileInfo!.favGenre!}",
-                                style: const TextStyle(
-                                    color: Colors.black, fontSize: 14),
-                              ),
-                            ))
-                        : const SizedBox.shrink(),
+                    (isFriend ||
+                            _userInfo!.isPublic ||
+                            widget.user.uid == widget.profileUserId)
+                        ? _profileDisplay()
+                        : const Text(
+                            "This user's profile is private.",
+                            style: TextStyle(fontSize: 16),
+                          )
                   ],
                 )),
               )

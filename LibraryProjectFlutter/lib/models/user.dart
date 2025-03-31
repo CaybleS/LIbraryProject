@@ -6,6 +6,7 @@ class UserModel {
   final String username;
   final String email;
   final String? photoUrl;
+  final bool isPublic;
   final bool isActive;
   final bool isTyping;
   final Color avatarColor;
@@ -18,6 +19,7 @@ class UserModel {
     required this.email,
     required this.avatarColor,
     this.photoUrl,
+    this.isPublic = false,
     required this.isActive,
     this.isTyping = false,
     required this.lastSignedIn,
@@ -31,6 +33,7 @@ class UserModel {
       email: json['email'],
       photoUrl: json['photoUrl'],
       avatarColor: Color(json['avatarColor'] ?? Colors.grey.value),
+      isPublic: json['isPublic'] ?? false,
       isActive: json['isActive'],
       isTyping: json['isTyping'],
       lastSignedIn: DateTime.parse(json['lastSignedIn']),
@@ -44,6 +47,7 @@ class UserModel {
       'email': email,
       'photoUrl': photoUrl,
       'avatarColor': avatarColor.value,
+      'isPublic': isPublic,
       'isActive': isActive,
       'isTyping': isTyping,
       'lastSignedIn': lastSignedIn.toIso8601String(),
