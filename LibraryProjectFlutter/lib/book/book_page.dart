@@ -149,6 +149,10 @@ class _BookPageState extends State<BookPage> {
           ),
           actions: [
             TextButton(
+            onPressed: () => tempController.clear(),
+            child: const Text("Clear"),
+          ),
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text("Cancel"),
             ),
