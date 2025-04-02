@@ -29,7 +29,7 @@ class _BookPageState extends State<BookPage> {
   double? textBoxHeight;
   final TextEditingController _notesController = TextEditingController();
   final ScrollController _notesScrollController = ScrollController();
-  final ScrollController _desciptionScrollController = ScrollController();
+  final ScrollController _descriptionScrollController = ScrollController();
 
   @override
   void initState() {
@@ -58,9 +58,15 @@ class _BookPageState extends State<BookPage> {
     }
     if (widget.book.borrowerId != null) {
       _userLent = userIdToUserModel[widget.book.borrowerId]!.name;
-      setState(() {});
     }
     setState(() {});
+  }
+
+  @override
+  void dispose() {
+      _notesScrollController.dispose();
+      _descriptionScrollController.dispose();
+    super.dispose();
   }
 
   void processSelectionOption(_ReadStatus selection) {
@@ -179,7 +185,9 @@ class _BookPageState extends State<BookPage> {
     return ElevatedButton(
       onPressed: () async {
         await displayLendDialog(context, widget.book, widget.user);
-        setState(() {});
+        setState(() {
+          _userLent = userIdToUserModel[widget.book.borrowerId]!.name;
+        });
       },
       style: ElevatedButton.styleFrom(
         shape: ContinuousRectangleBorder(
@@ -309,11 +317,11 @@ class _BookPageState extends State<BookPage> {
                         Flexible(
                           child: Scrollbar(
                           thumbVisibility: true,
-                          controller: _desciptionScrollController,
+                          controller: _descriptionScrollController,
                           child: Container(
                           constraints: const BoxConstraints(maxHeight: 100),  
                           child: SingleChildScrollView(
-                            controller: _desciptionScrollController,
+                            controller: _descriptionScrollController,
                             child: Text(
                               widget.book.description ?? "No description found",
                               style: const TextStyle(fontSize: 12),
@@ -573,7 +581,7 @@ class _BookPageState extends State<BookPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  (widget.book.isManualAdded == true)
+                  (widget.book.isManualAdded == true && widget.book.borrowerId == null)
                       ? ElevatedButton(
                           onPressed: () async {
                             await Navigator.push(
