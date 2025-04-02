@@ -122,17 +122,16 @@ class _SettingsState extends State<Settings> {
         break;
       }
     }
-    // the order is delibrate because if you have books lent to you and books lent out, dealing with the books lent to you is harder; it requires
-    // contacting other people since you can't unlend books to yourself. Dealing with lent out books is easy so warning them of that is less important.
-    if (booksLentToMe.isNotEmpty) {
-      if (mounted) {
-        SharedWidgets.displayErrorDialog(context, "You have books lent to you. You cannot delete your account when you have books lent to you.");
-        return;
-      }
-    }
+    // the order is delibrate because if you have books lent out you need to do all this effort to get them back
     if (hasBookLentOut) {
       if (mounted) {
         SharedWidgets.displayErrorDialog(context, "You have books lent out. You cannot delete your account when you have books lent out.");
+        return;
+      }
+    }
+    if (booksLentToMe.isNotEmpty) {
+      if (mounted) {
+        SharedWidgets.displayErrorDialog(context, "You have books lent to you. You cannot delete your account when you have books lent to you.");
         return;
       }
     }

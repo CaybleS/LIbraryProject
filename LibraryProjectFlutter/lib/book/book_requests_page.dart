@@ -29,9 +29,6 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
   @override
   void initState() {
     super.initState();
-     // TODO some listener is wrong, i think a subscription listener.
-     // Im too tired to fix it now but yeah its smth wrogn with receivedd book requests listeners
-     // something where I lent out a book but my received book requests didnt seem to register that it was lent or something. .. bruuh
     _fillBookRequestLists();
     _requestsChangedListener = () {
       _fillBookRequestLists();
@@ -183,12 +180,9 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                             children: [
                               SizedBox(
                                 height: 150,
-                                // TODO need to prevent accepting received requests for already lent out books. My vision is graying it out with some red LENT text over it or something but idk how to do it yet
                                 child: Card(
                                   margin: const EdgeInsets.all(5),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(10, 1, 10, 1),
@@ -197,86 +191,107 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                           child: coverImage,
                                         ),
                                       ),
-                                      (_showing == _ListToShow.receivedRequests)
-                                        ? Flexible( 
-                                            child: Column(
-                                              children: [
-                                                Text(
-                                                  "Requested by $name",
-                                                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: (thisBookIsLent) ? null : () async {
-                                                    tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
-                                                  },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.green,
-                                                    padding: const EdgeInsets.all(8),
-                                                  ),
-                                                  child: const FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    child: Text(
-                                                      "Lend requested book",
-                                                      style: TextStyle(fontSize: 16, color: Colors.black),
+                                      // the purpose of this, its kind of a redundant row but I want the book cover image to be left aligned
+                                      // and the rest of the stuff in this row to be center aligned, so I just make another nested row
+                                      // to achieve this difference. It looks like it works so.
+                                      Flexible(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          (_showing == _ListToShow.receivedRequests)
+                                            ? Flexible( 
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      "Requested by $name",
+                                                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                  ),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    book.unsendBookRequest(senderId, widget.user.uid);
-                                                    SharedWidgets.displayPositiveFeedbackDialog(context, "Request Denied");
-                                                  },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                    padding: const EdgeInsets.all(8),
-                                                  ),
-                                                  child: const FittedBox(
-                                                    child: Text(
-                                                      "Deny request",
-                                                      style: TextStyle(fontSize: 16, color: Colors.black),
+                                                    (thisBookIsLent)
+                                                    ? const Padding(
+                                                        padding: EdgeInsets.symmetric(vertical: 5),
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            "Currently lent out",
+                                                            style: TextStyle(fontSize: 16, color: Colors.black),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : ElevatedButton(
+                                                        onPressed: () {
+                                                          tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
+                                                        },
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.green,
+                                                          padding: const EdgeInsets.all(8),
+                                                        ),
+                                                        child: const FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            "You've lent this book to them",
+                                                            style: TextStyle(fontSize: 16, color: Colors.black),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        book.unsendBookRequest(senderId, widget.user.uid);
+                                                        SharedWidgets.displayPositiveFeedbackDialog(context, "Request Denied");
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.red,
+                                                        padding: const EdgeInsets.all(8),
+                                                      ),
+                                                      child: const FittedBox(
+                                                        child: Text(
+                                                          "Deny request",
+                                                          style: TextStyle(fontSize: 16, color: Colors.black),
+                                                        ),
+                                                      ),
                                                     ),
-                                                  ),
+                                                    Text(
+                                                      "Requested on ${DateFormat.yMd().format(dateSent.toLocal())}",
+                                                    ),
+                                                  ],
                                                 ),
-                                                Text(
-                                                  "Requested on ${DateFormat.yMd().format(dateSent.toLocal())}",
+                                              )
+                                            : Flexible(
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      "Sent to $name",
+                                                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        book.unsendBookRequest(widget.user.uid, receiverId);
+                                                        SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.red,
+                                                        padding: const EdgeInsets.all(8),
+                                                      ),
+                                                      child: const FittedBox(
+                                                        child: Text(
+                                                          "Unsend Request",
+                                                          style: TextStyle(fontSize: 16, color: Colors.black),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      "Sent on ${DateFormat.yMd().format(dateSent.toLocal())}",
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
                                             ),
-                                          )
-                                        : Flexible(
-                                            child: Column(
-                                              children: [
-                                                Text(
-                                                  "Sent to $name",
-                                                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    book.unsendBookRequest(widget.user.uid, receiverId);
-                                                    SharedWidgets.displayPositiveFeedbackDialog(context, "Request Unsent");
-                                                  },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                    padding: const EdgeInsets.all(8),
-                                                  ),
-                                                  child: const FittedBox(
-                                                    child: Text(
-                                                      "Unsend Request",
-                                                      style: TextStyle(fontSize: 16, color: Colors.black),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  "Sent on ${DateFormat.yMd().format(dateSent.toLocal())}",
-                                                ),
-                                              ],
-                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
