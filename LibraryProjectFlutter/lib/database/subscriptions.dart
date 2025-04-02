@@ -17,7 +17,7 @@ import 'dart:io';
 // The same is done with the lent to me books. It feteches them initially and updates the in-memory list as needed
 // and refreshes the pages as needed in the parameter functions. It works like this since dart passes lists and other objects by reference.
 StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
-    List<Book> userLibrary, User user, Function ownedBooksUpdated) {
+    List<Book> userLibrary, User user, Function ownedBooksUpdated, Function receivedBookRequestsUpdated) {
   DatabaseReference ownedBooksReference = FirebaseDatabase.instance.ref('books/${user.uid}/');
   bool incrementedRequestsAndBooksLoaded = false;
   StreamSubscription<DatabaseEvent> ownedSubscription = ownedBooksReference.onValue.listen((DatabaseEvent event) {
@@ -31,6 +31,16 @@ StreamSubscription<DatabaseEvent> setupUserLibrarySubscription(
           numBooksReadyToReturn++;
         }
         tempUserLibrary.add(book);
+        // if user library gets updated at all, update all received book requests with the updated versions of their books.
+        // Its not optimized but it was essential to fix the bug where if you lend a book on 1 device, the other device's
+        // received book requests wont understand that its lent (for some reason the same device's received book requests knew
+        // and i dont understand why exactly)
+        for (int i = 0; i < receivedBookRequests.length; i++) {
+          if (receivedBookRequests[i].book.id.key == book.id.key) {
+            receivedBookRequests[i].book = book;
+            receivedBookRequestsUpdated();
+          }
+        }
       }
       numUnseenBooksReadyToReturnNotifier.value = numBooksReadyToReturn;
     }
@@ -352,23 +362,6 @@ StreamSubscription<DatabaseEvent> setupFriendsSubscription(
     friends.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        // Friend friend = Friend('${child.key}');
-        // friend.setId(dbReference.child('friends/${user.uid}/${child.key}'));
-
-        // DatabaseEvent userEvent = await dbReference.child('users/${child.key}').once();
-        // if (userEvent.snapshot.value != null) {
-        //   Map data = userEvent.snapshot.value as Map;
-        // if (data.containsKey('name')) {
-        //   friend.name = data['name'];
-        // }
-        // if (data.containsKey('email')) {
-        //   friend.email = data['email'];
-        // }
-        // if (data.containsKey('photoUrl')) {
-        //   friend.photo = data['photoUrl'];
-        // }
-        // friends.add(UserModel.fromJson(data, userEvent.snapshot.key!));
-
         String id = '${child.key}';
         if (userIdToSubscription[id] == null) {
           userIdToSubscription[id] =
@@ -414,24 +407,6 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
     requests.value.clear();
     if (event.snapshot.value != null) {
       for (var child in event.snapshot.children) {
-        // Request request = createRequest(child.value, user.uid);
-        // request.setId(dbReference.child('requests/${user.uid}/${child.key}'));
-
-        // DatabaseEvent userEvent = await dbReference.child('users/${request.senderId}').once();
-        // if (userEvent.snapshot.value != null) {
-        //   Map data = userEvent.snapshot.value as Map;
-        //   if (data.containsKey('name')) {
-        //     request.name = data['name'];
-        //   }
-        //   if (data.containsKey('email')) {
-        //     request.email = data['email'];
-        //   }
-        //   if (data.containsKey('photoUrl')) {
-        //     request.photo = data['photoUrl'];
-        //   }
-        // }
-
-        // var map = child.value as Map<dynamic, dynamic>;
         String id = '${child.key}';
         if (userIdToSubscription[id] == null) {
           userIdToSubscription[id] =
@@ -441,7 +416,6 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
       }
     }
     requestsUpdated();
-    requests.notifyListeners();
   });
   return requestsSubscription;
 }

@@ -33,7 +33,7 @@ Completer<void> userLibraryLoaded = Completer<void>();
 void setupDatabaseSubscriptions(User user, BuildContext context) {
   userIdToSubscription[user.uid] = setupUserSubscription(userIdToUserModel, user.uid, userUpdated, context: context);
   userIdToProfileSubscription[user.uid] = setupProfileSubscription(userIdToProfile, user.uid, profileUpdated);
-  _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated);
+  _userLibrarySubscription = setupUserLibrarySubscription(userLibrary, user, _ownedBooksUpdated, _receivedBookRequestsUpdated);
   _lentToMeSubscription = setupLentToMeSubscription(booksLentToMe, user, _lentToMeBooksUpdated);
   _sentBookRequestsSubscription = setupSentBookRequestsSubscription(sentBookRequests, user, _sentBookRequestsUpdated);
   _receivedBookRequestsSubscription = setupReceivedBookRequestsSubscription(receivedBookRequests, user, _receivedBookRequestsUpdated);

@@ -74,7 +74,6 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
   }
 }
 
-// TODO this is a fine change right? To check only username instead of the entire user node. Delete this comment if you agree
 Future<bool> userExists(String id) async {
   if (id.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
@@ -135,22 +134,6 @@ Future<bool> usernameExists(String username) async {
 void addUsername(String username) async {
   DatabaseReference  id = dbReference.child('usernames/');
   id.update({username: true});
-}
-
-// call this everytime username gets updated
-// TODO this and removeUsername maybe can be deleted honestly. The reason I implemented it is just to add an interface if we want to
-// allow users to change usernames. Is that something we want or no? If we decide no just delete these 2 functions k?
-Future<void> updateUsername(String oldUsername, String newUsername, User user) async {
-  _removeUsername(oldUsername);
-  DatabaseReference  id = dbReference.child('usernames/');
-  id.update({newUsername: true});
-  Map<String, dynamic> userJson = {'username': newUsername};
-  DatabaseReference userRef = FirebaseDatabase.instance.ref('users/${user.uid}');
-  await userRef.update(userJson);
-}
-
-void _removeUsername(String oldUsername) {
-  dbReference.child('usernames/$oldUsername').remove();
 }
 
 void sendFriendRequest(User user, String friendId) {
