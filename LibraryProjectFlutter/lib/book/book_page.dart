@@ -29,6 +29,7 @@ class _BookPageState extends State<BookPage> {
   double? textBoxHeight;
   final TextEditingController _notesController = TextEditingController();
   final ScrollController _notesScrollController = ScrollController();
+  final ScrollController _desciptionScrollController = ScrollController();
 
   @override
   void initState() {
@@ -302,11 +303,19 @@ class _BookPageState extends State<BookPage> {
                         ),
                         const SizedBox(height: 5),
                         Flexible(
+                          child: Scrollbar(
+                          thumbVisibility: true,
+                          controller: _desciptionScrollController,
+                          child: Container(
+                          constraints: const BoxConstraints(maxHeight: 100),  
                           child: SingleChildScrollView(
+                            controller: _desciptionScrollController,
                             child: Text(
                               widget.book.description ?? "No description found",
                               style: const TextStyle(fontSize: 12),
                             ),
+                          ),
+                          ),
                           ),
                         ),
                       ],
