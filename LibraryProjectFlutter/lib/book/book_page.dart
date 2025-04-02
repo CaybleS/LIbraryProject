@@ -1,9 +1,6 @@
 // TODO this page. Remove these comments when done
 // what can be on it?
-// 3.) text box with private book notes - idk about this one but most of my uncertainty is due to concerns about the UI being complex and hard to understand with 2 text boxes
 // 1.) Note that borrowed_book_page and add_book/search/book_details_screen will have similar layout to this page IMO, but with much of these details missing I'd say
-import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
@@ -29,10 +26,14 @@ class _BookPageState extends State<BookPage> {
   String? _selectedCondition = "-";
   String? _selectedRating = "-";
   String _userLent = "";
+  double? textBoxHeight;
+  final TextEditingController _notesController = TextEditingController();
+  final ScrollController _notesScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _notesController.text = widget.book.bookNotes ?? "";
     _selectedRating = widget.book.rating;
     _selectedRating ??= "-";
     _selectedCondition = widget.book.bookCondition;
@@ -59,6 +60,7 @@ class _BookPageState extends State<BookPage> {
     }
     setState(() {});
   }
+
   void processSelectionOption(_ReadStatus selection) {
     switch (selection) {
       case _ReadStatus.notRead:
@@ -92,20 +94,21 @@ class _BookPageState extends State<BookPage> {
     }
   }
 
-  // Widget _displayRequests() {
-  //   String requestText;
-  //   String requestNum = toString(widget.book.usersWhoRequested.length);
-  //   if(widget.book.usersWhoRequested!.length != 1){
-  //     requestText = "There are "+requestNum+" requests for this book";
-  //   }
-  //   else{
-  //     requestText = "There is "+requestNum+" request for this book";
-  //   }
-  //   return Text(
-  //     requestText,
-  //     style: TextStyle(fontSize: 10),
-  //     );
-  // }
+  Widget _displayRequests() {
+    final requestList = widget.book.usersWhoRequested ?? [];
+    final count = requestList.length;
+
+    final requestText = count == 1
+        ? "There is 1 request for this book"
+        : "There are $count requests for this book";
+
+    return Text(
+      requestText,
+      style: const TextStyle(fontSize: 12),
+      textAlign: TextAlign.center,
+    );
+  }
+
   Widget _displayStatus() {
     String availableTxt;
     Color availableTxtColor;
@@ -121,6 +124,48 @@ class _BookPageState extends State<BookPage> {
     return Text(
       availableTxt,
       style: TextStyle(fontSize: 22, color: availableTxtColor),
+    );
+  }
+
+  void _openNotesDialog() {
+    final TextEditingController tempController =
+        TextEditingController(text: widget.book.bookNotes ?? "");
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Notes"),
+          content: TextField(
+            controller: tempController,
+            maxLines: 8,
+            maxLength: 500,
+            decoration: const InputDecoration(
+              hintText: "I think this book is...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  widget.book.bookNotes = tempController.text.trim();
+                  widget.book.update();
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Notes saved")),
+                );
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -207,18 +252,19 @@ class _BookPageState extends State<BookPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Book Info"),
-        centerTitle: true,
-        backgroundColor: AppColor.appbarColor
-      ),
+          title: const Text("Book Info"),
+          centerTitle: true,
+          backgroundColor: AppColor.appbarColor),
       backgroundColor: Colors.grey[400],
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Row(
+      body: ListView(
+        //padding: const EdgeInsets.all(10),
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              //Flexible(
+              //child:
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
@@ -267,10 +313,11 @@ class _BookPageState extends State<BookPage> {
                   ),
                 ],
               ),
-            ),
-            Flexible(
+              //),
+              //Flexible(
               //flex: 1,
-              child: Row(
+              //child:
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -283,7 +330,6 @@ class _BookPageState extends State<BookPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        //display if book is available
                         _displayStatus(),
                         SizedBox(height: 5),
                         const Text(
@@ -295,32 +341,32 @@ class _BookPageState extends State<BookPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [ Flexible( child:
-                            DropdownButton<String?>(
-                              value: _selectedRating,
-                              iconSize: 0.0,
-                              items: ["-", "1", "2", "3", "4", "5"]
-                                  .map((rating) => DropdownMenuItem<String?>(
-                                        value: rating,
-                                        child: Text(
-                                          rating,
-                                          style: const TextStyle(fontSize: 30),
-                                        ),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedRating = value;
-                                    widget.book.rating =
-                                        value;
-                                    widget.book.update();
-                                  });
-                                }
-                              },
+                          children: [
+                            Flexible(
+                              child: DropdownButton<String?>(
+                                value: _selectedRating,
+                                iconSize: 0.0,
+                                items: ["-", "1", "2", "3", "4", "5"]
+                                    .map((rating) => DropdownMenuItem<String?>(
+                                          value: rating,
+                                          child: Text(
+                                            rating,
+                                            style:
+                                                const TextStyle(fontSize: 30),
+                                          ),
+                                        ))
+                                    .toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedRating = value;
+                                      widget.book.rating = value;
+                                      widget.book.update();
+                                    });
+                                  }
+                                },
+                              ),
                             ),
-                          ),
-                            //_displayRating(),
                             const Padding(
                               padding: EdgeInsets.only(top: 3.0),
                               child: Icon(
@@ -337,7 +383,7 @@ class _BookPageState extends State<BookPage> {
                           style: TextStyle(
                               fontSize: 12, fontWeight: FontWeight.bold),
                         ),
-                        
+
                         DropdownButton<String?>(
                           value: _selectedCondition,
                           isExpanded: true,
@@ -363,59 +409,59 @@ class _BookPageState extends State<BookPage> {
                             if (value != null) {
                               setState(() {
                                 _selectedCondition = value;
-                                widget.book.bookCondition =
-                                    value;
+                                widget.book.bookCondition = value;
                                 widget.book.update();
                               });
                             }
                           },
                         ),
-                        //Flexible(
-                          //child: _displayRequests(),
-                        //),
+                        _displayRequests(),
                       ],
                     ),
                   ),
                   //const SizedBox(width: 10),
                   Flexible(
-                    flex:2,
-                    child:
-                  Column(
-                    //crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          //Flexible(
-                          (widget.book.lentDbKey != null)
-                              ? _returnBookButton()
-                              : _lendBookButton(),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (widget.book.lentDbKey != null && widget.book.borrowerId != null) {
-                                SharedWidgets.displayErrorDialog(context, "You can't remove lent books! Please return the book first.");
-                                return;
-                              }
-                              bool shouldRemove = await SharedWidgets.displayConfirmActionDialog(context, "Do you want to remove this book from your library?");
-                              if (shouldRemove) {
-                                widget.book.remove(widget.user.uid);
-                                if (context.mounted) {
-                                  Navigator.pop(context);
+                    flex: 2,
+                    child: Column(
+                      //crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            //Flexible(
+                            (widget.book.lentDbKey != null)
+                                ? _returnBookButton()
+                                : _lendBookButton(),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: () async {
+                                if (widget.book.lentDbKey != null &&
+                                    widget.book.borrowerId != null) {
+                                  SharedWidgets.displayErrorDialog(context,
+                                      "You can't remove lent books! Please return the book first.");
+                                  return;
                                 }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: ContinuousRectangleBorder(
-                                borderRadius: BorderRadius.circular(0.0),
+                                bool shouldRemove = await SharedWidgets
+                                    .displayConfirmActionDialog(context,
+                                        "Do you want to remove this book from your library?");
+                                if (shouldRemove) {
+                                  widget.book.remove(widget.user.uid);
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                shape: ContinuousRectangleBorder(
+                                  borderRadius: BorderRadius.circular(0.0),
+                                ),
+                                backgroundColor:
+                                    const Color.fromARGB(255, 202, 35, 23),
                               ),
-                              backgroundColor:
-                                  const Color.fromARGB(255, 202, 35, 23),
-                            ),
-                            child: const SizedBox(
-                              height: 160,
-                              width: 50,
-                              //child: Flexible(
+                              child: const SizedBox(
+                                height: 160,
+                                width: 50,
+                                //child: Flexible(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -436,117 +482,154 @@ class _BookPageState extends State<BookPage> {
                                 ),
                               ),
                             ),
-                           //),
-                          
-                        ],
-                      ),
-                      SizedBox(height: 5),
-                      (widget.book.borrowerId != null)
-                          ? SizedBox(
-                              child: RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: "Lent to:\n",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors
-                                          .black,
-                                    ),
+                            //),
+                          ],
+                        ),
+                        SizedBox(height: 5),
+                        (widget.book.borrowerId != null)
+                            ? SizedBox(
+                                child: RichText(
+                                  textAlign: TextAlign.center,
+                                  text: TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: "Lent to:\n",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: _userLent,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextSpan(
-                                    text: _userLent,
-                                    style: TextStyle(
-                                      fontSize:
-                                          15,
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),)
-                          : const SizedBox.shrink(),
-                    ],
-                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ],
+                    ),
                   ),
                   //const SizedBox(height: 2),
                 ],
               ),
-            ),
-            //const SizedBox(height: 10),
-            //Column( mainAxisAlignment:MainAxisAlignment.start, children: [
+              //),
+              //const SizedBox(height: 10),
+              //Column( mainAxisAlignment:MainAxisAlignment.start, children: [
               Flexible(
-              child: SegmentedButton<_ReadStatus>(
-                selected: selection,
-                onSelectionChanged: (Set<_ReadStatus> newSelection) {
-                  selection = newSelection;
-                  processSelectionOption(newSelection.single);
-                },
-                segments: const <ButtonSegment<_ReadStatus>>[
-                  ButtonSegment(
-                    icon: Icon(Icons.bookmark_remove),
-                    value: _ReadStatus.notRead,
-                    label: Text("Not read"),
+                child: SegmentedButton<_ReadStatus>(
+                  selected: selection,
+                  onSelectionChanged: (Set<_ReadStatus> newSelection) {
+                    selection = newSelection;
+                    processSelectionOption(newSelection.single);
+                  },
+                  segments: const <ButtonSegment<_ReadStatus>>[
+                    ButtonSegment(
+                      icon: Icon(Icons.bookmark_remove),
+                      value: _ReadStatus.notRead,
+                      label: Text("Not read"),
+                    ),
+                    ButtonSegment(
+                      icon: Icon(Icons.auto_stories),
+                      value: _ReadStatus.currentlyReading,
+                      label: Text("Currently Reading"),
+                    ),
+                    ButtonSegment(
+                      icon: Icon(Icons.book),
+                      value: _ReadStatus.read,
+                      label: Text("Read"),
+                    ),
+                  ],
+                  style: SegmentedButton.styleFrom(
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(0.0),
+                    ),
                   ),
-                  ButtonSegment(
-                    icon: Icon(Icons.auto_stories),
-                    value: _ReadStatus.currentlyReading,
-                    label: Text("Currently Reading"),
-                  ),
-                  ButtonSegment(
-                    icon: Icon(Icons.book),
-                    value: _ReadStatus.read,
-                    label: Text("Read"),
+                ),
+              ),
+              //],
+              //),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  (widget.book.isManualAdded == true)
+                      ? ElevatedButton(
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CustomAddedBookEdit(
+                                  widget.book,
+                                  widget.user,
+                                ),
+                              ),
+                            );
+                            setState(() {});
+                          },
+                          style: ElevatedButton.styleFrom(
+                            shape: ContinuousRectangleBorder(
+                              borderRadius: BorderRadius.circular(0.0),
+                            ),
+                          ),
+                          child: const Text("Edit book here",
+                              style: TextStyle(
+                                  color: Color.fromARGB(255, 0, 0, 0))),
+                        )
+                      : const SizedBox.shrink(),
+                  const SizedBox(width: 5),
+                  ElevatedButton(
+                    onPressed: _openNotesDialog,
+                    style: ElevatedButton.styleFrom(
+                      shape: ContinuousRectangleBorder(
+                        borderRadius: BorderRadius.circular(0.0),
+                      ),
+                      //backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                    ),
+                    child: const Text("Edit Notes",
+                        style: TextStyle(color: Color.fromARGB(255, 0, 0, 0))),
                   ),
                 ],
               ),
-            ),
-            //],
-            //),
-            
-            Row(
-              children: [
-            (widget.book.isManualAdded == true)
-                ? ElevatedButton(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CustomAddedBookEdit(
-                            widget.book,
-                            widget.user,
-                          ),
-                        ),
-                      );
-                      setState(() {});
-                    },
-                    child: const Text("Edit manually added book here"),
-                  )
-                : const SizedBox.shrink(),
-
-              //ElevatedButton(
-              // do edit notes
-              //)
-              ],
-            ),
-                (widget.book.bookNotes != null)
-                    ? Card(
-                      color: Color.fromARGB(255, 145, 210, 244),
-                      child: Padding(
-                      padding: const EdgeInsets.all(10),
+              if ((widget.book.bookNotes?.isNotEmpty ?? false))
+                const Text(
+                  "Notes",
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              const SizedBox(height: 5),
+              Flexible(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 226, 226, 226),
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: Colors.black12),
+                  ),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: _notesScrollController,
+                    child: SingleChildScrollView(
+                      controller: _notesScrollController,
                       child: Text(
-                        widget.book.bookNotes!,
-                        style: const TextStyle(
-                          color: Colors.black, fontSize: 14),
+                        widget.book.bookNotes?.isNotEmpty == true
+                            ? widget.book.bookNotes!
+                            : "No notes added yet.",
+                        style: const TextStyle(fontSize: 13),
                       ),
-                      ))
-                : const SizedBox.shrink(),
-          ],
-          
-        ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
