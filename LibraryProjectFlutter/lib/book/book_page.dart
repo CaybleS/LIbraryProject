@@ -25,7 +25,7 @@ class _BookPageState extends State<BookPage> {
   Set<_ReadStatus> selection = <_ReadStatus>{_ReadStatus.unknown};
   String? _selectedCondition = "-";
   String? _selectedRating = "-";
-  String _userLent = "";
+  String? _userLent = "";
   double? textBoxHeight;
   final TextEditingController _notesController = TextEditingController();
   final ScrollController _notesScrollController = ScrollController();
@@ -226,6 +226,9 @@ class _BookPageState extends State<BookPage> {
             context, "Do you want to mark this book as returned?");
         if (shouldReturn) {
           widget.book.returnBook();
+        setState(() {
+          _userLent = null;
+        });
           if (mounted) {
             SharedWidgets.displayPositiveFeedbackDialog(
                 context, "Book Returned");
