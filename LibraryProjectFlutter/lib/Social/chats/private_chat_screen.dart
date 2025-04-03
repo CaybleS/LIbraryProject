@@ -90,10 +90,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     if (user == null) return;
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid)));
+                    showBottombar = true;
+                    refreshBottombar.value = true;
+                    await Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid, showBackButtonOnAppbarInsteadOfMenu: true)));
+                    showBottombar = false;
+                    refreshBottombar.value = true;  
                   },
                   child: Column(
                     children: [
@@ -110,12 +114,16 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 ),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       if (user == null) return;
-                      Navigator.push(
+                      showBottombar = true;
+                      refreshBottombar.value = true;
+                      await Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid)));
+                              builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid, showBackButtonOnAppbarInsteadOfMenu: true)));
+                      showBottombar = false;
+                      refreshBottombar.value = true;
                     },
                     child: Align(
                       alignment: Alignment.centerRight,

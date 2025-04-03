@@ -10,7 +10,8 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final User user;
   final String title;
   final List<Widget>? actions;
-  const CustomAppBar(this.user, {this.title = "", this.actions, super.key});
+  final bool showBackButtonInsteadOfMenu;
+  const CustomAppBar(this.user, {this.title = "", this.actions, this.showBackButtonInsteadOfMenu = false, super.key});
 
   @override
   // this is the default appbar "toolbar" height I believe, kToolbarHeight is usually 56px but it seems it can vary
@@ -45,7 +46,12 @@ class _CustomAppBarState extends State<CustomAppBar> {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: AppColor.appbarColor,
-      leading: MenuAnchor(
+      leading: (widget.showBackButtonInsteadOfMenu)
+      ? InkWell(
+        onTap: () => Navigator.pop(context),
+        child: const Icon(Icons.arrow_back),
+      )
+      : MenuAnchor(
         menuChildren: [
           MenuItemButton(onPressed: () => {
             goToHome()

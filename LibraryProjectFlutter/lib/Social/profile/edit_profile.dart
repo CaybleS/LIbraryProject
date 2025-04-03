@@ -178,6 +178,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColor.appbarColor,
+        title: const Text("Edit Profile"),
+        centerTitle: true,
       ),
       body: _displayProcessing
           ? Center(child: SharedWidgets.displayCircularProgressIndicator())

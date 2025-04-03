@@ -68,7 +68,7 @@ class _FriendsOfFriendsPageState extends State<FriendsOfFriendsPage> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) =>
-                                    Profile(widget.user, friends[index])));
+                                    Profile(widget.user, friends[index], showBackButtonOnAppbarInsteadOfMenu: true)));
                       },
                       child: SizedBox(
                           height: 100,

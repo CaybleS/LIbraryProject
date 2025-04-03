@@ -18,8 +18,9 @@ import '../friends_library/friends_library_page.dart';
 class Profile extends StatefulWidget {
   final User user;
   final String profileUserId;
+  final bool showBackButtonOnAppbarInsteadOfMenu;
 
-  const Profile(this.user, this.profileUserId, {super.key});
+  const Profile(this.user, this.profileUserId, {this.showBackButtonOnAppbarInsteadOfMenu = false, super.key});
 
   @override
   State<Profile> createState() => _ProfileState();
@@ -388,7 +389,11 @@ class _ProfileState extends State<Profile> {
     bool isFriend = friendIDs.contains(widget.profileUserId);
 
     return Scaffold(
-        appBar: CustomAppBar(widget.user),
+        appBar: CustomAppBar(
+          widget.user,
+          title: (widget.user.uid == widget.profileUserId) ? "Your Profile" : "${userIdToUserModel[widget.profileUserId]!.name}'s profile",
+          showBackButtonInsteadOfMenu: widget.showBackButtonOnAppbarInsteadOfMenu
+        ),
         body: (_userInfo != null && _profileInfo != null)
             ? Padding(
                 padding: const EdgeInsets.all(15),
