@@ -282,7 +282,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => Profile(
-                                    widget.user, sentFriendRequests[index])));
+                                    widget.user, sentFriendRequests[index], showBackButtonOnAppbarInsteadOfMenu: true)));
                       },
                       child: SizedBox(
                           height: 100,

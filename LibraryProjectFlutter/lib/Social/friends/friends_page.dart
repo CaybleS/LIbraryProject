@@ -144,7 +144,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            Profile(widget.user, showRequests[index])));
+                            Profile(widget.user, showRequests[index], showBackButtonOnAppbarInsteadOfMenu: true)));
               },
               child: SizedBox(
                   height: 100,
@@ -257,7 +257,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            Profile(widget.user, showFriends[index])));
+                            Profile(widget.user, showFriends[index], showBackButtonOnAppbarInsteadOfMenu: true)));
               },
               child: SizedBox(
                   height: 100,
