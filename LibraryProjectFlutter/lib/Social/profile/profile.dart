@@ -117,14 +117,21 @@ class _ProfileState extends State<Profile> {
 
     showBottombar = false;
     refreshBottombar.value = true;
-    await Navigator.pushReplacement(
+    // TODO I removed the pushReplacement becuase of the case where users go to profile from private chat (re-adds bottombar) then go to messages from that 
+    // private chat via this button (removes bottombar) then hit back button on top left which re adds the bottombar in the chat since it doesnt persist the logic
+    // to re-remove the bottombar when going back to the private chat screen from profile. Just make sure its fine and remove these comments when its determined ok?
+    // I think the logic was just to when leaving messages go to friends page rahter than their profile or something but if you really want that just put a pop
+    // before the navigator push or something. TODO remoive these comments when this is discussed / seen
+    if (mounted) {
+      await Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => PrivateChatScreen(
                 chatRoomId: chatID,
                 contact: userIdToUserModel[widget.profileUserId]!)));
-    showBottombar = true;
-    refreshBottombar.value = true;
+      showBottombar = true;
+      refreshBottombar.value = true;
+    }
   }
 
   Widget _displayButtons() {
