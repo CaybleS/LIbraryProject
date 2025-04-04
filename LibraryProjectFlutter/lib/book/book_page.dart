@@ -370,14 +370,26 @@ class _BookPageState extends State<BookPage> {
                             Flexible(
                               child: DropdownButton<String?>(
                                 value: _selectedRating,
-                                iconSize: 0.0,
+                                //iconSize: 0.0,
                                 items: ["-", "1", "2", "3", "4", "5"]
                                     .map((rating) => DropdownMenuItem<String?>(
                                           value: rating,
-                                          child: Text(
+                                          child: Row(
+                                            children: [
+                                              Text(
                                             rating,
                                             style:
                                                 const TextStyle(fontSize: 30),
+                                          ),
+                                          const Padding(
+                                              padding: EdgeInsets.only(top: 2.0),
+                                              child: Icon(
+                                                Icons.star_border,
+                                                size: 40,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            ],
                                           ),
                                         ))
                                     .toList(),
@@ -392,14 +404,6 @@ class _BookPageState extends State<BookPage> {
                                 },
                               ),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.only(top: 3.0),
-                              child: Icon(
-                                Icons.star_border,
-                                size: 40,
-                                color: Colors.black,
-                              ),
-                            ),
                           ],
                         ),
                         //SizedBox(height: 10),
@@ -412,7 +416,7 @@ class _BookPageState extends State<BookPage> {
                         DropdownButton<String?>(
                           value: _selectedCondition,
                           isExpanded: true,
-                          iconSize: 0.0,
+                          //iconSize: 0.0,
                           items: [
                             "-",
                             "Perfect",
@@ -495,11 +499,11 @@ class _BookPageState extends State<BookPage> {
                                       size: 45,
                                       color: Color.fromARGB(255, 0, 0, 0),
                                     ),
-                                    SizedBox(height: 5),
+                                    SizedBox(height: 7),
                                     Text(
                                       'Delete',
                                       style: TextStyle(
-                                        fontSize: 17,
+                                        fontSize: 16,
                                         color: Color.fromARGB(255, 0, 0, 0),
                                       ),
                                     ),
