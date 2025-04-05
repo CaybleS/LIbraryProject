@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
+import 'package:shelfswap/models/notification.dart';
+import 'package:shelfswap/notifications/aws_scheduler_interface.dart';
+import 'package:shelfswap/notifications/notification_channel_manager.dart';
+import 'package:shelfswap/notifications/send_notifications.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 
@@ -21,11 +25,32 @@ class _FriendBookPageState extends State<FriendBookPage> {
   late Book _friendsLibraryBook;
   late final VoidCallback _booksLentToMeUpdatedListener; // p sure its just for the thing that shows if its "lent" or "available"
   late final VoidCallback _friendsBooksUpdatedListener;
+  final _daysBeforeToNotifyController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _friendsLibraryBook = widget.bookToView;
+    // its intended to be some user input way to specify when you want to get notified prior to a book return date
+    // currently only supports 1 user input but this is an attempt at fetching any previously set values and putting them
+    // in the input box by default or something but 
+    // if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
+    //   _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
+    //     if (value == NotificationChannel.lend_receiver_early.name) {
+    //       var result = await getScheduledJob(key);
+    //       var time = result?['ScheduleExpression'];
+    //       print(time);
+    //       time = time.substring(0, 3); // replacing the at( at the start
+    //       time = time.substring(0, time.length - 1); // replacing the ) at the end
+    //       DateTime parsedTime = DateTime.parse(time); // TODO this doesnt work at all
+    //       // make this a difference between the date to return and this
+    //       int currentDaysBeforeDueDateToNotify = _friendsLibraryBook.dateToReturn!.day - parsedTime.day; // TODO aint no way this works right
+    //       // var daysBetweenThese2Times = DateFormat('d').format(t);
+    //       _daysBeforeToNotifyController.text = currentDaysBeforeDueDateToNotify.toString();
+    //       setState(() {}); // TODO is this needed when you put stuff in text editing controllers no right?
+    //     }
+    //   });
+    // }
     _booksLentToMeUpdatedListener = () {
       setState(() {});
     };
@@ -56,6 +81,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
   void dispose() {
     pageDataUpdatedNotifier.removeListener(_booksLentToMeUpdatedListener);
     pageDataUpdatedNotifier.removeListener(_friendsBooksUpdatedListener);
+    _daysBeforeToNotifyController.dispose();
     super.dispose();
   }
   Widget _displayStatus() {
@@ -110,10 +136,10 @@ class _FriendBookPageState extends State<FriendBookPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            ((_friendsLibraryBook.usersWhoRequested?.length ?? 0) <= 1)
-              ? (_friendsLibraryBook.usersWhoRequested?.length == 1)
-                ? "This book has 1 request for it"
-                : "This book has no requests for it"
+            ((_friendsLibraryBook.usersWhoRequested?.length ?? 0) == 1)
+              // note there is no situation where there would be 0 requests for it, if there was I'd show "no requests for this book"
+              // but if theres no requests you would just see the "request book button" not this
+              ? "This book has 1 request for it"
               : "This book has ${_friendsLibraryBook.usersWhoRequested?.length ?? 0} requests for it",
             style: const TextStyle(fontSize: 14), textAlign: TextAlign.center,
           ),
@@ -133,6 +159,13 @@ class _FriendBookPageState extends State<FriendBookPage> {
           SharedWidgets.displayPositiveFeedbackDialog(context, "Book Requested");
         }
         _friendsLibraryBook.sendBookRequest(widget.user.uid, widget.friendId);
+        NotificationData notificationData = NotificationData(
+          "You have a new book request",
+          "Your book ${_friendsLibraryBook.title ?? "No title found"} has been requested",
+          NotificationChannel.incoming_book_request,
+          widget.friendId,
+        );
+        await sendNotification(notificationData);
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -144,6 +177,95 @@ class _FriendBookPageState extends State<FriendBookPage> {
         style: TextStyle(fontSize: 16, color: Colors.black),
       ),
     );
+  }
+
+  // only called if the book is lent to you
+  Widget _displayEarlyReturnNotifierSpecifier() {
+    return const SizedBox.shrink();
+    // return Column(
+    //   children: [
+    //     Flexible(
+    //       child: TextField(
+    //         controller: _daysBeforeToNotifyController,
+    //         decoration: InputDecoration(
+    //           filled: true,
+    //           fillColor: Colors.white,
+    //           hintText: "Enter an int",
+    //           hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+    //           border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(25.0)),
+    //           ),
+    //           //errorText: _getInputTitleError(),
+    //           suffixIcon: IconButton(
+    //           onPressed: () {
+    //             _daysBeforeToNotifyController.clear();
+    //           },
+    //           icon: const Icon(Icons.clear),
+    //           ),
+    //         ),
+    //         onTapOutside: (event) {
+    //           FocusManager.instance.primaryFocus?.unfocus();
+    //         },
+    //       ),
+    //     ),
+    //     ElevatedButton( // TODO ensure spam clicking this isnt problematic in all parts that use scheduled notifs with awaits
+    //       onPressed: () async {
+    //         String textInput = _daysBeforeToNotifyController.text;
+    //         if (textInput.isEmpty) {
+    //           return;
+    //         }
+    //         int? textAsInt = int.tryParse(textInput);
+    //         if (textAsInt == null) {
+    //           SharedWidgets.displayErrorDialog(context, "Numbers only"); // TODO can i make the texteditingcontroller force number input? Surelyr ight
+    //           return;
+    //         }
+    //         if (textAsInt < 0) {
+    //           SharedWidgets.displayErrorDialog(context, "Why is your number below 0 what are you doing");
+    //           return;
+    //         }
+    //         if (textAsInt > 100) {
+    //           SharedWidgets.displayErrorDialog(context, "You cannot specify a date like this");
+    //         }
+    //         // TODO add a calc from the date to return also
+    //         String bookTitle = widget.bookToView.title ?? "No title found";
+    //         String lenderName = userIdToUserModel[widget.friendId]!.name;
+    //         NotificationChannel currentChannel = NotificationChannel.lend_receiver_early;
+    //         NotificationData timeToReturnBookSoon = NotificationData(
+    //           "It's time to return a book soon",
+    //           "The book $bookTitle lent by $lenderName was flagged to be returned in a week",
+    //           currentChannel,
+    //           widget.user.uid,
+    //         );
+    //         // TODO this works or?
+    //         DateTime notificationDate = widget.bookToView.dateToReturn!.subtract(Duration(days: int.parse(textInput)));
+    //         String? scheduledJobName = await sendScheduledNotification(timeToReturnBookSoon, notificationDate);
+    //         if (scheduledJobName != null) {
+    //           // updating old scheduled "lend receiver early" notification for this one, if it exists
+    //           // TODO this is broken it may be related to the "your friend no longer has this book" problem idk tho
+    //           widget.bookToView.scheduledNotificationNameToChannel!.forEach((key, value) async {
+    //             bool channelFound = false;
+    //             if (value == currentChannel.name) {
+    //               await deleteScheduledJob(key);
+    //               key = scheduledJobName;
+    //               channelFound = true;
+    //             }
+    //             if (!channelFound) {
+    //               widget.bookToView.scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+    //             }
+    //           });
+    //           widget.bookToView.update();
+    //         }
+    //       },
+    //       style: ElevatedButton.styleFrom(
+    //         backgroundColor: AppColor.skyBlue,
+    //         padding: const EdgeInsets.all(8),
+    //       ),
+    //       child: const Text(
+    //         "set notif for this time",
+    //         style: TextStyle(fontSize: 16, color: Colors.black),
+    //       ),
+    //     ),
+    //   ],
+    // );
   }
 
   @override
@@ -214,6 +336,9 @@ class _FriendBookPageState extends State<FriendBookPage> {
                 ],
               ),
             ),
+            (widget.bookToView.borrowerId == widget.user.uid)
+            ? Flexible( child: _displayEarlyReturnNotifierSpecifier())
+            : const SizedBox.shrink(),
             const Spacer(),
             const Text(
               "Book Owned by:",

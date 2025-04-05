@@ -27,7 +27,10 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
   @override
   void initState() {
     super.initState();
+    // I guess this is the best place to initialize things which need to be initialized user-specifically
+    // (whereas main.dart is best place to initialize things which can be the same even if you logout)
     setupDatabaseSubscriptions(widget.user, context);
+    notificationInstance.userLoggedIn(widget.user.uid); // I think its fine to call this when theoretically the rest of the notification stuff isnt setup TODO double check
     _pagesList[homepageIndex] = HomePage(widget.user);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);

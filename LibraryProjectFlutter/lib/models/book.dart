@@ -2,8 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/notification.dart';
+import 'package:shelfswap/notifications/aws_scheduler_interface.dart';
+import 'package:shelfswap/notifications/notification_channel_manager.dart';
+import 'package:shelfswap/notifications/send_notifications.dart';
 
 //putting this definition here allows us to not use bools for read state.
 enum ReadingState { notRead, currentlyReading, read }
@@ -30,6 +35,9 @@ class Book {
   // basically this 1.) stores how many requests this book has and 2.) stores who exactly is requesting it. We need to know who, to delete the
   // request themselves from the database as needed.
   List<String>? usersWhoRequested;
+  // storing channel name to easily determine what "lend_receiver_early" notifications we have since those can potentially be
+  // adjusted by the receiver
+  Map<String, String>? scheduledNotificationNameToChannel;
   late DatabaseReference _id;
 
   Book(
@@ -104,7 +112,55 @@ class Book {
         await removeBookRequestData(usersWhoRequested![i], userId, _id.key!, removeAllReceivedRequests: true);
       }
     }
+    if (scheduledNotificationNameToChannel != null) {
+      scheduledNotificationNameToChannel!.forEach((k, v) async {
+        await deleteScheduledJob(k);
+      });
+    }
     removeRef(_id);
+  }
+
+  Future<void> setupScheduledLendNotifications(DateTime dateLent, DateTime dateToReturn, String borrowerId, String lenderId) async {
+    scheduledNotificationNameToChannel ??= {};
+    late String? scheduledJobName;
+    late NotificationChannel currentChannel;
+    String bookTitle = title ?? "No title found";
+    String? lenderName = userIdToUserModel[lenderId]?.name; // TODO check if this actually exists
+    String? receiverName = userIdToUserModel[borrowerId]?.name;
+    currentChannel = NotificationChannel.lend_receiver_time_to_return;
+    NotificationData timeToReturnBook = NotificationData(
+      "It's time to return a book",
+      "It's time to return the book $bookTitle lent by $lenderName",
+      currentChannel,
+      borrowerId,
+    );
+    scheduledJobName = await sendScheduledNotification(timeToReturnBook, dateToReturn);
+    if (scheduledJobName != null) {
+      scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+    }
+    currentChannel = NotificationChannel.lend_sender_did_you_get_book_back;
+    NotificationData didYouGetBookBack = NotificationData(
+      "Did you get this book back?",
+      "The date to return has occured for book $bookTitle lent to $receiverName",
+      currentChannel,
+      lenderId,
+    );
+    scheduledJobName = await sendScheduledNotification(didYouGetBookBack, dateToReturn);
+    if (scheduledJobName != null) {
+      scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+    }
+    currentChannel = NotificationChannel.lend_receiver_late;
+    NotificationData bookWasDueAWeekAgo = NotificationData(
+      "You have an overdue book lent to you",
+      "$bookTitle was set to be returned a week ago. Please return it to $lenderName",
+      currentChannel,
+      borrowerId,
+    );
+    scheduledJobName = await sendScheduledNotification(bookWasDueAWeekAgo, dateToReturn.add(const Duration(days: 7)));
+    if (scheduledJobName != null) {
+      scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+    }
+    update();
   }
 
   // note that this function assumes the borrowerId is valid, so this value should be protected before function call
@@ -117,6 +173,8 @@ class Book {
     lentDbKey = lentToMeId.key;
     unsendBookRequest(borrowerId, lenderId);
     update();
+    // this intentionally not awaited to show the user instant feedback
+    setupScheduledLendNotifications(dateLent, dateToReturn, borrowerId, lenderId);
   }
 
   void returnBook() {
@@ -128,6 +186,12 @@ class Book {
       dateLent = null;
       dateToReturn = null;
       readyToReturn = null;
+      if (scheduledNotificationNameToChannel != null) {
+        scheduledNotificationNameToChannel!.forEach((key, value) async {
+          await deleteScheduledJob(key);
+        });
+      }
+      scheduledNotificationNameToChannel = null;
       update();
     }
   }
@@ -182,6 +246,7 @@ class Book {
       'dateToReturn': dateToReturn?.toIso8601String(),
       'readyToReturn': readyToReturn == null ? null : true,
       'usersWhoRequested': usersWhoRequestedMap,
+      'scheduledNotificationNames': scheduledNotificationNameToChannel,
     };
   }
 
@@ -234,6 +299,10 @@ Book createBookFromJson(record) {
       book.usersWhoRequested!.add(k);
     });
   }
+  book.scheduledNotificationNameToChannel = (record['scheduledNotificationNames'] as Map?)?.map(
+    (key, value) => MapEntry(key.toString(), value.toString()),
+  );
+  // book.scheduledNotificationNameToChannel = record['scheduledNotificationNames'];
   return book;
 }
 

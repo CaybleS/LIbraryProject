@@ -216,3 +216,13 @@ Future<String> getUserDisplayName(String id) async {
 
   return name;
 }
+
+void writeUserTokenData(String userToken, String userId, {required bool shouldSendToThisToken}) {
+  // storing the token as the db key to make it easy to flag token as inactive or update it
+  DatabaseReference id = dbReference.child('notifications/userTokens/$userId/$userToken/');
+  Map<String, dynamic> dataToWrite = {
+    'lastModified': DateTime.now().toUtc().toIso8601String(),
+    'shouldSendToThisToken': shouldSendToThisToken, // gets set to false upon logout and true upon login
+  };
+  id.update(dataToWrite);
+}

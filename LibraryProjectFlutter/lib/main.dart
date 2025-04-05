@@ -8,6 +8,7 @@ import 'package:shelfswap/app_startup/connectivity_wrapper.dart';
 import 'package:shelfswap/app_startup/login.dart';
 import 'package:shelfswap/core/app_life_cycle.dart';
 import 'package:shelfswap/database/firebase_options.dart';
+import 'package:shelfswap/notifications/receive_notifications.dart';
 import 'package:shelfswap/ui/colors.dart';
 
 void main() async {
@@ -16,6 +17,9 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate();
   FirebaseDatabase.instance.setPersistenceEnabled(true);
+  // not awaited because the first thing it does is await the function which generates the "ask for notifications"
+  // popup. It awaits what it needs to get notifications to work but we want UI to load regardless.
+  setupDeviceNotifications();
 
   await dotenv.load(fileName: ".env");
   runApp(const MainApp());

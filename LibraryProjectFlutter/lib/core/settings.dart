@@ -34,6 +34,7 @@ class _SettingsState extends State<Settings> {
   late final VoidCallback _userLibraryListener;
   late final VoidCallback _booksLentToMeListener;
   int numBooksLent = 0;
+  String? currentScheduleName;
 
   @override
   void initState() {
@@ -149,20 +150,17 @@ class _SettingsState extends State<Settings> {
         return;
       }
     }
-    // 1.) removing all book requests involving this user
     await removeAllBookRequestsInvolvingThisUser(widget.user.uid, widget.user.uid, deletingThisAccount: true);
-    // 2.) removing users books
     DatabaseReference usersBooks = dbReference.child('books/${widget.user.uid}');
     await removeRef(usersBooks);
     // note that "lent to me" books dont need to removed since we checked to make sure they dont have any books lent to them before letting them delete account.
     // (assumming everything works correctly. I wonder if its actually optimal to try to remove them anyways just to be safe. No right?)
-    // 3.) removing user's username
     DatabaseReference usersUsername = dbReference.child('usernames/${userIdToUserModel[widget.user.uid]!.username}');
     await removeRef(usersUsername);
+    DatabaseReference usersTokensRef = dbReference.child('notifications/userTokens/${widget.user.uid}');
+    await removeRef(usersTokensRef);
     DatabaseReference profileInfo = dbReference.child('profileInfo/${widget.user.uid}');
     await removeRef(profileInfo);
-    // TODO below stuff needs to be done
-    // and friend requests
     for (String id in sentFriendRequests) {
       DatabaseReference requestRef = dbReference.child('requests/$id/${widget.user.uid}');
       await removeRef(requestRef);
@@ -177,7 +175,6 @@ class _SettingsState extends State<Settings> {
     DatabaseReference friendRequestsRef = dbReference.child('requests/${widget.user.uid}');
     await removeRef(friendRequestsRef);
 
-    // and userChats
     DatabaseReference userChatsRef = dbReference.child('userChats/${widget.user.uid}');
     await removeRef(userChatsRef);
 
@@ -204,10 +201,7 @@ class _SettingsState extends State<Settings> {
     }
     DatabaseReference friends = dbReference.child('friends/${widget.user.uid}');
     await removeRef(friends);
-
-    // and chats
-    // and userTokens (for notification stuff, its easy but its not implemented completely yet so)
-    // and scheduledNotifications stuff (shouldnt exist since no books are lent assuming we even have time to implement it)
+  
     cancelDatabaseSubscriptions();
     userModel.value = null;
     for (var data in widget.user.providerData) {
@@ -357,7 +351,7 @@ class _SettingsState extends State<Settings> {
                           return;
                         }
                         _pressedAButton = true;
-                        await logout(context);
+                        await logout(widget.user.uid, context);
                         _pressedAButton = false;
                       },
                       style: ElevatedButton.styleFrom(

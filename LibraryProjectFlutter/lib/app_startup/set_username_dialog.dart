@@ -60,7 +60,7 @@ class _SetUsernameDialogState extends State<SetUsernameDialog> {
     });
     if (widget.usernameFromEmail != null) {
       String usernameToPutInController = widget.usernameFromEmail!;
-      usernameToPutInController = usernameToPutInController.trim().toLowerCase(); // ensure this is done before replacing the invalid characters
+      usernameToPutInController = usernameToPutInController.trim().toLowerCase();
       usernameToPutInController = replaceAllInvalidCharacters(usernameToPutInController);
       _inputUsernameController.text = usernameToPutInController;
     }
@@ -228,13 +228,6 @@ class _SetUsernameDialogState extends State<SetUsernameDialog> {
   }
 }
 
-class LowerCaseTextFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    return newValue.copyWith(text: newValue.text.toLowerCase());
-  }
-}
-
 // firebase doesnt allow certain characters such as . so to simplify we just guarantee usernames only contain alphanumeric + underscore
 bool checkIfUsernameContainsValidCharacters(String usernameInput) {
   if (RegExp(r'^[a-z0-9_]+$').hasMatch(usernameInput)) {
@@ -245,7 +238,15 @@ bool checkIfUsernameContainsValidCharacters(String usernameInput) {
 
 // this is for usernames extracted from emails since it can have some non-alphanumeric characters, so we just call this
 // before auto putting that username in the text editing controller
+// ensure you convert the username to lowercase and trim it before calling this function
 String replaceAllInvalidCharacters(String usernameToFix) {
-  usernameToFix = usernameToFix.replaceAll(RegExp(r'[^a-z0-9]'), "");
+  usernameToFix = usernameToFix.replaceAll(RegExp(r'[^a-z0-9_]'), "");
   return usernameToFix;
+}
+
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toLowerCase());
+  }
 }
