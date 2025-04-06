@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shelfswap/Social/chats/message_home.dart';
-import 'package:shelfswap/Social/friends/friends_page.dart';
+import 'package:shelfswap/social/chats/message_home.dart';
+import 'package:shelfswap/social/friends/friends_page.dart';
 import 'package:shelfswap/add_book/add_book_homepage.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/core/homepage.dart';
-import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/social/profile/profile.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'dart:math';

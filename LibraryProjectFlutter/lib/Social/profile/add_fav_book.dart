@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shelfswap/Social/profile/add_fav_subclasses.dart';
+import 'package:shelfswap/social/profile/add_fav_subclasses.dart';
 // import 'package:shelfswap/add_book/custom_add/custom_add.dart';
 import 'package:shelfswap/add_book/scan/scanner_driver.dart';
 import 'package:shelfswap/add_book/search/search_driver.dart';

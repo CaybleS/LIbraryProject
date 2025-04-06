@@ -7,7 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shelfswap/Social/chats/chat_screen.dart';
+import 'package:shelfswap/social/chats/chat_screen.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/core/conditional_widget.dart';

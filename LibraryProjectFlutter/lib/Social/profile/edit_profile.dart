@@ -4,7 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shelfswap/Social/profile/add_fav_book.dart';
+import 'package:shelfswap/social/profile/add_fav_book.dart';
 import 'package:shelfswap/add_book/custom_add/book_cover_changers.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/database/subscriptions.dart';

@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:shelfswap/Social/chats/edit_chat_info_screen.dart';
+import 'package:shelfswap/social/chats/edit_chat_info_screen.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/core/conditional_widget.dart';

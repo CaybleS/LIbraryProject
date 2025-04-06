@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shelfswap/Social/friends/friend_scanner_driver.dart';
-import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/social/friends/friend_scanner_driver.dart';
+import 'package:shelfswap/social/profile/profile.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/ui/colors.dart';

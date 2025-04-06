@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-// import 'package:shelfswap/Social/friends_library/friends_library_page.dart';
-import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/social/profile/profile.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/appbar.dart';
 import 'package:shelfswap/core/global_variables.dart';
@@ -18,6 +17,7 @@ class FriendsOfFriendsPage extends StatefulWidget {
 
 class _FriendsOfFriendsPageState extends State<FriendsOfFriendsPage> {
   List<String> friends = [];
+  int numPrivate = 0;
   late final VoidCallback _somethingUpdatedListener;
 
   @override
@@ -40,10 +40,13 @@ class _FriendsOfFriendsPageState extends State<FriendsOfFriendsPage> {
 
   void _updateList() {
     friends.clear();
+    numPrivate = 0;
 
     for (String id in idsToFriendList[widget.friendID]!) {
       if (userIdToUserModel[id]!.isPublic || friendIDs.contains(id)) {
         friends.add(id);
+      } else {
+        numPrivate += 1;
       }
     }
 
@@ -58,17 +61,26 @@ class _FriendsOfFriendsPageState extends State<FriendsOfFriendsPage> {
           title: "${userIdToUserModel[widget.friendID]!.name}'s friends",
         ),
         body: Padding(
-            padding: const EdgeInsets.all(25),
-            child: ListView.builder(
-                itemCount: friends.length,
-                itemBuilder: (BuildContext context, int index) {
+          padding: const EdgeInsets.all(25),
+          child: ListView.builder(
+              itemCount: friends.length + 1,
+              itemBuilder: (BuildContext context, int index) {
+                if (index == friends.length) {
+                  return Text(
+                    "$numPrivate friends are private",
+                    style: const TextStyle(fontSize: 14),
+                    textAlign: TextAlign.center,
+                  );
+                } else {
                   return InkWell(
                       onTap: () async {
                         await Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    Profile(widget.user, friends[index], showBackButtonOnAppbarInsteadOfMenu: true)));
+                                builder: (context) => Profile(
+                                    widget.user, friends[index],
+                                    showBackButtonOnAppbarInsteadOfMenu:
+                                        true)));
                       },
                       child: SizedBox(
                           height: 100,
@@ -129,6 +141,8 @@ class _FriendsOfFriendsPageState extends State<FriendsOfFriendsPage> {
                                       ]),
                                     )),
                                   ]))));
-                })));
+                }
+              }),
+        ));
   }
 }

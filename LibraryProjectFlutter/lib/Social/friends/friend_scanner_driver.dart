@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shelfswap/Social/friends/friend_scanner_screen.dart';
+import 'package:shelfswap/social/friends/friend_scanner_screen.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 

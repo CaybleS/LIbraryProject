@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:shelfswap/Social/friends_library/friend_book_page.dart';
+import 'package:shelfswap/social/friends_library/friend_book_page.dart';
 import 'package:shelfswap/book/book_requests_page.dart';
 import 'package:shelfswap/core/app_return_dialog.dart';
 import 'package:shelfswap/core/global_variables.dart';

@@ -3,7 +3,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shelfswap/Social/profile/profile_privacy_dialog.dart';
+import 'package:shelfswap/social/profile/profile_privacy_dialog.dart';
 import 'package:shelfswap/add_book/goodreads/goodreads_dialog.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/app_startup/auth.dart';

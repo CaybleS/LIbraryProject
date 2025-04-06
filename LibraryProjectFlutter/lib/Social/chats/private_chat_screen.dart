@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/social/profile/profile.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/models/message.dart';

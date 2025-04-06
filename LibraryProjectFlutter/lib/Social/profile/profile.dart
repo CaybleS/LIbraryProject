@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:shelfswap/Social/chats/private_chat_screen.dart';
-import 'package:shelfswap/Social/profile/edit_profile.dart';
-import 'package:shelfswap/Social/profile/friends_of_friends.dart';
+import 'package:shelfswap/social/chats/private_chat_screen.dart';
+import 'package:shelfswap/social/profile/edit_profile.dart';
+import 'package:shelfswap/social/profile/friends_of_friends.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/database/database.dart';
