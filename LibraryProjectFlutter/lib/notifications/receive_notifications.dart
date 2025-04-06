@@ -81,7 +81,7 @@ class NotificationService {
 
     await NotificationChannelManager.createAllNotificationChannels(_localNotifications);
     // TODO why the crud logo doesnt work
-    const initializationSettingsAndroid = AndroidInitializationSettings("@mipmap/ic_launcher");
+    const initializationSettingsAndroid = AndroidInitializationSettings("@mipmap/app_logo_alt");
 
     // ios setup
     final initializationSettingsDarwin = DarwinInitializationSettings(
@@ -123,7 +123,7 @@ class NotificationService {
             channelId,
             channelName,
             channelDescription: channelDescription,
-            icon: "@mipmap/ic_launcher", // TODO icon here it doesnt work i think
+            icon: "@mipmap/app_logo_alt", // TODO icon here it doesnt work i think
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,

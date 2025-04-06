@@ -4,9 +4,9 @@ class NotificationData {
   final String title;
   final String body;
   final NotificationChannel notificationChannel;
-  final String uid;
+  final String uidToSendTo;
   
-  NotificationData(this.title, this.body, this.notificationChannel, this.uid);
+  NotificationData(this.title, this.body, this.notificationChannel, this.uidToSendTo);
   
   Map<String, String> toJson() {
     String notificationChannelName = notificationChannel.name;
@@ -14,7 +14,7 @@ class NotificationData {
       "title": title,
       "body": body,
       "channelId": notificationChannelName,
-      "uid": uid,
+      "uid": uidToSendTo,
     };
   }
 }

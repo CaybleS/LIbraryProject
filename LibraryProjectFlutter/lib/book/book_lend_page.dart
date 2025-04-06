@@ -17,31 +17,39 @@ Future<void> displayLendDialog(BuildContext context, Book book, User user) async
   );
 }
 
-void tryToLendBook(String? selectedFriendId, BuildContext context, User user, Book book, {int daysToReturn = 30}) {
-    if (selectedFriendId == null) {
-      SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
-      return;
+Future<void> tryToLendBook(String? selectedFriendId, BuildContext context, User user, Book book, {int daysToReturn = 30, bool shouldPop = true}) async {
+  if (selectedFriendId == null) {
+    SharedWidgets.displayErrorDialog(context, "You have not selected a friend to lend to");
+    return;
+  }
+  String borrowerId = selectedFriendId;
+  bool foundFriend = false;
+  for (String friendId in friendIDs) {
+    if (friendId == borrowerId) {
+      foundFriend = true;
     }
-    String borrowerId = selectedFriendId;
-    bool foundFriend = false;
-    for (String friendId in friendIDs) {
-      if (friendId == borrowerId) {
-        foundFriend = true;
-      }
+  }
+  if (!foundFriend) {
+    // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
+    SharedWidgets.displayErrorDialog(context, "This user does not exist");
+    return;
+  }
+  bool confirmAction = await SharedWidgets.displayConfirmActionDialog(context, "Have you given this book to ${userIdToUserModel[selectedFriendId]?.name}?");
+  if (!confirmAction) {
+    return;
+  }
+  DateTime dateLent = DateTime.now().toUtc();
+  DateTime dateToReturn = dateLent.add(Duration(days: daysToReturn));
+  book.lendBook(dateLent, dateToReturn, borrowerId, user.uid);
+  if (shouldPop) {
+    if (context.mounted) {
+      Navigator.pop(context);
     }
-    if (!foundFriend) {
-      // dont think this is possible as long as selectedFriendId gets updated correctly, just being safe tho
-      SharedWidgets.displayErrorDialog(context, "This user does not exist");
-      return;
-    }
-    DateTime dateLent = DateTime.now().toUtc();
-    DateTime dateToReturn = dateLent.add(Duration(days: daysToReturn));
-    // could add a SharedWidgets.displayConfirmActionDialog() to confirm the lend action right here, but I decided its not
-    // necessary, its just 1 extra button press. If the user screws up they can just unlend right after.
-    book.lendBook(dateLent, dateToReturn, borrowerId, user.uid);
-    Navigator.pop(context);
+  }
+  if (context.mounted) {
     SharedWidgets.displayPositiveFeedbackDialog(context, "Book Lent");
   }
+}
 
 class BookLendDialog extends StatefulWidget {
   final Book book;

@@ -302,7 +302,6 @@ Book createBookFromJson(record) {
   book.scheduledNotificationNameToChannel = (record['scheduledNotificationNames'] as Map?)?.map(
     (key, value) => MapEntry(key.toString(), value.toString()),
   );
-  // book.scheduledNotificationNameToChannel = record['scheduledNotificationNames'];
   return book;
 }
 

@@ -34,7 +34,6 @@ class _SettingsState extends State<Settings> {
   late final VoidCallback _userLibraryListener;
   late final VoidCallback _booksLentToMeListener;
   int numBooksLent = 0;
-  String? currentScheduleName;
 
   @override
   void initState() {

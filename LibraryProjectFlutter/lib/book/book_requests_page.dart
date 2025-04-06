@@ -220,8 +220,8 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                                         ),
                                                       )
                                                     : ElevatedButton(
-                                                        onPressed: () {
-                                                          tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30);
+                                                        onPressed: () async {
+                                                          await tryToLendBook(senderId, context, widget.user, book, daysToReturn: 30, shouldPop: false);
                                                         },
                                                         style: ElevatedButton.styleFrom(
                                                           backgroundColor: Colors.green,
@@ -230,7 +230,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                                         child: const FittedBox(
                                                           fit: BoxFit.scaleDown,
                                                           child: Text(
-                                                            "You've lent this book to them",
+                                                            "Accept Request",
                                                             style: TextStyle(fontSize: 16, color: Colors.black),
                                                           ),
                                                         ),
@@ -246,7 +246,7 @@ class _BookRequestsPageState extends State<BookRequestsPage> {
                                                       ),
                                                       child: const FittedBox(
                                                         child: Text(
-                                                          "Deny request",
+                                                          "Deny Request",
                                                           style: TextStyle(fontSize: 16, color: Colors.black),
                                                         ),
                                                       ),

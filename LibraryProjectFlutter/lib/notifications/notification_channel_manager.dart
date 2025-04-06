@@ -1,7 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // ignore_for_file: constant_identifier_names
-// if you add another channel make sure you ensure you add it throughout this whole file
+// if you add another channel make sure you add it throughout this whole file
 enum NotificationChannel {
   lend_receiver_early, // scheduled, lending, updated with lend extending, deleted with return
   lend_receiver_time_to_return, // scheduled, lending, updated with lend extending, deleted with return

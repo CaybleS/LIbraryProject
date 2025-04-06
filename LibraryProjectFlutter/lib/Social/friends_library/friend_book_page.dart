@@ -26,6 +26,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
   late final VoidCallback _booksLentToMeUpdatedListener; // p sure its just for the thing that shows if its "lent" or "available"
   late final VoidCallback _friendsBooksUpdatedListener;
   final _daysBeforeToNotifyController = TextEditingController();
+  bool? _earlyNotificationSet;
 
   @override
   void initState() {
@@ -34,23 +35,15 @@ class _FriendBookPageState extends State<FriendBookPage> {
     // its intended to be some user input way to specify when you want to get notified prior to a book return date
     // currently only supports 1 user input but this is an attempt at fetching any previously set values and putting them
     // in the input box by default or something but 
-    // if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
-    //   _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
-    //     if (value == NotificationChannel.lend_receiver_early.name) {
-    //       var result = await getScheduledJob(key);
-    //       var time = result?['ScheduleExpression'];
-    //       print(time);
-    //       time = time.substring(0, 3); // replacing the at( at the start
-    //       time = time.substring(0, time.length - 1); // replacing the ) at the end
-    //       DateTime parsedTime = DateTime.parse(time); // TODO this doesnt work at all
-    //       // make this a difference between the date to return and this
-    //       int currentDaysBeforeDueDateToNotify = _friendsLibraryBook.dateToReturn!.day - parsedTime.day; // TODO aint no way this works right
-    //       // var daysBetweenThese2Times = DateFormat('d').format(t);
-    //       _daysBeforeToNotifyController.text = currentDaysBeforeDueDateToNotify.toString();
-    //       setState(() {}); // TODO is this needed when you put stuff in text editing controllers no right?
-    //     }
-    //   });
-    // }
+    if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
+      _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
+        if (value == NotificationChannel.lend_receiver_early.name) {
+          _earlyNotificationSet = true;
+        }
+      });
+    }
+    _earlyNotificationSet ??= false;
+    setState(() {});
     _booksLentToMeUpdatedListener = () {
       setState(() {});
     };
@@ -91,7 +84,10 @@ class _FriendBookPageState extends State<FriendBookPage> {
     if (_friendsLibraryBook.lentDbKey != null) {
       availableTxtColor = Colors.red;
       if (_isBookAlreadyLentToUser()) {
-        availableTxt = "Lent to you";
+        DateTime currentTime = DateTime.now().toUtc();
+        Duration daysUntilDueDate = _friendsLibraryBook.dateToReturn!.difference(currentTime);
+        int daysUntilDueDateInt = daysUntilDueDate.inDays;
+        availableTxt = "Lent to you\nDue in $daysUntilDueDateInt days";
       }
       else {
         availableTxt = "Lent";
@@ -104,6 +100,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
     return Text(
       availableTxt,
       style: TextStyle(fontSize: 16, color: availableTxtColor),
+      textAlign: TextAlign.center,
     );
   }
 
@@ -184,29 +181,39 @@ class _FriendBookPageState extends State<FriendBookPage> {
     return const SizedBox.shrink();
     // return Column(
     //   children: [
+    //     const SizedBox(height: 15),
+    //     (_earlyNotificationSet == true)
+    //     ? const Text("You currently are set to get notified before the due date")
+    //     : const Text("Get notified this many days early"),
+    //     const SizedBox(height: 5),
     //     Flexible(
-    //       child: TextField(
-    //         controller: _daysBeforeToNotifyController,
-    //         decoration: InputDecoration(
-    //           filled: true,
-    //           fillColor: Colors.white,
-    //           hintText: "Enter an int",
-    //           hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-    //           border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(25.0)),
+    //       child: SizedBox(
+    //         width: 170,
+    //         child: TextField(
+    //           controller: _daysBeforeToNotifyController,
+    //           keyboardType: TextInputType.number,
+    //           decoration: InputDecoration(
+    //             filled: true,
+    //             fillColor: Colors.white,
+    //             hintText: "Enter an int",
+    //             hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+    //             border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(25.0)),
+    //             ),
+    //             //errorText: _getInputTitleError(),
+    //             suffixIcon: IconButton(
+    //             onPressed: () {
+    //               _daysBeforeToNotifyController.clear();
+    //             },
+    //             icon: const Icon(Icons.clear),
+    //             ),
     //           ),
-    //           //errorText: _getInputTitleError(),
-    //           suffixIcon: IconButton(
-    //           onPressed: () {
-    //             _daysBeforeToNotifyController.clear();
+    //           onTapOutside: (event) {
+    //             FocusManager.instance.primaryFocus?.unfocus();
     //           },
-    //           icon: const Icon(Icons.clear),
-    //           ),
     //         ),
-    //         onTapOutside: (event) {
-    //           FocusManager.instance.primaryFocus?.unfocus();
-    //         },
     //       ),
     //     ),
+    //     const SizedBox(height: 4),
     //     ElevatedButton( // TODO ensure spam clicking this isnt problematic in all parts that use scheduled notifs with awaits
     //       onPressed: () async {
     //         String textInput = _daysBeforeToNotifyController.text;
@@ -215,7 +222,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
     //         }
     //         int? textAsInt = int.tryParse(textInput);
     //         if (textAsInt == null) {
-    //           SharedWidgets.displayErrorDialog(context, "Numbers only"); // TODO can i make the texteditingcontroller force number input? Surelyr ight
+    //           SharedWidgets.displayErrorDialog(context, "Numbers only");
     //           return;
     //         }
     //         if (textAsInt < 0) {
@@ -235,23 +242,24 @@ class _FriendBookPageState extends State<FriendBookPage> {
     //           currentChannel,
     //           widget.user.uid,
     //         );
-    //         // TODO this works or?
+    //         // TODO ensure this works I think it does
     //         DateTime notificationDate = widget.bookToView.dateToReturn!.subtract(Duration(days: int.parse(textInput)));
     //         String? scheduledJobName = await sendScheduledNotification(timeToReturnBookSoon, notificationDate);
     //         if (scheduledJobName != null) {
     //           // updating old scheduled "lend receiver early" notification for this one, if it exists
-    //           // TODO this is broken it may be related to the "your friend no longer has this book" problem idk tho
-    //           widget.bookToView.scheduledNotificationNameToChannel!.forEach((key, value) async {
-    //             bool channelFound = false;
+    //           String? keyToRemove;
+    //           widget.bookToView.scheduledNotificationNameToChannel!.forEach((key, value) {
     //             if (value == currentChannel.name) {
-    //               await deleteScheduledJob(key);
-    //               key = scheduledJobName;
-    //               channelFound = true;
-    //             }
-    //             if (!channelFound) {
-    //               widget.bookToView.scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+    //               // intentionally not awaited so that we can update the book asap without delays which I think mitigates race conditions
+    //               deleteScheduledJob(key);
+    //               keyToRemove = key;
+    //               return;
     //             }
     //           });
+    //           if (keyToRemove != null) {
+    //             widget.bookToView.scheduledNotificationNameToChannel!.remove(keyToRemove);
+    //           }
+    //           widget.bookToView.scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
     //           widget.bookToView.update();
     //         }
     //       },
@@ -337,7 +345,10 @@ class _FriendBookPageState extends State<FriendBookPage> {
               ),
             ),
             (widget.bookToView.borrowerId == widget.user.uid)
-            ? Flexible( child: _displayEarlyReturnNotifierSpecifier())
+            ? Flexible( 
+                flex: 2,
+                child: _displayEarlyReturnNotifierSpecifier(),
+              )
             : const SizedBox.shrink(),
             const Spacer(),
             const Text(

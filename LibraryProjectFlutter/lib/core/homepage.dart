@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shelfswap/social/friends_library/friend_book_page.dart';
 import 'package:shelfswap/book/book_requests_page.dart';
-import 'package:shelfswap/core/app_return_dialog.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/book/book_page.dart';
@@ -12,7 +11,7 @@ import 'package:shelfswap/ui/colors.dart';
 import 'appbar.dart';
 // TODO for showing Lent books, we need a way to filter who lent X book. I want to see what books I lent to X user, or
 // or also for lentToMe books, I want to see what books I have lent by X user. In my head its some menuanchur filter dropdown
-// or something but idk. I'm pretty confident this should be added. 
+// or something but idk. I'm pretty confident this should be added. (will be a dropdown menuanchor with all selected by default btw)
 
 enum _SortingOption { dateAdded, title, author }
 
@@ -77,7 +76,9 @@ class _HomePageState extends State<HomePage> {
     };
     _bookRequestsAndUserLibraryLoadedListener = () {
       if (requestsAndBooksLoaded.value == 2) {
-        displayAppReturnDialog(context, widget.user);
+        // TODO im just temp removing this since its bad feature, fully remove the requestsAndBooksLoaded stuff when dashboard gets added
+        // (I think the requestsAndBooksLoaded was solely for this but not 100% since I rushed thru that)
+        // displayAppReturnDialog(context, widget.user);
         requestsAndBooksLoaded.removeListener(_bookRequestsAndUserLibraryLoadedListener);
       }
     };
@@ -827,6 +828,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                                 color: Colors.black,
                                                 fontSize: 14),
                                             softWrap: true,
+                                            textAlign: TextAlign.center,
                                           ),
                                         ),
                                         Flexible(
@@ -851,6 +853,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                       ],
                                     ),
                                   ),
+                                  const SizedBox(width: 5),
                           ],
                         ),
                       ),

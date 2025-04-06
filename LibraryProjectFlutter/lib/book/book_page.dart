@@ -477,6 +477,7 @@ class _BookPageState extends State<BookPage> {
                                   widget.book.remove(widget.user.uid);
                                   if (context.mounted) {
                                     Navigator.pop(context);
+                                    SharedWidgets.displayPositiveFeedbackDialog(context, "Book Removed");
                                   }
                                 }
                               },
