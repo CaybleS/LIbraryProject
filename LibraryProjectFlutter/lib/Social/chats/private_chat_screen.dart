@@ -4,20 +4,20 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shelfswap/Social/profile/profile.dart';
+import 'package:shelfswap/core/aws_config.dart';
 import 'package:shelfswap/core/global_variables.dart';
+import 'package:shelfswap/core/services/aws_service.dart';
 import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/models/message.dart';
 import 'package:shelfswap/models/user.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:shelfswap/ui/widgets/user_avatar_widget.dart';
-import 'package:uuid/uuid.dart';
 
 class PrivateChatScreen extends StatefulWidget {
   const PrivateChatScreen({super.key, required this.chatRoomId, required this.contact});
@@ -565,15 +565,22 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         selectedImage = File('');
       });
       File image = File(selectedImagePath);
-      String filename = const Uuid().v1();
+      // String filename = const Uuid().v1();
+      //
+      // final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+      //
+      // var uploadTask = await imageRef.putFile(image).catchError((error) {
+      //   return null;
+      // });
 
-      final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+      final AwsService awsService = AwsService(
+        accessKey: AwsConfig.accessKey,
+        secretKey: AwsConfig.secretKey,
+        bucketName: AwsConfig.bucketName,
+        region: AwsConfig.region,
+      );
 
-      var uploadTask = await imageRef.putFile(image).catchError((error) {
-        return null;
-      });
-
-      String url = await uploadTask.ref.getDownloadURL();
+      String url = await awsService.uploadFile(image);
       final messageId = _database.child('messages/${widget.chatRoomId}').push().key!;
       // String encryptedForRecipient = await SecureChatService.instance.encryptMessage(url, widget.contact!.uid);
       // String encryptedForSender = await SecureChatService.instance.encryptMessage(url, userModel.value!.uid);

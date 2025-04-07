@@ -117,12 +117,12 @@ Future<Map<String, dynamic>> logIn(String email, String password, BuildContext c
       };
     }
 
-    if (userCredential.user?.emailVerified == false) {
-      return {
-        'status': false,
-        'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
-      };
-    }
+    // if (userCredential.user?.emailVerified == false) {
+    //   return {
+    //     'status': false,
+    //     'error': 'Your email is not verified. Please check your inbox and verify your account to continue.',
+    //   };
+    // }
 
     // this checks for the case where the user signs up the account but doesnt enter username in the
     // input username dialog

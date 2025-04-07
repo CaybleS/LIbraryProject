@@ -60,7 +60,9 @@ class _LoginPageState extends State<LoginPage> {
     FirebaseAuth auth = FirebaseAuth.instance;
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      if (auth.currentUser != null && auth.currentUser!.emailVerified) {
+      if (auth.currentUser != null
+          // && auth.currentUser!.emailVerified
+      ) {
         user = auth.currentUser;
         changeStatus(true);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PersistentBottomBar(user!)));
