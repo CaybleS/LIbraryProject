@@ -4,10 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/database/database.dart';
 import 'dart:async';
-
 import 'package:shelfswap/notifications/notification_channel_manager.dart';
-// one known error is that powering off device and turning it back on, notifications just arent coming. Is it even a problem id ont know anymore TODO <--
-// prob just some OS limitation
 
 // called setup device notifications since these things which run should be independent of the user. It's basically everything
 // except the stuff which deals with tokens; the general receiving functionality doesn't really care who's signed in, it's just receiving
@@ -15,7 +12,7 @@ Future<void> setupDeviceNotifications() async {
   await requestNotificationPermission(); // ensure this is first, many things rely on this being true to work
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   notificationInstance = NotificationService();
-  notificationInstance.initialize();
+  //notificationInstance.initialize(); // TODO check this
 }
 
 Future<void> requestNotificationPermission() async {
@@ -39,7 +36,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // TODO this crud dont work
   AppBadgePlus.updateBadge(1);
   NotificationService notificationService = NotificationService();
-  // TODO does this get closed when device shuts down, and never reinitialized? Or is void main called when app reopens in this case? Notifs arent happening there at all so idk
   await notificationService.setupNotificationsForShowingOutOfTheApp();
   await notificationService.showNotification(message);
 }
