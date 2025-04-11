@@ -143,7 +143,8 @@ class SearchFavDriver extends SearchDriver {
 class CustomAddFav extends StatefulWidget {
   // final User user;
   final List<Book> favBooks;
-  const CustomAddFav(this.favBooks, {super.key});
+  final List<String> newCustomBookCovers;
+  const CustomAddFav(this.favBooks, this.newCustomBookCovers, {super.key});
 
   @override
   State<CustomAddFav> createState() => _CustomAddFavState();
@@ -208,6 +209,7 @@ class _CustomAddFavState extends State<CustomAddFav> {
         // ordered this way so that we pop to add book homepage before showing book added dialog
         Navigator.pop(context, "added");
         widget.favBooks.add(customAddedBook);
+        widget.newCustomBookCovers.add(customAddedBook.cloudCoverUrl!);
         SharedWidgets.displayPositiveFeedbackDialog(context, "Book Added");
       }
     }

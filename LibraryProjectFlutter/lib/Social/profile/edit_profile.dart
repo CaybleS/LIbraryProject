@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shelfswap/social/profile/add_fav_book.dart';
@@ -11,6 +10,7 @@ import 'package:shelfswap/database/subscriptions.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/models/profile_info.dart';
 import 'package:shelfswap/models/user.dart';
+import 'package:shelfswap/storage/aws_s3.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
@@ -34,6 +34,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _picFromDB;
   XFile? _profilePicFile;
   List<Book> _favBooks = [];
+  final List<String> _newCustomBookCovers = [];
+  final List<String> _removeCustomCovers = [];
 
   bool _displayProcessing = false;
   late final VoidCallback _textUpdatedListener;
@@ -115,19 +117,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (_picUploaded && _profilePicFile != null) {
       String picName = const Uuid().v1();
-      Reference imageRef = FirebaseStorage.instance.ref("profilePics/$picName");
-      TaskSnapshot uploadTask =
-          await imageRef.putFile(File(_profilePicFile!.path));
 
-      if (uploadTask.state == TaskState.success) {
-        String picURL = await uploadTask.ref.getDownloadURL();
+      String? currentURL = userIdToUserModel[widget.user.uid]!.photoUrl;
+
+      String response = await uploadImage(context, picName, File(_profilePicFile!.path));
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
+
+      if (response == "good") {
+        if (currentURL != null && currentURL.startsWith(s3Base)) {
+          await deleteImage(currentURL);
+        }
+
+        String picURL = "$s3Base/$picName";
         userJson['photoUrl'] = picURL;
         _picFromDB = picURL;
-      } else {
-        SharedWidgets.displayErrorDialog(
-            context, "Failed to set profile picture");
       }
     } else if (_picFromDB == null) {
+      String? currentURL = userIdToUserModel[widget.user.uid]!.photoUrl;
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
+
+      if (currentURL != null && currentURL.startsWith(s3Base)) {
+        await deleteImage(currentURL);
+      }
+
       userJson['photoUrl'] = null;
     }
 
@@ -154,6 +166,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     profileJson['favBooks'] = bookMap;
+    _newCustomBookCovers.clear();
+    for (String cover in _removeCustomCovers) {
+      await deleteCoverFromStorage(cover);
+    }
+    _removeCustomCovers.clear();
 
     DatabaseReference userRef =
         FirebaseDatabase.instance.ref('users/${widget.user.uid}');
@@ -381,7 +398,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 MaterialPageRoute(
                                                     builder: (context) =>
                                                         AddFavBook(widget.user,
-                                                            _favBooks)));
+                                                            _favBooks, _newCustomBookCovers)));
                                             setState(() {});
                                           },
                                           style: ElevatedButton.styleFrom(
@@ -397,6 +414,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         (_favBooks.isNotEmpty)
                                             ? ElevatedButton(
                                                 onPressed: () async {
+                                                  for (Book book in _favBooks) {
+                                                    if (book.isManualAdded != null && book.isManualAdded!) {
+                                                      String cover = book.cloudCoverUrl!;
+                                                      _removeCustomCovers.add(cover);
+                                                    }
+                                                  }
                                                   setState(() {
                                                     _favBooks.clear();
                                                   });
@@ -447,7 +470,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                       TextOverflow.ellipsis,
                                                 ),
                                                 ElevatedButton(
-                                                  onPressed: () {
+                                                  onPressed: () async {
+                                                    if (_favBooks[index].isManualAdded != null && _favBooks[index].isManualAdded!) {
+                                                      String cover = _favBooks[index].cloudCoverUrl!;
+                                                      _removeCustomCovers.add(cover);
+                                                    }
                                                     _favBooks.removeAt(index);
                                                     setState(() {});
                                                   },
@@ -532,7 +559,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(10),
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
+                              // TODO this will work on cancel button but not back arrow
+                              for (String cover in _newCustomBookCovers) {
+                                await deleteCoverFromStorage(cover);
+                              }
+                              for (String cover in _removeCustomCovers) {
+                                await deleteCoverFromStorage(cover);
+                              }
                               Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(

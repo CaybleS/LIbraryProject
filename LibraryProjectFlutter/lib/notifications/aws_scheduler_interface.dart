@@ -37,21 +37,21 @@ Future<http.Response?> sendAwsRequest(String region, String service, Uri endpoin
         response = await http.post(
           endpoint,
           headers: signedRequest.headers,
-          body: await _streamToList(signedRequest.body),
+          body: await streamToList(signedRequest.body),
         );
         break;
       case AWSHttpMethod.put:
         response = await http.put(
           endpoint,
           headers: signedRequest.headers,
-          body: await _streamToList(signedRequest.body),
+          body: await streamToList(signedRequest.body),
         );
         break;
       case AWSHttpMethod.delete:
         response = await http.delete(
           endpoint,
           headers: signedRequest.headers,
-          body: await _streamToList(signedRequest.body),
+          body: await streamToList(signedRequest.body),
         );
         break;
       default:
@@ -65,7 +65,7 @@ Future<http.Response?> sendAwsRequest(String region, String service, Uri endpoin
 }
 
 // for some reason the signedRequest body getter returns a stream list rather than the list itself, who knows, I just convert it back to List<int> here
-Future<List<int>> _streamToList(Stream<List<int>> stream) async {
+Future<List<int>> streamToList(Stream<List<int>> stream) async {
   List<int> result = [];
   await for (List<int> chunk in stream) {
     result.addAll(chunk);

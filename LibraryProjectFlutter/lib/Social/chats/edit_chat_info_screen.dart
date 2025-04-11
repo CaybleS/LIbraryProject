@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +10,7 @@ import 'package:shelfswap/core/conditional_widget.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/chat.dart';
 import 'package:shelfswap/models/message.dart';
+import 'package:shelfswap/storage/aws_s3.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
@@ -211,13 +211,23 @@ class _EditChatInfoScreenState extends State<EditChatInfoScreen> {
       File image = File(xFile.path);
       String filename = const Uuid().v1();
 
-      final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+      String response = await uploadImage(context, filename, image);
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
 
-      var uploadTask = await imageRef.putFile(image).catchError((error) {
-        return null;
-      });
+      if (response != "good") {
+        // Error handling?
+        return;
+      }
+      
+      String url = "$s3Base/$filename";
 
-      String url = await uploadTask.ref.getDownloadURL();
+      // final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+
+      // var uploadTask = await imageRef.putFile(image).catchError((error) {
+      //   return null;
+      // });
+
+      // String url = await uploadTask.ref.getDownloadURL();
       chat = chat.copyWith(chatImage: url);
     }
     setState(() {

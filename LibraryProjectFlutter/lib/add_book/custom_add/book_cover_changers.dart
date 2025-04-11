@@ -2,6 +2,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shelfswap/storage/aws_s3.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
@@ -47,17 +48,18 @@ Future<XFile?> selectCoverFromCamera(BuildContext context) async {
   return null;
 }
 
+// Updated for S3
 Future<String?> uploadCoverToStorage(BuildContext context, XFile coverImage) async {
     try {
       File coverImageFile = File(coverImage.path);
       String coverImageFileName = const Uuid().v1();
-      final Reference imageRef = FirebaseStorage.instance.ref().child('customBookCovers/$coverImageFileName');
-      TaskSnapshot uploadTask = await imageRef.putFile(coverImageFile);
-      if (uploadTask.state == TaskState.success) {
-        String newCoverImageUrl = await uploadTask.ref.getDownloadURL();
-        return newCoverImageUrl;
-      }
-      else {
+
+      String response = await uploadImage(context, coverImageFileName, coverImageFile);
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
+
+      if (response == "good") {
+        return "$s3Base/$coverImageFileName";
+      } else {
         if (context.mounted) {
           SharedWidgets.displayErrorDialog(context, "Failed to set cover image");
         }
@@ -75,7 +77,13 @@ Future<String?> uploadCoverToStorage(BuildContext context, XFile coverImage) asy
     return null;
   }
 
+// Updated to account for deleting from firebase and s3
   Future<void> deleteCoverFromStorage(String cloudCoverUrl) async {
-    Reference storageRef = FirebaseStorage.instance.refFromURL(cloudCoverUrl);
-    await storageRef.delete();
+    String s3Base = "https://shelfswap.s3.amazonaws.com";
+    if (cloudCoverUrl.startsWith(s3Base)) {
+        await deleteImage(cloudCoverUrl);
+    } else {
+      Reference storageRef = FirebaseStorage.instance.refFromURL(cloudCoverUrl);
+      await storageRef.delete();
+    }
   }

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shelfswap/social/chats/chat_info_screen.dart';
+import 'package:shelfswap/storage/aws_s3.dart' as aws;
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/core/conditional_widget.dart';
 import 'package:shelfswap/models/chat.dart';
@@ -595,13 +595,22 @@ class _ChatScreenState extends State<ChatScreen> {
       File image = File(selectedImagePath);
       String filename = const Uuid().v1();
 
-      final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+      String response = await aws.uploadImage(context, filename, image);
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
 
-      var uploadTask = await imageRef.putFile(image).catchError((error) {
-        return null;
-      });
+      if (response != "good") {
+        // Error handling?
+        return;
+      }
 
-      String url = await uploadTask.ref.getDownloadURL();
+      // final Reference imageRef = FirebaseStorage.instance.ref().child('chatImages/$filename');
+
+      // var uploadTask = await imageRef.putFile(image).catchError((error) {
+      //   return null;
+      // });
+
+      // String url = await uploadTask.ref.getDownloadURL();
+      String url = "$s3Base/$filename";
       final messageId = dbRef.child('messages/${chat.id}').push().key!;
       MessageModel message = MessageModel(
         id: messageId,

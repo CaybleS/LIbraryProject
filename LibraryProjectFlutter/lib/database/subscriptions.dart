@@ -424,7 +424,6 @@ StreamSubscription<DatabaseEvent> setupRequestsSubscription(
     }
     requestsUpdated();
 
-    // TODO jonathon if you're reading this, there was a reason for the notifyListeners()
     // On app start-up, the icon number will not display if there is a request without this for some reason
     // Is there another way to do this? Probably. But this is functional soooo
     requests.notifyListeners();

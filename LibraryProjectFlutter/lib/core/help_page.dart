@@ -307,6 +307,7 @@ class HelpPage extends StatelessWidget {
                                   style: TextStyle(
                                       fontSize: 16, color: Colors.blue),
                                 )),
+                                // TODO add "delete chats" section
                           ]))),
               const SizedBox(height: 10),
               Text(

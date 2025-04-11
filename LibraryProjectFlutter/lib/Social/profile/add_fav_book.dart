@@ -12,10 +12,11 @@ import 'package:shelfswap/ui/colors.dart';
 class AddFavBook extends StatefulWidget {
   final User user;
   final List<Book> favBooks;
+  final List<String> newCustomBookCovers;
 
   @override
   State<AddFavBook> createState() => _AddFavBookState();
-  const AddFavBook(this.user, this.favBooks, {super.key});
+  const AddFavBook(this.user, this.favBooks, this.newCustomBookCovers, {super.key});
 }
 
 class _AddFavBookState extends State<AddFavBook> {
@@ -112,7 +113,7 @@ class _AddFavBookState extends State<AddFavBook> {
   Future<void> _customAddButtonClicked() async {
     _resetNoInput();
     // I clear the search results when user comes back to this page ONLY if a book was added (there is only a return value if it pops when adding a book)
-    String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddFav(widget.favBooks)));
+    String? retVal = await Navigator.push(context, MaterialPageRoute(builder: (context) => CustomAddFav(widget.favBooks, widget.newCustomBookCovers)));
     if (retVal != null) {
       _bookSearchInstance.resetLastSearchValues();
       _searchQueryController.clear();
