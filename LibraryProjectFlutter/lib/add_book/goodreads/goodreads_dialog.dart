@@ -31,7 +31,7 @@ class GoodreadsDialog extends StatelessWidget {
                 child: const Icon(Icons.arrow_back),
               ),
               const Expanded(
-                child: Text("Goodreads", style: TextStyle(fontSize: 20, color: Colors.black), textAlign: TextAlign.center),
+                child: Text("Goodreads Import", style: TextStyle(fontSize: 20, color: Colors.black), textAlign: TextAlign.center),
               ),
               const SizedBox(width: 24), // meant to center the "Goodreads" text by being the same size as the icon
             ],

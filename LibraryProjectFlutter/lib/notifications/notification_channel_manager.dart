@@ -100,6 +100,7 @@ class NotificationChannelManager {
       case 'incoming_book_request':
         return Importance.high;
       default:
+        print("its default case womp womp channel name: $channelName");
         return Importance.defaultImportance;
     }
   }

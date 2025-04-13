@@ -1,7 +1,7 @@
 name: shelfswap
 description: "A Flutter project."
 publish_to: 'none'
-version: 0.1.0+7 # for every appbundle that you build this + number is the version code it needs to be incremented each time
+version: 0.1.0+8 # for every appbundle that you build this + number is the version code it needs to be incremented each time
 
 environment:
   sdk: '>=3.4.1 <4.0.0'
@@ -37,7 +37,6 @@ dependencies:
   url_launcher: ^6.3.1
   firebase_messaging: ^15.2.1
   flutter_local_notifications: ^17.0.1 # if you update this you will have to fix the code which doesnt work on v18
-  app_badge_plus: ^1.1.6
   aws_common: 0.7.5 # updating this requires you to update flutter
   aws_signature_v4: 0.6.3 # updating this requires you to update flutter
 

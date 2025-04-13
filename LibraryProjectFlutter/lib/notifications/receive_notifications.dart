@@ -1,8 +1,9 @@
-import 'package:app_badge_plus/app_badge_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/database/database.dart';
+import 'package:shelfswap/database/firebase_options.dart';
 import 'dart:async';
 import 'package:shelfswap/notifications/notification_channel_manager.dart';
 
@@ -12,7 +13,7 @@ Future<void> setupDeviceNotifications() async {
   await requestNotificationPermission(); // ensure this is first, many things rely on this being true to work
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   notificationInstance = NotificationService();
-  //notificationInstance.initialize(); // TODO check this
+  notificationInstance.initialize(); // TODO check this
 }
 
 Future<void> requestNotificationPermission() async {
@@ -33,8 +34,7 @@ Future<void> requestNotificationPermission() async {
 // an "isolate" (on android) to handle messages when the app isnt running
 @pragma('vm:entry-point') // needed so this background isolate spawner doesnt get removed during tree shaking for release mode
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // TODO this crud dont work
-  AppBadgePlus.updateBadge(1);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   NotificationService notificationService = NotificationService();
   await notificationService.setupNotificationsForShowingOutOfTheApp();
   await notificationService.showNotification(message);
@@ -107,19 +107,32 @@ class NotificationService {
     AndroidNotification? android = message.notification?.android;
     String channelId = message.data['channelId'] ?? 'default_channel';
     String channelName = NotificationChannelManager.getChannelName(channelId);
+    //print("channelName is: $channelName");
     String channelDescription = NotificationChannelManager.getChannelDescription(channelId);
+
+    // for some reason background notifications are having freaky stuff happen -_- its not registering the channel even though the channel name
+    // is clearly fetched correctly and the channel SHOULD be created
+    // await _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
+    //   AndroidNotificationChannel(
+    //     channelId,
+    //     channelName,
+    //     description: channelDescription,
+    //     importance: NotificationChannelManager.getChannelImportance(channelId),
+    //   )
+    // );
+
 
     if (notification != null && android != null) {
       await _localNotifications.show(
         notification.hashCode,
-        notification.title, // TODO app badge plus stuff with background doesnt work dont know why
+        notification.title,
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
             channelName,
             channelDescription: channelDescription,
-            icon: "@mipmap/app_logo_alt", // TODO icon here it doesnt work i think
+            icon: "@mipmap/app_logo_alt", // TODO icon here it doesnt work i think no I think it does work ... I think this one works and the other doesnt or smth
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -149,7 +162,6 @@ class NotificationService {
   }
 
   void _handleBackgroundMessage(RemoteMessage message) {
-    AppBadgePlus.updateBadge(0); // TODO ensure this goes here
     // TODO much to consider:
     // by default if you click on a notification which comes in the background, it will just open the app, but you can also pass
     // extra data from your firebase and specify which screen should be opened.

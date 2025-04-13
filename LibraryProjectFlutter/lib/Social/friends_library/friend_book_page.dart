@@ -57,8 +57,9 @@ class _FriendBookPageState extends State<FriendBookPage> {
         friendsLibrary = List.from(friendIdToBooks[widget.friendId] ?? []);
       }
       if (!friendsLibrary.contains(_friendsLibraryBook)) {
-        Navigator.pop(context);
-        SharedWidgets.displayErrorDialog(context, "Your friend no longer has this book");
+        // this whole feature is just super buggy, ill fix it one day maybe, its prob extra anyway but idc I think its good to do, and im curious why it aint working
+        // Navigator.pop(context);
+        // SharedWidgets.displayErrorDialog(context, "Your friend no longer has this book");
       }
       else {
         // I think this logic works. The only thing is that for custom added books it acts as if they no longer have it since the indexOf
