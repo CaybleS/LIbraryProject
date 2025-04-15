@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:shelfswap/Social/profile/profile.dart';
 import 'package:shelfswap/social/chats/edit_chat_info_screen.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
@@ -175,25 +177,48 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                             final user = members[index];
                             return Row(
                               children: [
-                                UserAvatarWidget(
-                                    photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                                GestureDetector(
+                                  onTap: () async {
+                                    showBottombar = true;
+                                    refreshBottombar.value = true;
+                                    await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid,
+                                                showBackButtonOnAppbarInsteadOfMenu: true)));
+                                    showBottombar = false;
+                                    refreshBottombar.value = true;
+                                  },
+                                  child: UserAvatarWidget(
+                                      photoUrl: user.photoUrl, name: user.name, avatarColor: user.avatarColor),
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user.name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        user.username,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      showBottombar = true;
+                                      refreshBottombar.value = true;
+                                      await Navigator.push(context,
+                                          MaterialPageRoute(builder: (context) => Profile(FirebaseAuth.instance.currentUser!, user.uid, showBackButtonOnAppbarInsteadOfMenu: true)));
+                                      showBottombar = false;
+                                      refreshBottombar.value = true;
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          user.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          user.username,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 if (user.uid == chat.createdBy)

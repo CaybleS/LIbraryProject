@@ -16,7 +16,6 @@ class CreateChatScreen extends StatefulWidget {
 }
 
 class _CreateChatScreenState extends State<CreateChatScreen> {
-  final _database = FirebaseDatabase.instance.ref();
   final controller = TextEditingController();
   List<UserModel> friendsResult = [];
 
@@ -41,7 +40,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   }
 
   void createChat(UserModel user) async {
-    String id = await getChatRoomId(userModel.value!.uid, user.uid);
+    String id = getChatRoomId(userModel.value!.uid, user.uid);
     showBottombar = false;
     refreshBottombar.value = true;
     if (mounted) {
@@ -59,19 +58,12 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
     refreshBottombar.value = true;
   }
 
-  Future<String> getChatRoomId(String currentUser, String contact) async {
-    final snapshot = await _database.child('chats/$currentUser*$contact').get();
-    if (snapshot.exists) {
+  String getChatRoomId(String currentUser, String contact) {
+    if(currentUser.compareTo(contact) < 0){
       return '$currentUser*$contact';
     } //
-    else {
-      final snapshot = await _database.child('chats/$contact*$currentUser').get();
-      if (snapshot.exists) {
-        return '$contact*$currentUser';
-      } //
-      else {
-        return '$currentUser*$contact';
-      }
+    else{
+      return '$contact*$currentUser';
     }
   }
 
