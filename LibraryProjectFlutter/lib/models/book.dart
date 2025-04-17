@@ -121,6 +121,7 @@ class Book {
   }
 
   Future<void> setupScheduledLendNotifications(DateTime dateLent, DateTime dateToReturn, String borrowerId, String lenderId) async {
+    return;
     scheduledNotificationNameToChannel ??= {};
     late String? scheduledJobName;
     late NotificationChannel currentChannel;

@@ -210,7 +210,7 @@ class _HomePageState extends State<HomePage> {
           context,
           MaterialPageRoute(
               builder: (context) =>
-                  FriendBookPage(widget.user, _booksLentToMeList[index].book, _booksLentToMeList[index].lenderId!)));
+                  FriendBookPage(widget.user, _booksLentToMeList[index].book, _booksLentToMeList[index].lenderId!, viewingFromLentToMe: true)));
     } else {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => BookPage(userLibrary[index], widget.user)));
     }

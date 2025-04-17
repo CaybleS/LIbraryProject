@@ -217,12 +217,26 @@ Future<String> getUserDisplayName(String id) async {
   return name;
 }
 
-void writeUserTokenData(String userToken, String userId, {required bool shouldSendToThisToken}) {
-  // storing the token as the db key to make it easy to flag token as inactive or update it
+// I'm storing lastModified here since firebase cloud messaging documentation recommends it, I guess for scalability/future modifications
+// in case the database wants to be cleaned up. The notification sender logic detects invalid tokens and deletes them, and tokens can be
+// invalidated if an app gets uninstalled, or it reaches 270 days of "inactivity", or something like this. Basically, timestamps are just stored
+// if you want to create some independent job, like an eventbridge scheduler cron job which runs once a month and goes through all tokens and
+// deletes super old ones. Old tokens which aren't being sent to will just persist for years otherwise. Its good design but I'm not gonna
+// do it right now, but its an option for the future.
+// I would say, as a side note, that I wouldn't check timestamps in the lambda's send notification logic, since firebase cloud messaging
+// has its own logic for invalidating tokens. You could, but in many cases it will handle them without that. If a token is being
+// sent to enough, it will either be ok, or deleted, the main reason for the lastModified timestamps is to allow for handling of tokens
+// which don't get sent to ever, to cleanup the database one day.
+void writeUserTokenData(String userToken, String userId) {
+  // storing the token as the db key to make it easy to access it
   DatabaseReference id = dbReference.child('notifications/userTokens/$userId/$userToken/');
   Map<String, dynamic> dataToWrite = {
     'lastModified': DateTime.now().toUtc().toIso8601String(),
-    'shouldSendToThisToken': shouldSendToThisToken, // gets set to false upon logout and true upon login
   };
   id.update(dataToWrite);
+}
+
+void removeUserTokenData(String userToken, String userId) {
+  DatabaseReference id = dbReference.child('notifications/userTokens/$userId/$userToken/');
+  removeRef(id);
 }

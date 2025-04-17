@@ -120,6 +120,12 @@ StreamSubscription<DatabaseEvent> setupLentToMeSubscription(
               lentToMeBooksUpdated();
             }
           }
+          else {
+            // in this case, for some reason, a book flagged as "lent to me" by the user is not actually there for whatever reason
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          }
         });
         await completer.future;
       }
@@ -299,6 +305,11 @@ StreamSubscription<DatabaseEvent> setupSentBookRequestsSubscription(
             }
             else {
               sentBookRequestsUpdated();
+            }
+          }
+          else {
+            if (!completer.isCompleted) {
+              completer.complete();
             }
           }
         });

@@ -10,6 +10,10 @@ import 'package:shelfswap/notifications/notification_channel_manager.dart';
 // called setup device notifications since these things which run should be independent of the user. It's basically everything
 // except the stuff which deals with tokens; the general receiving functionality doesn't really care who's signed in, it's just receiving
 Future<void> setupDeviceNotifications() async {
+  // when re-adding notification stuff, its the dead code places where I early return, and then I commented out uses of
+  // the notificationInstance object, in persistent_bottombar file and logout function.
+  // also friend_book_page sendNotification function
+  return;
   await requestNotificationPermission(); // ensure this is first, many things rely on this being true to work
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   notificationInstance = NotificationService();
@@ -53,13 +57,13 @@ class NotificationService {
   Future<void> userLoggedIn(String userId) async {
     token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
-      writeUserTokenData(token!, userId, shouldSendToThisToken: true);
+      writeUserTokenData(token!, userId);
     }
   }
 
   void userLoggedOut(String userId) {
     if (token != null) {
-      writeUserTokenData(token!, userId, shouldSendToThisToken: false);
+      removeUserTokenData(token!, userId);
       token = null;
     }
   }

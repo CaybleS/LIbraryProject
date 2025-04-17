@@ -79,26 +79,24 @@ class NotificationChannelManager {
 
   // only high importance channels show up on screen, also when a channel is created it exists in the apps settings and its importance 
   // cannot change unless the user uninstalls. So if you go to your settings you will see all the notification channels
-  // TODO ensure these are acceptable, they arent really changable so
-  // I tentatively just made them all high importance mainly for demonstration purposes, I guess we can decide as we go.
   static Importance getChannelImportance(String channelName) {
     switch (channelName) {
       case 'lend_receiver_early':
-        return Importance.high;
+        return Importance.defaultImportance; // not urgent I'd say no rush at this point
       case 'lend_receiver_time_to_return':
-        return Importance.high;
+        return Importance.high; // should be urgent I think
       case 'lend_receiver_late':
-        return Importance.high;
+        return Importance.high; // should be very urgent I think
       case 'lend_sender_did_you_get_book_back':
-        return Importance.high; // was default before
+        return Importance.high; // should be urgent I think, I mean yeah they kinda need to know this
       case 'book_is_ready_to_return':
-        return Importance.high; // was default before
+        return Importance.high; // should be urgent I think or maybe not but I think expediting this lending process is fine
       case 'chat_notification':
-        return Importance.high; // was low before
+        return Importance.low; // should be low I think
       case 'incoming_friend_request':
-        return Importance.high; // was default before
+        return Importance.defaultImportance; // its not urgent
       case 'incoming_book_request':
-        return Importance.high;
+        return Importance.high; // should be urgent I think
       default:
         print("its default case womp womp channel name: $channelName");
         return Importance.defaultImportance;

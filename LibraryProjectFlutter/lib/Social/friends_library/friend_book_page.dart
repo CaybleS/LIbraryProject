@@ -18,7 +18,8 @@ class FriendBookPage extends StatefulWidget {
   final Book bookToView;
   final String friendId;
   final bool viewingFromSentRequest;
-  const FriendBookPage(this.user, this.bookToView, this.friendId, {this.viewingFromSentRequest = false, super.key});
+  final bool viewingFromLentToMe;
+  const FriendBookPage(this.user, this.bookToView, this.friendId, {this.viewingFromSentRequest = false, this.viewingFromLentToMe = false, super.key});
 }
 
 class _FriendBookPageState extends State<FriendBookPage> {
@@ -53,13 +54,15 @@ class _FriendBookPageState extends State<FriendBookPage> {
         // creating a list of all books derived from all sent book requests sent to this friend
         friendsLibrary = sentBookRequests.values.where((item) => item.receiverId == widget.friendId).map((item) => item.book).toList();
       }
+      else if (widget.viewingFromLentToMe) {
+        friendsLibrary = booksLentToMe.values.where((item) => item.lenderId == widget.friendId).map((item) => item.book).toList();
+      }
       else {
         friendsLibrary = List.from(friendIdToBooks[widget.friendId] ?? []);
       }
       if (!friendsLibrary.contains(_friendsLibraryBook)) {
-        // this whole feature is just super buggy, ill fix it one day maybe, its prob extra anyway but idc I think its good to do, and im curious why it aint working
-        // Navigator.pop(context);
-        // SharedWidgets.displayErrorDialog(context, "Your friend no longer has this book");
+        Navigator.pop(context);
+        SharedWidgets.displayErrorDialog(context, "Your friend no longer has this book");
       }
       else {
         // I think this logic works. The only thing is that for custom added books it acts as if they no longer have it since the indexOf
@@ -163,7 +166,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
           NotificationChannel.incoming_book_request,
           widget.friendId,
         );
-        await sendNotification(notificationData);
+        //await sendNotification(notificationData);
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
