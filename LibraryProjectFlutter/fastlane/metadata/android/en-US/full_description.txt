@@ -1,0 +1,7 @@
+<b>Simplify book sharing amongst friends</b>
+
+Track your personal book library including book condition and ratings. Keep records of who you lend your books to. Borrow books from your friends' libraries.
+
+<b>Friends and Messaging</b>
+
+Add friends by scanning their QR code or using the friend code. Send messages to friends to coordinate book pick-ups and returns. Create group chats with your friends.

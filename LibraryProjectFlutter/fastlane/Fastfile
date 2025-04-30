@@ -1,0 +1,114 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  def increment_flutter_version_code()
+    # This uses the directory of the Fastfile. This is explained in the docs its basically every "action and
+    # every plugin's code" runs in the project root but all user code runs inside the ./fastlane directory.
+    pubspec_path = "../pubspec.yaml"
+    pubspec_content = File.read(pubspec_path)
+
+    version_pattern = /version:\s+([^+]+)\+(\d+)/
+    version_match = pubspec_content.match(version_pattern)
+
+    if version_match.nil?
+      puts "Could not find version in pubspec.yaml"
+      return nil
+    end
+
+    version_name = version_match[1]
+    version_code = version_match[2].to_i
+    new_version_code = version_code + 1
+    new_app_version = "#{version_name}+#{new_version_code}"
+
+    # updating pubspec.yaml with new version code
+    pubspec_content.gsub!(version_pattern, "version: #{new_app_version}")
+    File.write(pubspec_path, pubspec_content)
+    puts "Successfully updated version code in pubspec.yaml"
+
+    return new_version_code
+  end
+
+  def create_changelog(new_version_code, public_release_notes)
+    changelog_dir = "metadata/android/en-US/changelogs"
+    FileUtils.mkdir_p(changelog_dir) unless Dir.exist?(changelog_dir)
+
+    changelog_path = File.join(changelog_dir, "#{new_version_code}.txt")
+    File.write(changelog_path, public_release_notes)
+  end
+
+  desc "Deploy a new version to Play Store Internal Testing Track"
+  lane :internal_test do
+    public_release_notes = prompt(text: "Enter PUBLIC release notes here:")
+    private_version_name = prompt(text: "Enter private version name (this shows in google play console):")
+  
+    # this order is intentional, so that we only increment pubspec version code after both prompts in case the user exists
+    # we dont want to update pubspec if we don't have to
+    new_version_code = increment_flutter_version_code()
+    private_version_name = "Version code: #{new_version_code}" if private_version_name.strip.empty?
+    # for this, I believe the only way for this to automatically set the change notes is through this metadata file
+    create_changelog(new_version_code, public_release_notes)
+
+    Dir.chdir("..") do
+      sh "flutter clean"
+      sh "flutter pub get"
+      sh "flutter build appbundle --obfuscate --split-debug-info=./symbols"
+    end
+    output_file_path = "build/app/outputs/bundle/release/app-release.aab"
+    upload_to_play_store(
+      track: "internal",
+      aab: output_file_path,
+      version_name: private_version_name,
+      metadata_path: "fastlane/metadata/android",
+      sync_image_upload: true, # skips uploading of images already on play store
+      validate_only: false # this ensures it will get automatically published
+    )
+    puts "Build uploaded to play store successfully! You should commit the pubspec version update to main branch"
+  end
+
+  desc "Deploy a new production release to Google Play"
+  lane :deploy_production do
+    puts "You are now uploading a production release to the Play Store."
+    puts "First enter release notes. Note that you can also enter this in the Google Play Console, 
+    since this will only upload the app to play store, you can still edit release notes before you publish."
+    public_release_notes = prompt(text: "Enter PUBLIC release notes here:")
+    private_version_name = prompt(text: "Enter private version name (this shows in google play console):")
+    
+    new_version_code = increment_flutter_version_code()
+    private_version_name = "Version code: #{new_version_code}" if private_version_name.strip.empty?
+    # for this, I believe the only way for this to automatically set the change notes is through this metadata file
+    create_changelog(new_version_code, public_release_notes)
+  
+    Dir.chdir("..") do
+      sh "flutter clean"
+      sh "flutter pub get"
+      sh "flutter build appbundle --obfuscate --split-debug-info=./symbols"
+    end
+    output_file_path = "build/app/outputs/bundle/release/app-release.aab"
+    upload_to_play_store(
+      track: "production",
+      aab: output_file_path,
+      version_name: private_version_name,
+      metadata_path: "fastlane/metadata/android",
+      sync_image_upload: true, # skips uploading of images already on play store
+      validate_only: true # so that it only uploads it but doesnt actually publish the release
+    )
+    puts "Build uploaded to play store successfully with version code #{new_version_code}. Go to 
+    Play Console to edit the release notes and submit the changes for review when you are done! 
+    Also you should commit the pubspec version update to main branch."
+  end
+end

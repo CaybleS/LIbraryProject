@@ -1,5 +1,7 @@
 # project-related
 *.env
+symbols/
+fastlane-service-account-keys.json
 
 # Miscellaneous
 *.class
