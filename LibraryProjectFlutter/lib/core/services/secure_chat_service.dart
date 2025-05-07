@@ -1,3 +1,4 @@
+// TODO this file isnt used right? It can be deleted since it was just used with the chat encryption stuff right?
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';

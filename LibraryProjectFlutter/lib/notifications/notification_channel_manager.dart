@@ -25,7 +25,7 @@ class NotificationChannelManager {
         currentChannelName,
         getChannelName(currentChannelName),
         description: getChannelDescription(currentChannelName),
-        importance: getChannelImportance(currentChannelName),
+        importance: _getChannelImportance(currentChannelName),
       );
       await localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(channel);
     }
@@ -79,7 +79,7 @@ class NotificationChannelManager {
 
   // only high importance channels show up on screen, also when a channel is created it exists in the apps settings and its importance 
   // cannot change unless the user uninstalls. So if you go to your settings you will see all the notification channels
-  static Importance getChannelImportance(String channelName) {
+  static Importance _getChannelImportance(String channelName) {
     switch (channelName) {
       case 'lend_receiver_early':
         return Importance.defaultImportance; // not urgent I'd say no rush at this point
@@ -98,7 +98,6 @@ class NotificationChannelManager {
       case 'incoming_book_request':
         return Importance.high; // should be urgent I think
       default:
-        print("its default case womp womp channel name: $channelName");
         return Importance.defaultImportance;
     }
   }

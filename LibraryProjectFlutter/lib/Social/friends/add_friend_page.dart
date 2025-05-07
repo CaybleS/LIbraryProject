@@ -55,15 +55,19 @@ class _AddFriendPageState extends State<AddFriendPage> {
         id); // if there is already a request sent from this user, add as friend
     if (requestToMe) {
       await addFriend(id, widget.user.uid);
-      SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
+      if (context.mounted) {
+        SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
+      }
     } else {
       if (id != widget.user.uid) {
         if (id != '') {
           if (!friendIDs.contains(id)) {
             sendFriendRequest(widget.user, id);
-            SharedWidgets.displayPositiveFeedbackDialog(
-                context, 'Friend Request Sent!');
-            Navigator.pop(context);
+            if (context.mounted) {
+              SharedWidgets.displayPositiveFeedbackDialog(
+                  context, 'Friend Request Sent!');
+              Navigator.pop(context);
+            }
           } else {
             setState(() {
               _msg = "You are already friends with this user";
@@ -107,8 +111,10 @@ class _AddFriendPageState extends State<AddFriendPage> {
         var contain = friendIDs.where((element) => element == scannedID);
         if (contain.isEmpty) {
           sendFriendRequest(widget.user, scannedID);
-          SharedWidgets.displayPositiveFeedbackDialog(
-              context, 'Friend Request Sent!');
+          if (mounted) {
+            SharedWidgets.displayPositiveFeedbackDialog(
+                context, 'Friend Request Sent!');
+          }
         }
       }
     }

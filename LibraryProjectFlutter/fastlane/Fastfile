@@ -56,7 +56,7 @@ platform :android do
     public_release_notes = prompt(text: "Enter PUBLIC release notes here:")
     private_version_name = prompt(text: "Enter private version name (this shows in google play console):")
   
-    # this order is intentional, so that we only increment pubspec version code after both prompts in case the user exists
+    # this order is intentional, so that we only increment pubspec version code after both prompts in case the user exits
     # we dont want to update pubspec if we don't have to
     new_version_code = increment_flutter_version_code()
     private_version_name = "Version code: #{new_version_code}" if private_version_name.strip.empty?
@@ -92,7 +92,8 @@ platform :android do
     private_version_name = "Version code: #{new_version_code}" if private_version_name.strip.empty?
     # for this, I believe the only way for this to automatically set the change notes is through this metadata file
     create_changelog(new_version_code, public_release_notes)
-  
+
+    # below, note the obfuscate. It's very important to ensure the security of the gitignored data we store bundled in the app
     Dir.chdir("..") do
       sh "flutter clean"
       sh "flutter pub get"
@@ -105,7 +106,6 @@ platform :android do
       version_name: private_version_name,
       metadata_path: "fastlane/metadata/android",
       sync_image_upload: true, # skips uploading of images already on play store
-      validate_only: true # so that it only uploads it but doesnt actually publish the release
     )
     puts "Build uploaded to play store successfully with version code #{new_version_code}. Go to 
     Play Console to edit the release notes and submit the changes for review when you are done! 

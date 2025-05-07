@@ -77,7 +77,7 @@ Future<User?> signInWithGoogle(BuildContext context) async {
 
     return user;
   } catch (e) {
-    debugPrint(e.toString());
+    // print(e.toString());
     return null;
   }
 }
@@ -88,13 +88,12 @@ Future<void> signOutGoogle() async {
 
 Future<void> logout(String userId, context) async {
   await changeStatus(false);
-  // if (notificationInstance.token != null) {
-  //   notificationInstance.userLoggedOut(userId);
-  // }
+  if (notificationInstance.token != null) {
+    notificationInstance.userLoggedOut(userId);
+  }
   cancelDatabaseSubscriptions(); // ensuring the onvalue listeners are canceled before we are signed out
   if (_auth.currentUser != null) {
     for (var data in _auth.currentUser!.providerData) {
-      debugPrint(data.providerId);
       if (data.providerId == "google.com") {
         await signOutGoogle();
       }
@@ -149,7 +148,7 @@ Future<Map<String, dynamic>> logIn(String email, String password, BuildContext c
 
     return {'status': true, 'user': userCredential.user};
   } catch (e) {
-    debugPrint(e.toString());
+    // print(e.toString());
     return {
       'status': false,
       'error': 'Incorrect Email or Password',
@@ -161,23 +160,10 @@ Future<User?> createAccount(String name, String email, String password, BuildCon
   try {
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
 
-    if (userCredential.user == null) {
-      debugPrint("user null");
-    }
-
-    // debugPrint("Account created Successful");
     await userCredential.user!.updateDisplayName(name);
     await userCredential.user!.reload();
     User? user = _auth.currentUser;
     await user?.sendEmailVerification();
-
-    if (user?.displayName == null) {
-      debugPrint("display name null");
-    }
-
-    if (user?.email == null) {
-      debugPrint("email null");
-    }
 
     if (user != null) {
       if (context.mounted) {
@@ -191,7 +177,7 @@ Future<User?> createAccount(String name, String email, String password, BuildCon
 
     return user;
   } catch (e) {
-    debugPrint(e.toString());
+    // print(e.toString());
     return null;
   }
 }

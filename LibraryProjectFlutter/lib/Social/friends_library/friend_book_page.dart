@@ -1,14 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/models/notification.dart';
-import 'package:shelfswap/notifications/aws_scheduler_interface.dart';
 import 'package:shelfswap/notifications/notification_channel_manager.dart';
 import 'package:shelfswap/notifications/send_notifications.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'package:shelfswap/ui/shared_widgets.dart';
+import 'dart:math';
 
 class FriendBookPage extends StatefulWidget {
 
@@ -33,17 +35,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
   void initState() {
     super.initState();
     _friendsLibraryBook = widget.bookToView;
-    // its intended to be some user input way to specify when you want to get notified prior to a book return date
-    // currently only supports 1 user input but this is an attempt at fetching any previously set values and putting them
-    // in the input box by default or something but 
-    if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
-      _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
-        if (value == NotificationChannel.lend_receiver_early.name) {
-          _earlyNotificationSet = true;
-        }
-      });
-    }
-    _earlyNotificationSet ??= false;
+    _checkIfLendReceiverEarlyNotificationIsSet();
     setState(() {});
     _booksLentToMeUpdatedListener = () {
       setState(() {});
@@ -68,6 +60,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
         // I think this logic works. The only thing is that for custom added books it acts as if they no longer have it since the indexOf
         // uses the book's overrided operator== I think and if they changed title on custom added books it acts as if its a different book (it kinda is so)
         _friendsLibraryBook = friendsLibrary.elementAt(friendsLibrary.indexOf(_friendsLibraryBook));
+        _checkIfLendReceiverEarlyNotificationIsSet();
       }
     };
     pageDataUpdatedNotifier.addListener(_booksLentToMeUpdatedListener);
@@ -81,6 +74,21 @@ class _FriendBookPageState extends State<FriendBookPage> {
     _daysBeforeToNotifyController.dispose();
     super.dispose();
   }
+
+  // its intended to be some user input way to specify when you want to get notified prior to a book return date
+  // currently only supports 1 user input and that input cannot be edited as well
+  void _checkIfLendReceiverEarlyNotificationIsSet() {
+    _earlyNotificationSet = false;
+    if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
+      _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
+        if (value == NotificationChannel.lend_receiver_early.name) {
+          _earlyNotificationSet = true;
+        }
+      });
+    }
+    setState(() {});
+  }
+
   Widget _displayStatus() {
     String availableTxt;
     Color availableTxtColor;
@@ -91,7 +99,25 @@ class _FriendBookPageState extends State<FriendBookPage> {
         DateTime currentTime = DateTime.now().toUtc();
         Duration daysUntilDueDate = _friendsLibraryBook.dateToReturn!.difference(currentTime);
         int daysUntilDueDateInt = daysUntilDueDate.inDays;
-        availableTxt = "Lent to you\nDue in $daysUntilDueDateInt days";
+        if (daysUntilDueDateInt < 0) {
+          if (daysUntilDueDateInt.abs() == 1) {
+            availableTxt = "Lent to you\nDue ${daysUntilDueDateInt.abs()} day ago, on ${DateFormat.yMd().format(_friendsLibraryBook.dateToReturn!)}";
+          }
+          else {
+            availableTxt = "Lent to you\nDue ${daysUntilDueDateInt.abs()} days ago, on ${DateFormat.yMd().format(_friendsLibraryBook.dateToReturn!)}";
+          }
+        } 
+        else if (daysUntilDueDateInt == 0) {
+          availableTxt = "Lent to you\nDue today";
+        }
+        else {
+          if (daysUntilDueDateInt == 1) {
+            availableTxt = "Lent to you\nDue in $daysUntilDueDateInt day, on ${DateFormat.yMd().format(_friendsLibraryBook.dateToReturn!)}";
+          }
+          else {
+            availableTxt = "Lent to you\nDue in $daysUntilDueDateInt days, on ${DateFormat.yMd().format(_friendsLibraryBook.dateToReturn!)}";
+          }
+        }
       }
       else {
         availableTxt = "Lent";
@@ -166,7 +192,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
           NotificationChannel.incoming_book_request,
           widget.friendId,
         );
-        //await sendNotification(notificationData);
+        await sendNotification(notificationData);
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
@@ -180,104 +206,151 @@ class _FriendBookPageState extends State<FriendBookPage> {
     );
   }
 
-  // only called if the book is lent to you
+  // only called if the book is lent to you and the book is not overdue
   Widget _displayEarlyReturnNotifierSpecifier() {
-    return const SizedBox.shrink();
-    // return Column(
-    //   children: [
-    //     const SizedBox(height: 15),
-    //     (_earlyNotificationSet == true)
-    //     ? const Text("You currently are set to get notified before the due date")
-    //     : const Text("Get notified this many days early"),
-    //     const SizedBox(height: 5),
-    //     Flexible(
-    //       child: SizedBox(
-    //         width: 170,
-    //         child: TextField(
-    //           controller: _daysBeforeToNotifyController,
-    //           keyboardType: TextInputType.number,
-    //           decoration: InputDecoration(
-    //             filled: true,
-    //             fillColor: Colors.white,
-    //             hintText: "Enter an int",
-    //             hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-    //             border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(25.0)),
-    //             ),
-    //             //errorText: _getInputTitleError(),
-    //             suffixIcon: IconButton(
-    //             onPressed: () {
-    //               _daysBeforeToNotifyController.clear();
-    //             },
-    //             icon: const Icon(Icons.clear),
-    //             ),
-    //           ),
-    //           onTapOutside: (event) {
-    //             FocusManager.instance.primaryFocus?.unfocus();
-    //           },
-    //         ),
-    //       ),
-    //     ),
-    //     const SizedBox(height: 4),
-    //     ElevatedButton( // TODO ensure spam clicking this isnt problematic in all parts that use scheduled notifs with awaits
-    //       onPressed: () async {
-    //         String textInput = _daysBeforeToNotifyController.text;
-    //         if (textInput.isEmpty) {
-    //           return;
-    //         }
-    //         int? textAsInt = int.tryParse(textInput);
-    //         if (textAsInt == null) {
-    //           SharedWidgets.displayErrorDialog(context, "Numbers only");
-    //           return;
-    //         }
-    //         if (textAsInt < 0) {
-    //           SharedWidgets.displayErrorDialog(context, "Why is your number below 0 what are you doing");
-    //           return;
-    //         }
-    //         if (textAsInt > 100) {
-    //           SharedWidgets.displayErrorDialog(context, "You cannot specify a date like this");
-    //         }
-    //         // TODO add a calc from the date to return also
-    //         String bookTitle = widget.bookToView.title ?? "No title found";
-    //         String lenderName = userIdToUserModel[widget.friendId]!.name;
-    //         NotificationChannel currentChannel = NotificationChannel.lend_receiver_early;
-    //         NotificationData timeToReturnBookSoon = NotificationData(
-    //           "It's time to return a book soon",
-    //           "The book $bookTitle lent by $lenderName was flagged to be returned in a week",
-    //           currentChannel,
-    //           widget.user.uid,
-    //         );
-    //         // TODO ensure this works I think it does
-    //         DateTime notificationDate = widget.bookToView.dateToReturn!.subtract(Duration(days: int.parse(textInput)));
-    //         String? scheduledJobName = await sendScheduledNotification(timeToReturnBookSoon, notificationDate);
-    //         if (scheduledJobName != null) {
-    //           // updating old scheduled "lend receiver early" notification for this one, if it exists
-    //           String? keyToRemove;
-    //           widget.bookToView.scheduledNotificationNameToChannel!.forEach((key, value) {
-    //             if (value == currentChannel.name) {
-    //               // intentionally not awaited so that we can update the book asap without delays which I think mitigates race conditions
-    //               deleteScheduledJob(key);
-    //               keyToRemove = key;
-    //               return;
-    //             }
-    //           });
-    //           if (keyToRemove != null) {
-    //             widget.bookToView.scheduledNotificationNameToChannel!.remove(keyToRemove);
-    //           }
-    //           widget.bookToView.scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
-    //           widget.bookToView.update();
-    //         }
-    //       },
-    //       style: ElevatedButton.styleFrom(
-    //         backgroundColor: AppColor.skyBlue,
-    //         padding: const EdgeInsets.all(8),
-    //       ),
-    //       child: const Text(
-    //         "set notif for this time",
-    //         style: TextStyle(fontSize: 16, color: Colors.black),
-    //       ),
-    //     ),
-    //   ],
-    // );
+    if (_earlyNotificationSet == true) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Flexible(
+            child: Text("You are set to get notified early"),
+          ),
+          const SizedBox(width: 6),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+            ),
+            onPressed: () {
+              if (_friendsLibraryBook.scheduledNotificationNameToChannel != null) {
+                String? jobName;
+                _friendsLibraryBook.scheduledNotificationNameToChannel!.forEach((key, value) async {
+                  if (value == NotificationChannel.lend_receiver_early.name) {
+                    jobName = key;
+                    deleteScheduledNotification(jobName!);
+                    return; // this only returns from the forEach btw not the onPressed
+                  }
+                });
+                if (jobName != null) {
+                  _friendsLibraryBook.scheduledNotificationNameToChannel!.remove(jobName);
+                  _friendsLibraryBook.update();
+                }
+              }
+            },
+            child: const Text(
+              "Undo",
+              style: TextStyle(color: Colors.black, fontSize: 16),
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        const SizedBox(height: 15),
+        const Text("Do you want to get notified early?"),
+        const SizedBox(height: 6),
+        Flexible(
+          child: SizedBox(
+            width: 200,
+            child: TextField(
+              controller: _daysBeforeToNotifyController,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                hintText: "Days before due date",
+                hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                ),
+                //errorText: _getInputTitleError(),
+                suffixIcon: IconButton(
+                onPressed: () {
+                  _daysBeforeToNotifyController.clear();
+                },
+                icon: const Icon(Icons.clear),
+                ),
+              ),
+              onTapOutside: (event) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        ElevatedButton(
+          onPressed: () async {
+            String textInput = _daysBeforeToNotifyController.text;
+            if (textInput.isEmpty) {
+              return;
+            }
+            int? textAsInt = int.tryParse(textInput);
+            if (textAsInt == null) {
+              SharedWidgets.displayErrorDialog(context, "Invalid input"); // this occurs with int overflow it seems
+              return;
+            }
+            if (textAsInt <= 0) {
+              SharedWidgets.displayErrorDialog(context, "Enter a valid number of days before the return date");
+              return;
+            }
+            if (textAsInt > 100) {
+              SharedWidgets.displayErrorDialog(context, "You cannot specify a date like this");
+              return;
+            }
+            Duration daysUntilDueDate = _friendsLibraryBook.dateToReturn!.difference(DateTime.now().toUtc());
+            int daysUntilDueDateInt = daysUntilDueDate.inDays;
+            if (textAsInt > daysUntilDueDateInt) {
+              SharedWidgets.displayErrorDialog(context, "This book is flagged to be returned in $daysUntilDueDateInt days, so you cannot schedule an early reminder past that");
+              return;
+            }
+            else if (textAsInt == daysUntilDueDateInt) {
+              SharedWidgets.displayErrorDialog(context, "This book is flagged to be returned in $textAsInt days already, so you will already be notified at that time");
+              return;
+            }
+            String bookTitle = "No title found";
+            if (widget.bookToView.title != null) {
+              bookTitle = widget.bookToView.title!.substring(0, min(widget.bookToView.title!.length, 40));
+            }
+            String lenderName = userIdToUserModel[widget.friendId]!.name;
+            DateTime notificationDate = widget.bookToView.dateToReturn!.subtract(Duration(days: int.parse(textInput)));
+            int numDaysBeforeDueDateToBeNotified = widget.bookToView.dateToReturn!.difference(notificationDate).inDays;
+            NotificationChannel currentChannel = NotificationChannel.lend_receiver_early;
+            NotificationData timeToReturnBookSoonNotification = NotificationData(
+              "It's time to return a book soon",
+              "The book $bookTitle, lent by $lenderName was flagged to be returned in $numDaysBeforeDueDateToBeNotified days",
+              currentChannel,
+              widget.user.uid,
+            );
+            String whenToNotify = numDaysBeforeDueDateToBeNotified == 1 ? "$numDaysBeforeDueDateToBeNotified day" : "$numDaysBeforeDueDateToBeNotified days";
+            bool shouldContinue = await SharedWidgets.displayConfirmActionDialog(
+              context, "Are you sure you want to be notified $whenToNotify before this book is due, on ${DateFormat.yMd().format(_friendsLibraryBook.dateToReturn!.subtract(Duration(days: textAsInt)))}");
+            if (!shouldContinue) {
+              return;
+            }
+            String? scheduledJobName = await sendScheduledNotification(timeToReturnBookSoonNotification, notificationDate, widget.user.uid, widget.bookToView.id.key!);
+            if (scheduledJobName != null) {
+              widget.bookToView.scheduledNotificationNameToChannel ??= {};
+              widget.bookToView.scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
+              widget.bookToView.update();
+            }
+            setState(() {});
+            if (mounted) {
+              SharedWidgets.displayPositiveFeedbackDialog(context, "Notification Scheduled");
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColor.skyBlue,
+            padding: const EdgeInsets.all(8),
+          ),
+          child: const Text(
+            "Add a notification at this time",
+            style: TextStyle(fontSize: 16, color: Colors.black)
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -348,7 +421,7 @@ class _FriendBookPageState extends State<FriendBookPage> {
                 ],
               ),
             ),
-            (widget.bookToView.borrowerId == widget.user.uid)
+            (widget.bookToView.borrowerId == widget.user.uid && _friendsLibraryBook.dateToReturn!.difference(DateTime.now().toUtc()).inDays > 0)
             ? Flexible( 
                 flex: 2,
                 child: _displayEarlyReturnNotifierSpecifier(),

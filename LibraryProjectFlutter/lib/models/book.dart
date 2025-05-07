@@ -6,9 +6,9 @@ import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/database/database.dart';
 import 'package:shelfswap/models/book_requests_model.dart';
 import 'package:shelfswap/models/notification.dart';
-import 'package:shelfswap/notifications/aws_scheduler_interface.dart';
 import 'package:shelfswap/notifications/notification_channel_manager.dart';
 import 'package:shelfswap/notifications/send_notifications.dart';
+import 'dart:math';
 
 //putting this definition here allows us to not use bools for read state.
 enum ReadingState { notRead, currentlyReading, read }
@@ -114,50 +114,55 @@ class Book {
     }
     if (scheduledNotificationNameToChannel != null) {
       scheduledNotificationNameToChannel!.forEach((k, v) async {
-        await deleteScheduledJob(k);
+        await deleteScheduledNotification(k);
       });
     }
     removeRef(_id);
   }
 
   Future<void> setupScheduledLendNotifications(DateTime dateLent, DateTime dateToReturn, String borrowerId, String lenderId) async {
-    return;
     scheduledNotificationNameToChannel ??= {};
     late String? scheduledJobName;
     late NotificationChannel currentChannel;
-    String bookTitle = title ?? "No title found";
-    String? lenderName = userIdToUserModel[lenderId]?.name; // TODO check if this actually exists
+    String bookTitle = "No title found";
+    if (title != null) {
+      // truncating book title if its size is > 40. No clue if this is optimal, android notification descriptions allegedly have a character limit of 240
+      // but it seems lower in my limited testing experience so who knows ...
+      bookTitle = title!.substring(0, min(title!.length, 40));
+    }
+    String? lenderName = userIdToUserModel[lenderId]?.name;
     String? receiverName = userIdToUserModel[borrowerId]?.name;
     currentChannel = NotificationChannel.lend_receiver_time_to_return;
     NotificationData timeToReturnBook = NotificationData(
       "It's time to return a book",
-      "It's time to return the book $bookTitle lent by $lenderName",
+      "It's time to return the book $bookTitle, lent by $lenderName.",
       currentChannel,
       borrowerId,
     );
-    scheduledJobName = await sendScheduledNotification(timeToReturnBook, dateToReturn);
+    scheduledJobName = await sendScheduledNotification(timeToReturnBook, dateToReturn, lenderId, _id.key!);
     if (scheduledJobName != null) {
       scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
     }
     currentChannel = NotificationChannel.lend_sender_did_you_get_book_back;
+    int daysUntilNotifying = dateToReturn.difference(dateLent).inDays;
     NotificationData didYouGetBookBack = NotificationData(
       "Did you get this book back?",
-      "The date to return has occured for book $bookTitle lent to $receiverName",
+      "It has been $daysUntilNotifying days since you've lent $bookTitle to $receiverName.",
       currentChannel,
       lenderId,
     );
-    scheduledJobName = await sendScheduledNotification(didYouGetBookBack, dateToReturn);
+    scheduledJobName = await sendScheduledNotification(didYouGetBookBack, dateToReturn, lenderId, _id.key!);
     if (scheduledJobName != null) {
       scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
     }
     currentChannel = NotificationChannel.lend_receiver_late;
     NotificationData bookWasDueAWeekAgo = NotificationData(
       "You have an overdue book lent to you",
-      "$bookTitle was set to be returned a week ago. Please return it to $lenderName",
+      "$bookTitle was set to be returned a week ago. Please return it to $lenderName.",
       currentChannel,
       borrowerId,
     );
-    scheduledJobName = await sendScheduledNotification(bookWasDueAWeekAgo, dateToReturn.add(const Duration(days: 7)));
+    scheduledJobName = await sendScheduledNotification(bookWasDueAWeekAgo, dateToReturn.add(const Duration(days: 7)), lenderId, _id.key!);
     if (scheduledJobName != null) {
       scheduledNotificationNameToChannel![scheduledJobName] = currentChannel.name;
     }
@@ -174,7 +179,7 @@ class Book {
     lentDbKey = lentToMeId.key;
     unsendBookRequest(borrowerId, lenderId);
     update();
-    // this intentionally not awaited to show the user instant feedback
+    // this is intentionally not awaited to show the user instant feedback
     setupScheduledLendNotifications(dateLent, dateToReturn, borrowerId, lenderId);
   }
 
@@ -189,7 +194,7 @@ class Book {
       readyToReturn = null;
       if (scheduledNotificationNameToChannel != null) {
         scheduledNotificationNameToChannel!.forEach((key, value) async {
-          await deleteScheduledJob(key);
+          await deleteScheduledNotification(key);
         });
       }
       scheduledNotificationNameToChannel = null;

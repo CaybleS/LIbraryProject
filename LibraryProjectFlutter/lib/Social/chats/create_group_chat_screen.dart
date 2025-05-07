@@ -327,13 +327,15 @@ class _CreateGroupChatScreenState extends State<CreateGroupChatScreen> {
       File image = File(xFile.path);
       String filename = const Uuid().v1();
 
-      String response = await uploadImage(context, filename, image);
-      String s3Base = "https://shelfswap.s3.amazonaws.com";
-
-      if (response != "good") {
-        // Error handling?
-        return;
+      if (mounted) {
+        String response = await uploadImage(context, filename, image);
+        if (response != "good") {
+          // Error handling?
+          return;
+        }
       }
+      
+      String s3Base = "https://shelfswap.s3.amazonaws.com";
 
       imageUrl = "$s3Base/$filename";
 

@@ -10,14 +10,11 @@ import 'package:shelfswap/notifications/notification_channel_manager.dart';
 // called setup device notifications since these things which run should be independent of the user. It's basically everything
 // except the stuff which deals with tokens; the general receiving functionality doesn't really care who's signed in, it's just receiving
 Future<void> setupDeviceNotifications() async {
-  // when re-adding notification stuff, its the dead code places where I early return, and then I commented out uses of
-  // the notificationInstance object, in persistent_bottombar file and logout function.
-  // also friend_book_page sendNotification function
-  return;
-  await requestNotificationPermission(); // ensure this is first, many things rely on this being true to work
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   notificationInstance = NotificationService();
-  notificationInstance.initialize(); // TODO check this
+  // ensure this is first only after notificaiton instance is instantiated, many things rely on this being true to work
+  await requestNotificationPermission();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  notificationInstance.initialize();
 }
 
 Future<void> requestNotificationPermission() async {
@@ -41,7 +38,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   NotificationService notificationService = NotificationService();
   await notificationService.setupNotificationsForShowingOutOfTheApp();
-  await notificationService.showNotification(message);
+  // not showing the notification because, the android OS shows the notification already. Any firebase cloud messaging payloads containing a
+  // notification {} part will be automatically taken over by the OS. I pass in channel name to this also, so I dont even know if this entire isolate
+  // is even needed. I'm just keeping it since I'd guess (idk for sure) that keeping this allows for logic for users to click on these notifications and go
+  // to a certain page, even though the OS is the one who initially shows it.
+  //await notificationService.showNotification(message);
 }
 
 class NotificationService {
@@ -61,7 +62,7 @@ class NotificationService {
     }
   }
 
-  void userLoggedOut(String userId) {
+  Future<void> userLoggedOut(String userId) async {
     if (token != null) {
       removeUserTokenData(token!, userId);
       token = null;
@@ -80,8 +81,7 @@ class NotificationService {
     }
 
     await NotificationChannelManager.createAllNotificationChannels(_localNotifications);
-    // TODO why the crud logo doesnt work
-    const initializationSettingsAndroid = AndroidInitializationSettings("@mipmap/app_logo_alt");
+    const initializationSettingsAndroid = AndroidInitializationSettings("@drawable/app_logo_alt");
 
     // ios setup
     final initializationSettingsDarwin = DarwinInitializationSettings(
@@ -99,7 +99,7 @@ class NotificationService {
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        // handle on tap of notification or whatever TODO implement this functionality
+        // handle on tap of notification, some routing logic, here and in _handleBackgroundMessage I think..?? idk.
       }
     );
 
@@ -109,22 +109,9 @@ class NotificationService {
   Future<void> showNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
-    String channelId = message.data['channelId'] ?? 'default_channel';
+    String channelId = android?.channelId ?? 'default_channel';
     String channelName = NotificationChannelManager.getChannelName(channelId);
-    //print("channelName is: $channelName");
     String channelDescription = NotificationChannelManager.getChannelDescription(channelId);
-
-    // for some reason background notifications are having freaky stuff happen -_- its not registering the channel even though the channel name
-    // is clearly fetched correctly and the channel SHOULD be created
-    // await _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
-    //   AndroidNotificationChannel(
-    //     channelId,
-    //     channelName,
-    //     description: channelDescription,
-    //     importance: NotificationChannelManager.getChannelImportance(channelId),
-    //   )
-    // );
-
 
     if (notification != null && android != null) {
       await _localNotifications.show(
@@ -136,7 +123,9 @@ class NotificationService {
             channelId,
             channelName,
             channelDescription: channelDescription,
-            icon: "@mipmap/app_logo_alt", // TODO icon here it doesnt work i think no I think it does work ... I think this one works and the other doesnt or smth
+             // if you wish to change this, its used in this file and android/app/src/main/AndroidManifest.xml, basically you need a transparent image
+             // and then you need to use AndroidAssetStudio website to create a notification icon. It will make drawable folders for you
+            icon: "@drawable/app_logo_alt",
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -166,7 +155,8 @@ class NotificationService {
   }
 
   void _handleBackgroundMessage(RemoteMessage message) {
-    // TODO much to consider:
+    // I believe the routing logic would be here, and in onDidReceiveNotificationResponse, but idk honestly
+    // I don't know how it works and it seems complex to setup, sorry.
     // by default if you click on a notification which comes in the background, it will just open the app, but you can also pass
     // extra data from your firebase and specify which screen should be opened.
     // https://developer.android.com/develop/ui/views/notifications#Actions

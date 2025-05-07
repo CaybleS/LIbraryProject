@@ -1,6 +1,3 @@
-// TODO this page. Remove these comments when done
-// what can be on it?
-// 1.) Note that borrowed_book_page and add_book/search/book_details_screen will have similar layout to this page IMO, but with much of these details missing I'd say
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/app_startup/appwide_setup.dart';
@@ -186,7 +183,7 @@ class _BookPageState extends State<BookPage> {
       onPressed: () async {
         await displayLendDialog(context, widget.book, widget.user);
         setState(() {
-          _userLent = userIdToUserModel[widget.book.borrowerId]!.name;
+          _userLent = userIdToUserModel[widget.book.borrowerId]?.name;
         });
       },
       style: ElevatedButton.styleFrom(
@@ -356,7 +353,7 @@ class _BookPageState extends State<BookPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         _displayStatus(),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         const Text(
                           "Rating:",
                           style: TextStyle(
@@ -515,14 +512,14 @@ class _BookPageState extends State<BookPage> {
                             //),
                           ],
                         ),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         (widget.book.borrowerId != null)
                             ? SizedBox(
                                 child: RichText(
                                   textAlign: TextAlign.center,
                                   text: TextSpan(
                                     children: [
-                                      TextSpan(
+                                      const TextSpan(
                                         text: "Lent to:\n",
                                         style: TextStyle(
                                           fontSize: 18,
@@ -532,7 +529,7 @@ class _BookPageState extends State<BookPage> {
                                       ),
                                       TextSpan(
                                         text: _userLent,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.normal,
                                           color: Colors.black,

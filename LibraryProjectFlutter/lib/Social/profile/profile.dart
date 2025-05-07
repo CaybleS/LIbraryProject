@@ -83,7 +83,9 @@ class _ProfileState extends State<Profile> {
         id); // if there is already a request sent from this user, add as friend
     if (requestToMe) {
       await addFriend(id, widget.user.uid);
-      SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
+      if (mounted) {
+        SharedWidgets.displayPositiveFeedbackDialog(context, "Friend Added");
+      }
     } else {
       if (id != '' && id != widget.user.uid) {
         if (!friendIDs.contains(id)) {
@@ -117,11 +119,6 @@ class _ProfileState extends State<Profile> {
 
     showBottombar = false;
     refreshBottombar.value = true;
-    // TODO I removed the pushReplacement becuase of the case where users go to profile from private chat (re-adds bottombar) then go to messages from that 
-    // private chat via this button (removes bottombar) then hit back button on top left which re adds the bottombar in the chat since it doesnt persist the logic
-    // to re-remove the bottombar when going back to the private chat screen from profile. Just make sure its fine and remove these comments when its determined ok?
-    // I think the logic was just to when leaving messages go to friends page rahter than their profile or something but if you really want that just put a pop
-    // before the navigator push or something. TODO remoive these comments when this is discussed / seen
     if (mounted) {
       await Navigator.push(
         context,
@@ -277,8 +274,10 @@ class _ProfileState extends State<Profile> {
                     "Cannot unfriend: You have books lent to this user");
               } else {
                 await removeFriend(widget.user.uid, widget.profileUserId);
-                SharedWidgets.displayPositiveFeedbackDialog(
-                    context, "Removed Friend");
+                if (mounted) {
+                  SharedWidgets.displayPositiveFeedbackDialog(
+                      context, "Removed Friend");
+                }
               }
 
               setState(() {});
@@ -294,8 +293,10 @@ class _ProfileState extends State<Profile> {
                 onPressed: () async {
                   await removeFriendRequest(
                       widget.user.uid, widget.profileUserId);
-                  SharedWidgets.displayPositiveFeedbackDialog(
-                      context, "Request Removed");
+                  if (mounted) {
+                    SharedWidgets.displayPositiveFeedbackDialog(
+                        context, "Request Removed");
+                  }
                   setState(() {});
                 },
                 child: const Text(
@@ -307,8 +308,10 @@ class _ProfileState extends State<Profile> {
                 style: ElevatedButton.styleFrom(backgroundColor: AppColor.pink),
                 onPressed: () async {
                   await _addFriend();
-                  SharedWidgets.displayPositiveFeedbackDialog(
-                      context, "Friend Request Sent");
+                  if (mounted) {
+                    SharedWidgets.displayPositiveFeedbackDialog(
+                        context, "Friend Request Sent");
+                  }
                   setState(() {});
                 },
                 child: const Text(

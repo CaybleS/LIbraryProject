@@ -30,8 +30,10 @@ AWS_ACCESS_KEY=<your AWS access key>
 AWS_SECRET_ACCESS_KEY=<your AWS secret access key>
 AWS_ACCOUNT_ID=<your AWS account id>
 ```
-9. Our `.env` also contains an entry `AWS_SEND_NOTIFICATION_ENDPOINT=` which links to a lambda function that sends notifications. TODO lambda set up
-Change your `build.gradle` in the `android/app/` directory. **You need to comment out the lines:**
+9. Our `.env` also contains an entry `AWS_SEND_NOTIFICATION_ENDPOINT=` which links to a lambda function that sends notifications. This Lambda function source code, and setup, can be found [here](https://github.com/jidoux/shelfswap-send-notification-lambda).
+
+If you are running a non-deployed version of the app, you need to change your `build.gradle` in the `android/app/` directory.
+**You need to comment out the lines:**
 ```
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")

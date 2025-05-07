@@ -59,7 +59,6 @@ Future<http.Response?> sendAwsRequest(String region, String service, Uri endpoin
     }
     return response;
   } catch (e) {
-    print("Failure with sending AWS request: $e");
     return null;
   }
 }
@@ -90,7 +89,8 @@ String truncateDateToSendToProperFormat(String dateToSendString) {
   return dateToSendString.substring(0, dateToSendString.indexOf(RegExp(r'[.]')));
 }
 
-Future<String?> createScheduledJobWithLambdaTarget(Map<String, String> notificationJson, String lambdaArn, DateTime dateToSend) async {
+Future<String?> createScheduledJobWithLambdaTarget(
+  Map<String, String> notificationJson, String lambdaArn, DateTime dateToSend, String userId, String bookDbKey) async {
   String awsAccountId = dotenv.env['AWS_ACCOUNT_ID'] ?? "";
   const String region = "us-east-2";
   const String service = "scheduler";
@@ -99,7 +99,10 @@ Future<String?> createScheduledJobWithLambdaTarget(Map<String, String> notificat
   String dateToSendString = dateToSend.toUtc().toIso8601String();
   dateToSendString = truncateDateToSendToProperFormat(dateToSendString);
   Map<dynamic, dynamic> payloadToSendToLambda = {
-    "body": notificationJson, "scheduleName": randomScheduleName,
+    "body": notificationJson,
+    "scheduleName": randomScheduleName,
+    "userId": userId,
+    "bookDbKey": bookDbKey,
   };
 
   Map<dynamic, dynamic> schedulePayload = {
@@ -133,7 +136,6 @@ Future<String?> createScheduledJobWithLambdaTarget(Map<String, String> notificat
     return randomScheduleName;
 
   } else {
-    print("Failed to CREATE: ${response.body}");
     return null;
   }
 }
@@ -154,38 +156,36 @@ Future<Map<String, dynamic>?> getScheduledJob(String scheduleName) async {
   }
 
   if (response.statusCode == 200) {
-    print("GET worked");
     return json.decode(response.body);
   } else {
-    print("Failed to GET: ${response.body}");
     return null;
   }
 }
 
 // https://docs.aws.amazon.com/pdfs/scheduler/latest/APIReference/eventbridge-scheduler-api.pdf.pdf#API_UpdateSchedule
-// TODO i dont even kno also make sure bool return value is fine idk honestly maybe when it works ill know the truth
-Future<bool?> updateScheduledJob(String scheduleName, Map<String, dynamic> updates) async {
-  const String region = "us-east-2";
-  const String service = "scheduler";
-  Uri endpoint = Uri.parse("https://$service.$region.amazonaws.com/schedules/$scheduleName");
-  Map<String, String> headers = {
-    'Content-Type': 'application/json',
-    'X-Amz-Target': 'AWSScheduler.UpdateSchedule',
-  };
+// this currently does not work, and I don't know why exactly
+// Future<bool?> updateScheduledJob(String scheduleName, Map<String, dynamic> updates) async {
+//   const String region = "us-east-2";
+//   const String service = "scheduler";
+//   Uri endpoint = Uri.parse("https://$service.$region.amazonaws.com/schedules/$scheduleName");
+//   Map<String, String> headers = {
+//     'Content-Type': 'application/json',
+//     'X-Amz-Target': 'AWSScheduler.UpdateSchedule',
+//   };
 
-  http.Response? response = await sendAwsRequest(region, service, endpoint, AWSHttpMethod.put, headers, null);
-  if (response == null) {
-    return null;
-  }
+//   http.Response? response = await sendAwsRequest(region, service, endpoint, AWSHttpMethod.put, headers, null);
+//   if (response == null) {
+//     return null;
+//   }
 
-  if (response.statusCode == 200) {
-    print("PUT worked: ${response.body}");
-    return true;
-  } else {
-    print("Failed to PUT: ${response.body}");
-    return false;
-  }
-}
+//   if (response.statusCode == 200) {
+//     print("PUT worked: ${response.body}");
+//     return true;
+//   } else {
+//     print("Failed to PUT: ${response.body}");
+//     return false;
+//   }
+// }
 
 Future<void> deleteScheduledJob(String scheduleName) async {
   const String region = "us-east-2";

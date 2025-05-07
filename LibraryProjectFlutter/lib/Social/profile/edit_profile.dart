@@ -39,7 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _displayProcessing = false;
   late final VoidCallback _textUpdatedListener;
-  final int nameCharLimit = 20;
+  final int nameCharLimit = 20; // this is also set on appwide_setup/create_account_screen with the same value so change both
   final int aboutMeCharLimit = 200;
   final int genreCharLimit = 50;
   bool _nameCharErr = false;
@@ -187,7 +187,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _picUploaded = false;
     _profilePicFile = null;
 
-    SharedWidgets.displayPositiveFeedbackDialog(context, "Profile Saved");
+    if (mounted) {
+      SharedWidgets.displayPositiveFeedbackDialog(context, "Profile Saved");
+    }
   }
 
   @override
@@ -567,7 +569,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               for (String cover in _removeCustomCovers) {
                                 await deleteCoverFromStorage(cover);
                               }
-                              Navigator.pop(context);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColor.skyBlue),

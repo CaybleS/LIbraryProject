@@ -64,10 +64,6 @@ Future<String?> uploadCoverToStorage(BuildContext context, XFile coverImage) asy
           SharedWidgets.displayErrorDialog(context, "Failed to set cover image");
         }
       }
-    } on FirebaseException { // just in case better error handling should be added, im keeping this
-      if (context.mounted) {
-        SharedWidgets.displayErrorDialog(context, "Failed to set cover image");
-      }
     }
     catch (e) {
       if (context.mounted) {

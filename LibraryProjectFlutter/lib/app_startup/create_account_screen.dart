@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/ui/colors.dart';
@@ -28,6 +29,8 @@ class _CreateAccountState extends State<CreateAccount> {
   bool _noPasswordInput = false;
   bool _passwordNotMachInput = false;
   bool _passwordLenghtInput = false;
+  static const int _maxDisplayNameLength = 20; // this is set here, and on profile, could move this variable accordingly if you change both of them
+  bool _nameisMaxLength = false;
 
   @override
   void initState() {
@@ -36,6 +39,16 @@ class _CreateAccountState extends State<CreateAccount> {
       if (_noNameInput && nameController.text.isNotEmpty) {
         setState(() {
           _noNameInput = false;
+        });
+      }
+      if (_nameisMaxLength) {
+        setState(() {
+          _nameisMaxLength = false;
+        });
+      }
+      if (!_nameisMaxLength && nameController.text.length == _maxDisplayNameLength) {
+        setState(() {
+          _nameisMaxLength = true;
         });
       }
     });
@@ -159,16 +172,19 @@ class _CreateAccountState extends State<CreateAccount> {
                   const SizedBox(height: 25),
                   TextField(
                     controller: nameController,
+                    maxLength: 20,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
                     onTapOutside: (event) {
                       FocusScope.of(context).unfocus();
                     },
                     decoration: InputDecoration(
+                      counterText: "",
                       hintText: 'Name',
                       hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                       fillColor: Colors.white,
                       filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      errorText: _noNameInput ? "Required" : null,
+                      errorText: (_noNameInput || _nameisMaxLength) ? (_noNameInput ? "Required" : "You are at the 20-character limit") : null,
                       suffixIcon: IconButton(
                         onPressed: () {
                           nameController.clear();

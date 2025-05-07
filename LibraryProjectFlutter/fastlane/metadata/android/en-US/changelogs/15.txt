@@ -1,0 +1,1 @@
+Added notifications and a friend filter for lent books on the homepage

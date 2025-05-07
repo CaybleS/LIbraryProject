@@ -10,6 +10,10 @@
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/launcher_icon"
         android:label="ShelfSwap">
+        <!-- the push notification icon for OS-handled background messages (I think) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/app_logo_alt"/>
         <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait"
@@ -20,10 +24,6 @@
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:windowSoftInputMode="adjustResize">
-            <!-- the push notification icon -->
-            <meta-data
-                android:name="com.google.firebase.messaging.default_notification_icon"
-                android:resource="@mipmap/app_logo_alt"/>
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues

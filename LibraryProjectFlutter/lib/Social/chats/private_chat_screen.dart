@@ -545,11 +545,12 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   String _formatDate(DateTime sentTime) {
-    final now = DateTime.now().toUtc();
+    sentTime = sentTime.toLocal();
+    final now = DateTime.now();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     if (_isSameDay(sentTime, now)) return 'Today';
     if (_isSameDay(sentTime, yesterday)) return 'Yesterday';
-    return DateFormat('MM/dd/yyyy').format(sentTime.toLocal());
+    return DateFormat('MM/dd/yyyy').format(sentTime);
   }
 
   void selectImage() async {

@@ -32,7 +32,7 @@ Future<void> tryGoodreadsExport(BuildContext context) async {
     warningText = "Are you sure you want to export ${booksToExport.length} books? This is all of your books.";
   }
   else {
-    // TODO should better handle the books which cant be exported? Specify? No clue how this would be but obviously it should exist
+    // TODO should better handle the books which cant be exported? Specify? No clue how this would be but maybe it could be added in the future if people value this feature
     warningText = "$numBooksUserCantExport could not be exported due to not having an ISBN in our databases. Are you sure you want to export ${booksToExport.length} books still?";
   }
   bool shouldExport = await SharedWidgets.displayConfirmActionDialog(context, warningText);

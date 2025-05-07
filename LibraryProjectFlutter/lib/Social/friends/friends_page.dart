@@ -232,14 +232,14 @@ class _FriendsPageState extends State<FriendsPage> {
                                           },
                                           color: const Color.fromRGBO(
                                               76, 175, 80, 1),
-                                          icon: Icon(Icons.check)),
+                                          icon: const Icon(Icons.check)),
                                       IconButton(
                                           onPressed: () {
                                             _denyClicked(index, context);
                                           },
                                           color: const Color.fromRGBO(
                                               244, 67, 54, 1),
-                                          icon: Icon(Icons.close))
+                                          icon: const Icon(Icons.close))
                                     ],
                                   ),
                                 ))

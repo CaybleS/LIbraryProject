@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shelfswap/notifications/repeat_notification_manager.dart';
 import 'package:shelfswap/social/chats/message_home.dart';
 import 'package:shelfswap/social/friends/friends_page.dart';
 import 'package:shelfswap/add_book/add_book_homepage.dart';
@@ -30,7 +31,8 @@ class _PersistentBottomBarState extends State<PersistentBottomBar> {
     // I guess this is the best place to initialize things which need to be initialized user-specifically
     // (whereas main.dart is best place to initialize things which can be the same even if you logout)
     setupDatabaseSubscriptions(widget.user, context);
-    //notificationInstance.userLoggedIn(widget.user.uid); // I think its fine to call this when theoretically the rest of the notification stuff isnt setup TODO double check
+    notificationInstance.userLoggedIn(widget.user.uid); // I think its fine to call this when theoretically the rest of the notification stuff isnt setup but not sure
+    repeatNotificationManager = RepeatNotificationManager();
     _pagesList[homepageIndex] = HomePage(widget.user);
     _pagesList[addBookPageIndex] = AddBookHomepage(widget.user);
     _pagesList[friendsPageIndex] = FriendsPage(widget.user);

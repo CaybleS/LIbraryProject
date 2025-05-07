@@ -1,4 +1,3 @@
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shelfswap/social/chats/create_group_chat_screen.dart';
 import 'package:shelfswap/social/chats/private_chat_screen.dart';

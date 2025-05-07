@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
+import 'package:shelfswap/models/notification.dart';
+import 'package:shelfswap/notifications/notification_channel_manager.dart';
+import 'package:shelfswap/notifications/send_notifications.dart';
 import 'package:shelfswap/social/friends_library/friend_book_page.dart';
 import 'package:shelfswap/book/book_requests_page.dart';
 import 'package:shelfswap/core/global_variables.dart';
@@ -9,10 +12,14 @@ import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/book/book_page.dart';
 import 'package:shelfswap/ui/colors.dart';
 import 'appbar.dart';
-// TODO for showing Lent books, we need a way to filter who lent X book. I want to see what books I lent to X user, or
-// or also for lentToMe books, I want to see what books I have lent by X user. In my head its some menuanchur filter dropdown
-// or something but idk. I'm pretty confident this should be added. (will be a dropdown menuanchor with all selected by default btw)
+// can add more sorting stuff or maybe on the sorting list add some option. Its date added, title, author, mby add ready to return or smth
+// and make the sorting option some sorting + filtering combo both. Its complex but maybe better
 
+// could allow for filtering these somehow:
+// extension requested books (if this feature gets implemented later)
+// lent ready to return
+// lent to me ready to return
+// requested books
 enum _SortingOption { dateAdded, title, author }
 
 enum _BooksShowing { all, fav, lent, lentToMe }
@@ -30,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   // this is the "driver" list which dictates what books in shownLibrary are visible, and in what order, by storing indicies of books in shownLibrary
   List<int> _shownList = [];
 
-  // needed to always be able to sort by 'date added" even when shownList changes to sort by title
+  // needed to always be able to sort by "date added" even when shownList changes to sort by title
   List<int> _unsortedShownList = [];
   List<Book> _shownLibrary = [];
   final List<LentBookInfo> _booksLentToMeList = [];
@@ -47,6 +54,10 @@ class _HomePageState extends State<HomePage> {
   bool _showingLentOutReadyToReturn = false; // subfilter within "lent" section of filters
   bool _showingLentToMeReadyToReturn = false; // subfilter within "lent to me" section of filters
   int _numLentToMeBooksReadyToReturn = 0; // for the lent to me section this is for the filter of ready to return "lent to me" books
+  // basically this structure stores the friend ids used so that menuanchor has visual feedback for whats selected.
+  List<int> _shownFriendIds = [];
+  final ScrollController _bookListScrolling = ScrollController();
+  final ScrollController _filterDownFriendsScrolling = ScrollController();
 
   @override
   void initState() {
@@ -56,6 +67,7 @@ class _HomePageState extends State<HomePage> {
     // since initState() apparently is called before the page is actually built so if we do it normally it shows the previous page still.
     WidgetsBinding.instance.addPostFrameCallback((_) => _removeSplashScreen());
     _fillBooksLentToMeList();
+    _fillShownFriendIdsList();
     _homepageContentUpdatedListener = () {
       // since offstage loads this page into memory at all times via the bottombar we just run the refresh logic if its the selectedIndex
       if (selectedIndex == homepageIndex) {
@@ -63,6 +75,12 @@ class _HomePageState extends State<HomePage> {
           _showEmptyLibraryMsg = true;
         } else {
           _showEmptyLibraryMsg = false;
+        }
+        // updating shown friend ids list as long as we arent on those pages, since for example this needs to be updated when friendIds is
+        // initially filled, while also not being updated when a book gets lent to the user. Its a difficult situation but I think this works
+        // in most cases
+        if (_showing != _BooksShowing.lent && _showing != _BooksShowing.lentToMe) {
+          _fillShownFriendIdsList();
         }
         _fillBooksLentToMeList();
         _updateList();
@@ -76,8 +94,11 @@ class _HomePageState extends State<HomePage> {
     };
     _bookRequestsAndUserLibraryLoadedListener = () {
       if (requestsAndBooksLoaded.value == 2) {
-        // TODO im just temp removing this since its bad feature, fully remove the requestsAndBooksLoaded stuff when dashboard gets added
+        // im just temp removing this since its bad feature, you can fully remove it if you want
+        // I didn't fully remove it because I think its a good idea IF there is a setting which allows any user to select
+        // "dont show again" on this, which I wrote in the dev documentation also.
         // (I think the requestsAndBooksLoaded was solely for this but not 100% since I rushed thru that)
+        // (so to delete it, remove all stuff related to that on this page, global_variables page, and in subscriptions.dart)
         // displayAppReturnDialog(context, widget.user);
         requestsAndBooksLoaded.removeListener(_bookRequestsAndUserLibraryLoadedListener);
       }
@@ -93,6 +114,8 @@ class _HomePageState extends State<HomePage> {
     bottombarIndexChangedNotifier.removeListener(_homepageClickedOffListener);
     requestsAndBooksLoaded.removeListener(_bookRequestsAndUserLibraryLoadedListener);
     _filterBooksTextController.dispose();
+    _bookListScrolling.dispose();
+    _filterDownFriendsScrolling.dispose();
     super.dispose();
   }
 
@@ -105,6 +128,10 @@ class _HomePageState extends State<HomePage> {
     booksLentToMe.forEach((k, v) {
       _booksLentToMeList.add(v);
     });
+  }
+
+  void _fillShownFriendIdsList() {
+    _shownFriendIds = Iterable<int>.generate(friendIDs.length).toList();
   }
 
   // note that these sorting and filtering functions are only changing the composition of shownList.
@@ -161,29 +188,33 @@ class _HomePageState extends State<HomePage> {
   // this doesn't change the shownLibrary list at all, it simply changes the shownList list (which only contains indicies of books to show inside of shownLibrary)
   void _filter(String filterText) {
     filterText = filterText.toLowerCase().trim();
-    if (filterText.isEmpty) {
-      _setShownListWithNoFilters();
-    } else {
-      List<int> newShownList = [];
+    _setShownListWithNoFilters();
+
+    if (filterText.isNotEmpty) {
+      List<int> textFilteredList = [];
       List<String> individualWordsToFilter = filterText.split(" ");
-      for (int i = 0; i < _shownLibrary.length; i++) {
-        if ((_shownLibrary[i].title?.toLowerCase() ?? "no title found").contains(filterText) ||
-            (_shownLibrary[i].author?.toLowerCase() ?? "no author found").contains(filterText) ||
+
+      for (int i = 0; i < _shownList.length; i++) {
+        int bookIndex = _shownList[i];
+        if ((_shownLibrary[bookIndex].title?.toLowerCase() ?? "no title found").contains(filterText) ||
+            (_shownLibrary[bookIndex].author?.toLowerCase() ?? "no author found").contains(filterText) ||
             _isFilterTextOneOfTheIndividualWords(individualWordsToFilter, filterText) ||
-            _isFilterTextTitleAndAuthor(filterText, _shownLibrary[i])) {
-          newShownList.add(i);
+            _isFilterTextTitleAndAuthor(filterText, _shownLibrary[bookIndex])) {
+          textFilteredList.add(bookIndex);
         }
       }
-      if (listEquals(newShownList, _shownList)) {
-        // optimization to prevent unnecessary rebuilds (if shownList doesn't change, no need to setState)
-        return;
-      } else {
-        _shownList = List.from(newShownList);
-        _unsortedShownList = List.from(newShownList);
-      }
+
+      _shownList = textFilteredList;
     }
+
+    if (_showing == _BooksShowing.lent || _showing == _BooksShowing.lentToMe) {
+      _applyFriendFiltering();
+    }
+
+    _unsortedShownList = List.from(_shownList);
+
+    // note that these sort by functions all perform setState
     switch (_sortSelection) {
-      // note that these sort by functions all perform setState
       case _SortingOption.dateAdded:
         _sortByDateAdded();
         break;
@@ -224,6 +255,7 @@ class _HomePageState extends State<HomePage> {
     _showingLentOutReadyToReturn = false; // when user clicks off lent tab this just gets unset, resetting that subfilter to avoid confusion
     _showingLentToMeReadyToReturn = false;
     _showing = state;
+    _fillShownFriendIdsList();
     _updateList();
   }
 
@@ -280,6 +312,42 @@ class _HomePageState extends State<HomePage> {
     _unsortedShownList = List.from(_shownList);
   }
 
+  void _applyFriendFiltering() {
+    // clear everything if there are no friends
+    if (_shownFriendIds.isEmpty) {
+      _shownList.clear();
+      _unsortedShownList.clear();
+      setState(() {});
+      return;
+    }
+    List<int> indicesToKeep = [];
+
+    for (int i = 0; i < _shownList.length; i++) {
+      int bookIndex = _shownList[i];
+      String? relevantUserId;
+      int indexInFriendIds = -1;
+
+      if (_showing == _BooksShowing.lent) {
+        relevantUserId = _shownLibrary[bookIndex].borrowerId ?? "no borrower id";
+        indexInFriendIds = friendIDs.indexOf(relevantUserId);
+      } else if (_showing == _BooksShowing.lentToMe) {
+        relevantUserId = _booksLentToMeList[bookIndex].lenderId ?? "no lender id";
+        indexInFriendIds = friendIDs.indexOf(relevantUserId);
+      }
+    
+      if (relevantUserId == widget.user.uid) {
+        continue;
+      }
+
+      if (indexInFriendIds != -1 && _shownFriendIds.contains(indexInFriendIds)) {
+        indicesToKeep.add(bookIndex);
+      }
+    }
+  
+    _shownList = indicesToKeep;
+    _unsortedShownList = List.from(_shownList);
+  }
+
   void _updateList() {
     _usingBooksLentToMe = _showing == _BooksShowing.lentToMe;
 
@@ -287,17 +355,14 @@ class _HomePageState extends State<HomePage> {
     _shownLibrary = _usingBooksLentToMe
       ? _booksLentToMeList.map((item) => item.book).toList()
       : userLibrary;
+  
     if (_filterBooksTextController.text.isNotEmpty) {
-      // Idk why this works, basically this can be called anytime a book is added or when user goes to homepage so
-      // in this case we want to both set the shown list and also apply any possible filters. A lot of this stuff seems
-      // unnecessary to me but I guess with 2 filter systems (the _BooksShowing and filter bar) we need to consider both of them, which
-      // is why prevShownList exists (we only show books with both filters applied to them).
-      List<int> prevShownList = _shownList;
       _filter(_filterBooksTextController.text);
-      _shownList.removeWhere((item) => !prevShownList.contains(item));
-      setState(() {});
     } else {
-      // these sorting functions will call the setState
+      if (_showing == _BooksShowing.lent || _showing == _BooksShowing.lentToMe) {
+        _applyFriendFiltering();
+      }
+
       switch (_sortSelection) {
         case _SortingOption.dateAdded:
           _sortByDateAdded();
@@ -553,7 +618,7 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "You have ${numUnseenBooksReadyToReturnNotifier.value} books ready to return.",
+            "You have ${numUnseenBooksReadyToReturnNotifier.value} lent books ready to return.",
             style: const TextStyle(fontSize: 14),
           ),
           Padding(
@@ -637,6 +702,119 @@ Widget _displayLentToMeReadyToReturnFilter() {
     );
   }
 
+  Widget _friendFilterDownMenu() {
+    return MenuAnchor(
+      builder: (BuildContext context, MenuController controller, Widget? child) {
+        return ElevatedButton(
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
+          ),
+          child: const Text(
+            "Filter down friends",
+            style: TextStyle(fontSize: 14, color: Colors.black),
+          ),
+        );
+      },
+      menuChildren: [
+        Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Text(
+                  "Filter down friends",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const Divider(),
+            const SizedBox(height: 9),
+            (friendIDs.isEmpty)
+              ? const Text("You have no friends to lend to", style: TextStyle(fontSize: 14, color: Colors.black))
+              : ConstrainedBox(
+                // this logic is used for dynamic sizing, I don't want it to take max space but I want it to shrink if necessary
+                constraints: BoxConstraints(maxHeight: friendIDs.length <= 5 ? friendIDs.length * 55 : 330),
+                child: SingleChildScrollView(
+                  controller: _filterDownFriendsScrolling,
+                  child: Column(
+                  children: List.generate(
+                    friendIDs.length,
+                    (index) => InkWell(
+                      onTap: () {
+                        if (_shownFriendIds.contains(index)) {
+                          _shownFriendIds.remove(index);
+                        }
+                        else {
+                          _shownFriendIds.add(index);
+                        }
+                        _filter(_filterBooksTextController.text);
+                      },
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+                        color: Colors.grey[200],
+                        child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          child: Row(
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(1, 0, 5, 0),
+                                child: Icon(Icons.person),
+                              ),
+                              Expanded( // this is what gives these widgets in the column constraints
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      userIdToUserModel[friendIDs[index]]!.name,
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      userIdToUserModel[friendIDs[index]]!.username,
+                                      style: const TextStyle(fontSize: 14),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 30),
+                              AnimatedOpacity(
+                                  opacity: _shownFriendIds.contains(index) ? 1 : 0,
+                                  duration: const Duration(milliseconds: 100),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.green,
+                                    ),
+                                    padding: const EdgeInsets.all(2),
+                                    child: const Icon(Icons.check, color: Colors.white, size: 16),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -646,7 +824,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
           Padding(
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 5),
               child: _displayShowButtons()),
-              (_showing == _BooksShowing.lent)
+              (_showing == _BooksShowing.lent) // TODO make a better filter UI for these things and more, its optimal I'd say
               ? _displayLentReadyToReturnFilter()
               : const SizedBox.shrink(),
               (_showing == _BooksShowing.lentToMe)
@@ -660,7 +838,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
                   child: TextField(
                     controller: _filterBooksTextController,
                     onChanged: (text) {
-                      _filter(text);
+                      _updateList();
                     },
                     decoration: InputDecoration(
                       filled: true,
@@ -693,11 +871,18 @@ Widget _displayLentToMeReadyToReturnFilter() {
                   child:
                       Text("Add books to view your library here", style: TextStyle(fontSize: 14, color: Colors.black)))
               : const SizedBox.shrink(),
+          (_showing == _BooksShowing.lent || _showing == _BooksShowing.lentToMe)
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: _friendFilterDownMenu(),
+                )
+              : const SizedBox.shrink(),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(7, 9, 7, 5),
               child: ListView.builder(
                 itemCount: _shownList.length,
+                controller: _bookListScrolling,
                 itemBuilder: (BuildContext context, int index) {
                   Widget coverImage = _shownLibrary[_shownList[index]].getCoverImage();
                   String availableTxt;
@@ -779,10 +964,17 @@ Widget _displayLentToMeReadyToReturnFilter() {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColor.pink, padding: const EdgeInsets.all(8),
                                     ),
-                                    onPressed: () {
+                                    onPressed: () async {
                                       _shownLibrary[_shownList[index]].readyToReturn = true;
                                       _shownLibrary[_shownList[index]].update();
+                                      NotificationData notificationData = NotificationData(
+                                        "Your lent book is ready to return",
+                                        "Your book ${_shownLibrary[_shownList[index]].title ?? "No title found"} is ready to return",
+                                        NotificationChannel.book_is_ready_to_return,
+                                        _booksLentToMeList[_shownList[index]].lenderId!,
+                                      );
                                       setState(() {});
+                                      await sendNotification(notificationData);
                                     },
                                     child: const FittedBox(
                                       child: Text("Ready To Return",
@@ -863,7 +1055,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
               ),
             ),
           ),
-          _displayInfoOnRequests(),
+          _displayInfoOnRequests(), // if this gets removed for a better feedback system maybe add padding here
         ],
       ),
     );

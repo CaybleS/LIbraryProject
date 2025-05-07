@@ -1,5 +1,3 @@
-// TODO rate button which links to google play store, also maybe at some point remove the feedback form or no? Honestly might be a decent perma feature
-
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +24,7 @@ class Settings extends StatefulWidget {
 
 class _SettingsState extends State<Settings> {
   static const String _feedbackFormUrl = "https://forms.gle/tKjd6hR8Gwc4UDNd8";
+  static const String _playStoreUrl = "https://play.google.com/store/apps/details?id=com.shelfswap";
   // at least for the logout this _pressedAButton is definitely needed, idk about the others, it might not be
   // needed but its meant to prevent spam pressing a button to try to do something many times, for example if
   // we are trying to logout and its not done and user clicks it again, it shouldnt try do the logout stuff again.
@@ -194,6 +193,7 @@ class _SettingsState extends State<Settings> {
     // remove the friends
     // I'm putting friends after requests for the race condition of someone accepting a friend request as an account is being deleted
     // TODO we should probably consider if more similar race conditions apply
+    // (they do since signaling between 2 devices in that way seems a tad difficult, how do databases normally handle that anyway...)
     for (String friendId in friendIDs) {
       DatabaseReference friendRef = dbReference.child('friends/$friendId/${widget.user.uid}');
       await removeRef(friendRef);
@@ -232,8 +232,12 @@ class _SettingsState extends State<Settings> {
         padding: const EdgeInsets.fromLTRB(10, 25, 10, 25),
         child: Column(
           children: [
+            Expanded(
+            child: SingleChildScrollView(
+            child: Column(
+            children: [
             const Row(), // idk how else to make the columns children be in the center of the screen if you know how just do it cuz this cant be optimal ..
-            IntrinsicWidth( // making all 4 buttons the size of the biggest one, this and CrossAxisAlignment.stretch achieve this
+            IntrinsicWidth( // making all buttons the size of the biggest one, this and CrossAxisAlignment.stretch achieve this
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -326,6 +330,45 @@ class _SettingsState extends State<Settings> {
                           return;
                         }
                         _pressedAButton = true;
+                        final Uri url = Uri.parse(_playStoreUrl);
+                        bool urlLaunched = await launchUrl(url);
+                        if (!urlLaunched && context.mounted) {
+                          SharedWidgets.displayErrorDialog(context, "An error occured while launching the url");
+                        }
+                        _pressedAButton = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 70, 199, 250),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          const Text("Rate our app",
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                          const SizedBox(width: 44), // intended to center the "rate our app" text
+                          InkWell(
+                            onTap: () async {
+                              await Clipboard.setData(const ClipboardData(text: _playStoreUrl));
+                              if (context.mounted) {
+                                SharedWidgets.displayPositiveFeedbackDialog(context, "Google Play Store Link Copied");
+                              }
+                            },
+                            child: const Icon(Icons.copy),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Flexible(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_pressedAButton) {
+                          return;
+                        }
+                        _pressedAButton = true;
                         await _removeAllBooksButtonClicked();
                         _pressedAButton = false;
                       },
@@ -390,22 +433,28 @@ class _SettingsState extends State<Settings> {
                 ],
               ),
             ),
-            const Spacer(), // I want the stats on the bottom and this is just the perfect use case for Spacer thats crazy
-            const Text( // can also add stuff like books rdy to return num friends num chat msgs sent num book requests received idk
-              "Your Stats",
-              style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
-            ),
-            Text(
-              "Added books: ${userLibrary.length}",
-              style: const TextStyle(fontSize: 14, color: Colors.black),
-            ),
-            Text(
-              "Books lent out: $numBooksLent",
-              style: const TextStyle(fontSize: 14, color: Colors.black),
-            ),
-            Text(
-              "Books lent to you: ${booksLentToMe.length}",
-              style: const TextStyle(fontSize: 14, color: Colors.black),
+            ],
+            ))),
+            Column(
+              children: [
+                const SizedBox(height: 10),
+                const Text( // can also add stuff like books rdy to return num friends num chat msgs sent num book requests received idk
+                  "Your Stats",
+                  style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  "Added books: ${userLibrary.length}",
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                Text(
+                  "Books lent out: $numBooksLent",
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                Text(
+                  "Books lent to you: ${booksLentToMe.length}",
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                ),
+              ],
             ),
           ],
         ),
