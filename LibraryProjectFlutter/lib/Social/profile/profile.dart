@@ -89,7 +89,7 @@ class _ProfileState extends State<Profile> {
     } else {
       if (id != '' && id != widget.user.uid) {
         if (!friendIDs.contains(id)) {
-          sendFriendRequest(widget.user, id);
+          await sendFriendRequest(widget.user, id);
           SharedWidgets.displayPositiveFeedbackDialog(
               context, 'Friend Request Sent!');
           Navigator.pop(context);

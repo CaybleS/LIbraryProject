@@ -5,7 +5,7 @@ publish_to: 'none'
 # make it possible to update the app's visible version in fastlane (you could do it there, I just didn't do it).
 # For every appbundle that you build this + number is the version code, it gets incremented automatically each
 # time through fastlane. Note that users will never see the version code, and you really don't have to touch it
-version: 0.1.0+15
+version: 0.1.0+16
 
 environment:
   sdk: '>=3.4.1 <4.0.0'

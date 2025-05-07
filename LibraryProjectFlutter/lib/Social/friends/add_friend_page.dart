@@ -62,7 +62,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
       if (id != widget.user.uid) {
         if (id != '') {
           if (!friendIDs.contains(id)) {
-            sendFriendRequest(widget.user, id);
+            await sendFriendRequest(widget.user, id);
             if (context.mounted) {
               SharedWidgets.displayPositiveFeedbackDialog(
                   context, 'Friend Request Sent!');
@@ -110,7 +110,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         // var contain = friends.where((element) => element.friendId == scannedID);
         var contain = friendIDs.where((element) => element == scannedID);
         if (contain.isEmpty) {
-          sendFriendRequest(widget.user, scannedID);
+          await sendFriendRequest(widget.user, scannedID);
           if (mounted) {
             SharedWidgets.displayPositiveFeedbackDialog(
                 context, 'Friend Request Sent!');

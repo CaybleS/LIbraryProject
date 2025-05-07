@@ -2,11 +2,16 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:shelfswap/app_startup/appwide_setup.dart';
 import 'package:shelfswap/core/global_variables.dart';
 import 'package:shelfswap/models/book.dart';
 import 'package:shelfswap/models/book_requests_model.dart';
+import 'package:shelfswap/models/notification.dart';
 import 'package:shelfswap/models/user.dart';
 import 'dart:async';
+
+import 'package:shelfswap/notifications/notification_channel_manager.dart';
+import 'package:shelfswap/notifications/send_notifications.dart';
 
 final dbReference = FirebaseDatabase.instance.ref();
 
@@ -21,7 +26,8 @@ void updateBook(Book book, DatabaseReference id) {
 
 // for many of these, the onvalue subscriptions are what use the id, so we dont need to return id,
 // but in this case the id is needed for the book to know about this
-DatabaseReference addLentBookInfo(DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
+DatabaseReference addLentBookInfo(
+    DatabaseReference bookDbRef, LentBookInfo lentBook, String borrowerId) {
   DatabaseReference id = dbReference.child('booksLent/$borrowerId/').push();
   id.set(lentBook.toJson(bookDbRef.key!));
   return id;
@@ -31,13 +37,18 @@ void removeLentBookInfo(String lentDbKey, String borrowerId) {
   dbReference.child('booksLent/$borrowerId/$lentDbKey').remove();
 }
 
-void addSentBookRequest(SentBookRequest sentBookRequest, String senderId, String bookDbKey) {
-  DatabaseReference id = dbReference.child('sentBookRequests/$senderId/$bookDbKey/');
+void addSentBookRequest(
+    SentBookRequest sentBookRequest, String senderId, String bookDbKey) {
+  DatabaseReference id =
+      dbReference.child('sentBookRequests/$senderId/$bookDbKey/');
   id.set(sentBookRequest.toJson());
 }
 
-Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String receiverId, String bookDbKey) async {
-  DataSnapshot snapshot = await dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/senders/').get();
+Future<void> addReceivedBookRequest(String senderId, DateTime sendDate,
+    String receiverId, String bookDbKey) async {
+  DataSnapshot snapshot = await dbReference
+      .child('receivedBookRequests/$receiverId/$bookDbKey/senders/')
+      .get();
   Map<String, String> senders = {};
   // if there are already senders we need to fetch them before adding our new sender to them
   if (snapshot.value != null) {
@@ -46,12 +57,15 @@ Future<void> addReceivedBookRequest(String senderId, DateTime sendDate, String r
       (key, value) => MapEntry(key.toString(), value.toString()),
     );
   }
-  DatabaseReference id = dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
+  DatabaseReference id =
+      dbReference.child('receivedBookRequests/$receiverId/$bookDbKey/');
   senders[senderId] = sendDate.toIso8601String();
   id.set({'senders': senders});
 }
 
-Future<void> removeBookRequestData(String requesterId, String userId, String bookDbKey, {bool removeAllReceivedRequests = false}) async {
+Future<void> removeBookRequestData(
+    String requesterId, String userId, String bookDbKey,
+    {bool removeAllReceivedRequests = false}) async {
   dbReference.child('sentBookRequests/$requesterId/$bookDbKey').remove();
   // slight optimization to prevent removing receivers in the case where user just removes the book (the function still needs to be called N times
   // for the number of request senders in this case to remove all the sender requests separately though).
@@ -59,13 +73,16 @@ Future<void> removeBookRequestData(String requesterId, String userId, String boo
     dbReference.child('receivedBookRequests/$userId/$bookDbKey').remove();
   } else {
     // need to see current senders and update as needed
-    DataSnapshot snapshot = await dbReference.child('receivedBookRequests/$userId/$bookDbKey/senders/').get();
+    DataSnapshot snapshot = await dbReference
+        .child('receivedBookRequests/$userId/$bookDbKey/senders/')
+        .get();
     if (snapshot.value != null) {
       Map<String, String> senders = (snapshot.value as Map).map(
         (key, value) => MapEntry(key.toString(), value.toString()),
       );
       senders.remove(requesterId);
-      DatabaseReference id = dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
+      DatabaseReference id =
+          dbReference.child('receivedBookRequests/$userId/$bookDbKey/');
       id.set({'senders': senders});
     } else {
       // there are no senders so we just remove everything (assuming the get() call doesn't return null when there is in fact data there...)
@@ -121,7 +138,6 @@ void addUser(User user, String username) {
   userModel.value = currentUser;
 }
 
-
 Future<bool> usernameExists(String username) async {
   if (username.contains(RegExp('[.#\$\\[\\]]'))) {
     return false;
@@ -132,16 +148,23 @@ Future<bool> usernameExists(String username) async {
 
 // call this only from the add user function
 void addUsername(String username) async {
-  DatabaseReference  id = dbReference.child('usernames/');
+  DatabaseReference id = dbReference.child('usernames/');
   id.update({username: true});
 }
 
-void sendFriendRequest(User user, String friendId) {
+Future<void> sendFriendRequest(User user, String friendId) async {
   var id = dbReference.child('requests/$friendId/${user.uid}');
   id.set({'sendDate': DateTime.now().toUtc().toIso8601String()});
   id = dbReference.child('sentFriendRequests/${user.uid}');
-  Map<String, dynamic> map = {friendId : true};
+  Map<String, dynamic> map = {friendId: true};
   id.update(map);
+
+  NotificationData notifData = NotificationData(
+      "New friend request",
+      "You have recieved a friend request from ${userIdToUserModel[user.uid]?.name}",
+      NotificationChannel.incoming_friend_request,
+      friendId);
+  await sendNotification(notifData);
 }
 
 Future<void> removeFriendRequest(String senderID, String receiverID) async {
@@ -180,12 +203,14 @@ Future<Map<String, dynamic>> getChatInfo(String roomID) async {
   Map<String, dynamic> map = {};
 
   if (event.snapshot.value != null) {
-    Map<String, dynamic> tempMap = Map<String, dynamic>.from(event.snapshot.value as Map);
+    Map<String, dynamic> tempMap =
+        Map<String, dynamic>.from(event.snapshot.value as Map);
 
     map['type'] = tempMap['type'];
 
     Map<String, String> memberMap = {};
-    Map<String, String> memberIDs = Map<String, String>.from(tempMap['members'] as Map);
+    Map<String, String> memberIDs =
+        Map<String, String>.from(tempMap['members'] as Map);
 
     for (var child in memberIDs.values) {
       memberMap[child] = await getUserDisplayName(child);
@@ -229,7 +254,8 @@ Future<String> getUserDisplayName(String id) async {
 // which don't get sent to ever, to cleanup the database one day.
 void writeUserTokenData(String userToken, String userId) {
   // storing the token as the db key to make it easy to access it
-  DatabaseReference id = dbReference.child('notifications/userTokens/$userId/$userToken/');
+  DatabaseReference id =
+      dbReference.child('notifications/userTokens/$userId/$userToken/');
   Map<String, dynamic> dataToWrite = {
     'lastModified': DateTime.now().toUtc().toIso8601String(),
   };
@@ -237,6 +263,7 @@ void writeUserTokenData(String userToken, String userId) {
 }
 
 void removeUserTokenData(String userToken, String userId) {
-  DatabaseReference id = dbReference.child('notifications/userTokens/$userId/$userToken/');
+  DatabaseReference id =
+      dbReference.child('notifications/userTokens/$userId/$userToken/');
   removeRef(id);
 }
