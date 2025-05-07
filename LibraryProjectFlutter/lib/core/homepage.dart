@@ -705,7 +705,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
   Widget _friendFilterDownMenu() {
     return MenuAnchor(
       builder: (BuildContext context, MenuController controller, Widget? child) {
-        return ElevatedButton(
+        return IconButton(
           onPressed: () {
             if (controller.isOpen) {
               controller.close();
@@ -713,13 +713,7 @@ Widget _displayLentToMeReadyToReturnFilter() {
               controller.open();
             }
           },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColor.skyBlue, padding: const EdgeInsets.all(8),
-          ),
-          child: const Text(
-            "Filter down friends",
-            style: TextStyle(fontSize: 14, color: Colors.black),
-          ),
+          icon: const Icon(Icons.person_search),
         );
       },
       menuChildren: [
@@ -834,6 +828,12 @@ Widget _displayLentToMeReadyToReturnFilter() {
             padding: const EdgeInsets.fromLTRB(19, 8, 19, 5),
             child: Row(
               children: [
+                (_showing == _BooksShowing.lent || _showing == _BooksShowing.lentToMe)
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: _friendFilterDownMenu(),
+                )
+                : const SizedBox.shrink(),
                 Expanded(
                   child: TextField(
                     controller: _filterBooksTextController,
@@ -870,12 +870,6 @@ Widget _displayLentToMeReadyToReturnFilter() {
                   padding: EdgeInsets.only(top: 10),
                   child:
                       Text("Add books to view your library here", style: TextStyle(fontSize: 14, color: Colors.black)))
-              : const SizedBox.shrink(),
-          (_showing == _BooksShowing.lent || _showing == _BooksShowing.lentToMe)
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: _friendFilterDownMenu(),
-                )
               : const SizedBox.shrink(),
           Expanded(
             child: Padding(
